@@ -1,0 +1,29 @@
+package com.tiamaes.bike.connector.service;
+
+import com.tiamaes.bike.connector.protocol.message.Message8001.Result;
+
+/**
+ * 通信程序服务接口
+ * 
+ * @author Chen
+ */
+public interface HandlerServiceInterface<T> {
+	/**
+	 * 注册事件
+	 * @param vehicle
+	 * @return
+	 */
+	Result register(T target);
+	/**
+	 * 注销事件
+	 * 
+	 * @param simNo
+	 * @return
+	 */
+	boolean logout(T target);
+	/**
+	 * 发送下线消息
+	 * @param target
+	 */
+	boolean offline(T target);
+}

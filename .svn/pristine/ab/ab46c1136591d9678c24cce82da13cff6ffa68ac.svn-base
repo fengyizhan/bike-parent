@@ -1,0 +1,304 @@
+package com.tiamaes.bike.service;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.LoadState;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.TestConstant;
+import com.tiamaes.bike.common.bean.connector.PhotoPackage;
+import com.tiamaes.bike.common.bean.connector.RegisterResult;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.RegisterResult.RegisterResultType;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo.ResponseState;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DirectionType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DistrictType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.WarnCode;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.information.Terminal.Type;
+import com.tiamaes.bike.common.bean.information.Vehicle.PlateColor;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message0200;
+import com.tiamaes.bike.common.bean.message.Message.Header;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class HandlerServiceTest extends TestConstant {
+	private static Logger logger = LogManager.getLogger(HandlerServiceTest.class);
+	@Autowired
+	private HandlerServiceInterface service;
+	
+	@Resource
+	private ChannelRepository channelRepository;
+	
+	@Resource
+	private ObjectMapper objectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("objectMapper not found...", objectMapper);
+	}
+	
+	@Test
+	public void getVehicleBySimNoTest() throws Exception {
+		Vehicle vehicle = service.getVehicleBySimNo(simNo);
+		logger.info(objectMapper.writeValueAsString(vehicle));
+	}
+
+	@Test
+	public void registerTest() throws Exception {
+		Vehicle vehicle = new Vehicle();
+		Terminal terminal = new Terminal();
+		Terminal.Factory factory = new Terminal.Factory();
+		factory.setId("10001");
+		terminal.setFactory(factory);
+		Terminal.Type type = new Terminal.Type();
+		type.setId("80000000");
+		terminal.setType(type);
+		terminal.setName("1000000");
+		terminal.setSimNo(simNo);
+		vehicle.setTerminal(terminal);
+		vehicle.setCarNo(carNo);
+		vehicle.setPlateColor(PlateColor.BLUE);
+		RegisterResult result = service.registerVehicle(vehicle);
+		Assert.assertEquals(RegisterResultType.SUCCESS, result.getResult());
+	}
+	
+	@Test
+	public void logout() throws Exception{
+		
+		service.logoutVehicle(simNo);
+		
+		Vehicle expected = service.getVehicleBySimNo(simNo);
+		
+		Assert.assertEquals(null, expected);
+	}
+	
+	@Test
+	public void getTerminalBySimNoTest() throws Exception {
+		Terminal terminal = service.getTerminalBySimNo(simNo);
+		logger.info(objectMapper.writeValueAsString(terminal));
+	}
+	
+	@Test
+	public void getSerialNoTest() throws Exception {
+		int serialNo = service.getSerialNo(simNo);
+		logger.info(serialNo);
+	}
+	
+	@Test
+	public void handle0001Test() throws Exception {
+		ResponseInfo responseInfo = new ResponseInfo();
+		responseInfo.setMessageId(33536);
+		responseInfo.setMessageSeqNo(3100);
+		responseInfo.setSimNo(simNo);
+		responseInfo.setResponseContent("0001000501580002002200B40142830000");
+		responseInfo.setResponse("成功/确认");
+		responseInfo.setResponseState(ResponseState.SUCCESS);
+		responseInfo.setResponseTime(new Date());
+		service.handle0001(responseInfo);
+		logger.info(objectMapper.writeValueAsString(responseInfo));
+	}
+	
+	@Test
+	@Ignore
+	public void handle0102Test() throws Exception {
+		Company company = new Company();
+		company.setId("bc455782477d4826ab03a7f24219ba37");
+		company.setName("郑州公交总公司");
+		Department department = new Department();
+		department.setId("692b719582684ac9a16163220eb6bcbf");
+		department.setName("一车队");
+		Terminal terminal = new Terminal();
+		terminal.setId(terminalId);
+		terminal.setName("100000");
+		terminal.setSimNo(simNo);
+		terminal.setRegistered(false);
+		Type type = new Type();
+		type.setName("HT800-V10388");
+		terminal.setType(type);
+		PointVector.Info info = new PointVector.Info();
+		info.setDate(new Date());
+		info.setHeight(802);
+		info.setSpeed(67);
+		info.setOdometer(12500);
+		info.setState(State.ONLINE);
+		Vehicle vehicle = new Vehicle();
+		vehicle.setSimCode(simNo);
+		vehicle.setId(vehicleId);
+		vehicle.setCarNo(carNo);
+		vehicle.setName(carNo);
+		vehicle.setInfo(info);
+		vehicle.setCompany(company);
+		vehicle.setDepartment(department);
+		vehicle.setTerminal(terminal);
+		service.handle0102(vehicle ,true);
+		logger.info(objectMapper.writeValueAsString(vehicle));
+	}
+	
+	@Test
+	@Ignore
+	public void handle0200Test() throws Exception {
+		Company company = new Company();
+		company.setId("bc455782477d4826ab03a7f24219ba37");
+		company.setName("郑州公交总公司");
+		Department department = new Department();
+		department.setId("692b719582684ac9a16163220eb6bcbf");
+		department.setName("一车队");
+		Terminal terminal = new Terminal();
+		terminal.setId(terminalId);
+		terminal.setName("100000");
+		terminal.setSimNo(simNo);
+		terminal.setRegistered(false);
+		Type type = new Type();
+		type.setName("HT800-V10388");
+		terminal.setType(type);
+		Vehicle vehicle = new Vehicle();
+		vehicle.setSimCode(simNo);
+		vehicle.setId(vehicleId);
+		vehicle.setCarNo(carNo);
+		vehicle.setName(carNo);
+		vehicle.setCompany(company);
+		vehicle.setDepartment(department);
+		vehicle.setTerminal(terminal);
+		PointVector pointVector = new PointVector();
+		PointVector.Info info = new PointVector.Info();
+		info.setDate(new Date(1478483002414l));
+		info.setHeight(802);
+		info.setSpeed(67);
+		info.setState(State.ONLINE);
+		info.setOdometer(12500);
+		info.setAccState(true);
+		info.setLocationState(true);
+		info.setLngState(false);
+		info.setLatState(false);
+		info.setRunState(false);
+		info.setEncryptState(false);
+		info.setLoadState(LoadState.NOLOAD);
+		info.setOilState(false);
+		info.setElectricState(true);
+		info.setLocked(true);
+		info.setDoor1(false);
+		info.setDoor2(false);
+		info.setDoor3(false);
+		info.setDoor4(false);
+		info.setDoor5(false);
+		info.setGps(false);
+		info.setCompass(false);
+		info.setGlonass(false);
+		info.setGalileo(false);
+		info.setOilContent(10);
+		info.setRecordSpeed(67);
+		PointVector.Center center = new PointVector.Center();
+		center.setLng(109.203745);
+		center.setLat(30.120334);
+		center.setRotation(30);
+		pointVector.setInfo(info);
+		pointVector.setCenter(center);
+		List<VehicleWarningInfo> vehicleWarningInfos = new ArrayList<VehicleWarningInfo>();
+		VehicleWarningInfo vehicleWarningInfo1 = new VehicleWarningInfo();
+		vehicleWarningInfo1.setId("14fdb4502cdf4e1884aa69e46200908d");
+		vehicleWarningInfo1.setVehicle(vehicle);
+		vehicleWarningInfo1.setWarnCode(WarnCode.EMERGENCY);
+		vehicleWarningInfo1.setWarnContent("紧急报警");
+		vehicleWarningInfo1.setCreateTime(new Date());
+		vehicleWarningInfo1.setLng(109.203745);
+		vehicleWarningInfo1.setLat(30.120334);
+		vehicleWarningInfos.add(vehicleWarningInfo1);
+		VehicleWarningInfo vehicleWarningInfo2 = new VehicleWarningInfo();
+		vehicleWarningInfo2.setId("7d090558f12b4c6a8343d6f631596460");
+		vehicleWarningInfo2.setVehicle(vehicle);
+		vehicleWarningInfo2.setWarnCode(WarnCode.FATIGUE);
+		vehicleWarningInfo2.setWarnContent("疲劳驾驶");
+		vehicleWarningInfo2.setCreateTime(new Date());
+		vehicleWarningInfo2.setLng(109.203745);
+		vehicleWarningInfo2.setLat(30.120334);
+		vehicleWarningInfos.add(vehicleWarningInfo2);
+		VehicleWarningInfo vehicleStationInfo = new VehicleWarningInfo();
+		vehicleStationInfo.setId("b8222641c0fe4d8d9de6ef1d1d769d55");
+		vehicleStationInfo.setVehicle(vehicle);
+		vehicleStationInfo.setWarnCode(WarnCode.INOUTAREA);
+		vehicleStationInfo.setWarnContent("进出区域");
+		vehicleStationInfo.setDistrictType(DistrictType.POLYGON);
+		vehicleStationInfo.setDistrictId(1);
+		vehicleStationInfo.setDirectionType(DirectionType.IN);
+		vehicleStationInfo.setCreateTime(new Date());
+		vehicleStationInfo.setLng(109.203745);
+		vehicleStationInfo.setLat(30.120334);
+		Message0200 message0200 = new Message0200(pointVector, vehicleWarningInfos, vehicleStationInfo);
+		service.handle0200(message0200, vehicle);
+	}
+	
+	@Test
+	@Ignore
+	public void handle0801Test() throws Exception {
+		PhotoPackage photoPackage = new PhotoPackage();
+		Header header = new Message().new Header();
+		header.setId(2049);
+		header.setChildPackage(true);
+		header.setEnableRSA(false);
+		header.setSimNo(simNo);
+		header.setSerialNo(148);
+		header.setLength(123);
+		header.setPacketNo(18);
+		header.setPacketTotal(18);
+		Map<Integer, byte[]> photoStream = new HashMap<Integer, byte[]>();
+		photoPackage.setPackageNo(17);
+		photoPackage.setMediaId(1l);
+		photoPackage.setCreateTime(new Date());
+		photoPackage.setPhotoType("jpeg");
+		photoStream.put(1, "/9j/4AAQSkZJRgABAQEASABIAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAHgAoADASIAAhEBAxEB/8QAHAABAQACAwEBAAAAAAAAAAAAAAMEBwEFBgII/8QAWRAAAgECBAEGCgYEBwwJBQEAABIBAgMEBRFhBgcTIVFTkhUWFzFBcaGy0dIIFCI1c3QycoGxIyUzNEJ1sxgkJyhSVFZigpG08DZjZoOipKXB0yZERYTjw//EABoBAQADAQEBAAAAAAAAAAAAAAABAgMEBQb/xAAxEQEAAgIBAwMCBQMEAwEAAAAAARECEgMEITEyQVEzYRMicYGRNLHwFCOhwQVi4dH/2gAMAwEAAhEDEQA/AOhAB5j7sAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOqzfPcJleJpw+It36qqqIriaKYmNNZj0zHUdqeJ45pfPcPTPpsUx/4qi2ERM92HUcmXHhti7Txvy3sMX3KfmHjflvYYvuU/Met4Z5NsvzHKbOKrr0muNTs/JPlnaewm8GcR1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSjLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDXw==".getBytes());
+		photoStream.put(2, "MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSjLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyUZZ2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSjLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5KMs7QeSfLO09gvArqfmGv/G/Lewxfcp+YeN+W9hi+5T8xsDyT5Z2g8lGWdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJRlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5KMs7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJPlnaewXgV1PzDX/jflvYYvuU/MPG/Lewxfcp+Y2B5J8s7T2DyT5Z2nsF4FdT8w1/435b2GL7lPzDxvy3sMX3KfmNgeSfLO09g8k+Wdp7BeBXU/MNf+N+W9hi+5T8w8b8t7DF9yn5jYHknyztPYPJRlnaewXgV1PzDX/jflvYYvuU/Md7hb1OIw1rEURMU3aIrpifPpManluUbh+xkOYxYsTrB6LJfufBfl7fuwMoiomE8HJyTnlhn7MwAFHUAAAAAAAAHi+Nf+kOG/Bp96o9oeL41/6QYb8Gn3qi/H5cvWfS/eG+eAqtOHMN+qd+8nmeBqv/AKdw36p3r7lHTEdmS8hzGQ==".getBytes());
+		photoStream.put(3, "fcOCmS4cxn3D7gpkvIeTGcOCmS0h5MZ9w+4KZLhzGfcOCmS4eTGcOCmS4cxnD7gpkuHMZ9w4KZLSHkxn3D7gpkuHMZ9w+4KZLyHMZw+4KZLh5MZ9w+4KZLyHMZw+4KZLyGkxnDgpkvIcxn3D7gpkvIcxnD7gpkuGkxnD7gpkvIeTGfcPuCmS0hzGfcPuCmS8h5MZw+4KZLyHMZ9w+4KZLyHMZ9w+4KZLyHkxnD7gpkvIeTGfcPuCmS4aTGfcOCmS8h5MZw4KZLyHnYxn3D7gpkuHMZtw+4KZLhpMZ9w+4KZLhzGfcPuCmS0hzGcOCmS4cxn3E17gpo/lunXO4MnJfufBfl7fuwYfLTOudQZmS/c+C/L2/dgvPohzcf8AUZswAFHUAAAAAAAAHiuNv+kGG/Bp96o9qeK43+/8N+DT71Rfj9Tl6z6X7w3bwRVpw/h4/wBU7xzzfBlemQ4f9U7t9zOXXjHaGS5wxjPPWHnrITTKcOYr7h9wUynDmK+4fcFMpw5ivPWHnrBTKcOYr7h9wUynDmK+4eesFMpw5ivuH3BTKcOYr7h9wUymDmK+4fcFMpzhzGfcPuCmU5w5jPPWH3CaZTnDmM+4fcIplOGMV9w4TTKYOYrz1h9wUynDmK+4fcIplOHMV9w89YKZThzFeesPuCmU4cxX3D7gplOHMV9w+4KZThzFfcPPWCmU4cxX3DgplOHMV9w4TTKcOYrnLz1hFMlw5ivuH3BTKcOYr7h56wUynDmK89Zy89YKZLhzGfc4fcFMlw5jPPWH3BTKcOYr7h9wUyXDGM+4eesJplOHMZ9zhwUynDmK+4fcIplOcTWYz7h+jzhNNNcss65zSZ+S/c+C/L2/dg63lgnXOKTssl+58F+Xt+7BrPohxcf9RmzAAUdQAAAAAAAAeK43+/8ADfg0+9Ue1PFcb/f+H/Ap96ovx+py9Z9L94bf4Oq0yKx+qdy50HCNX8SWP1Tt3M58uzH0wyHDmO4chZkOHMdw4GQ4cx3DyBkOHMdw4GQ4cx3DyBkOHMd5DyBkOHMdw4GQ4cx3DgZDhzHcPIGQ4cx3DgZDhzHcOBkOHMdw4GQ4cx3kOBkOHMd5DyBkOHMdw4GQ4cx3DgZDhzHeQ4GQ4cx3DgZDhzHcOBkOHMdw4GQ4cx3DyBkOHMd5DgZDhzHcOBkOHMd5DgZDhzHcOBkOHMdw4GQ4cx3DyBkOHMdw8gZDhzHeQ4GQ4cx3kOBkOHMdw4GQ4cx3kOBkOcTX0EHD9AGo+Vydc2g7XJfufBfl7fuwdRyrzrmtJ2+S/c+C/L2/dg1n0Q4OP+ozZgAKOsAAAAAAAAPFccff2H/Ap96o9qeJ44+/sP8AgQ==".getBytes());
+		photoStream.put(4, "+l+8Np8J1aZLZ/VO2c6PharTJ7P6p2rmc+Xbh6YXcOQcOQsu4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwLvuHIOHAu4cg+4cC7hyDhwLvuHIOHAu4cg+4cC7hyDhwLuHIOHAu+4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwLvuHIOHAu4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwLuHIOHAu4cg4cC7hyDhwNW8qc65pSd1kv3Pgvy9v3YOi5T51zOk73JfufBfl7fuwaz6Iefxf1GbMABR1gAAAAAAAB4njj7+w/4FPvVHtjxPHH39h/wKfeqL8fqcvWfS/eGx+GatMps/qnZvudNw3VplVqNoOyYyy8u3j9Efou+4fcgwYhddw5BgwF33DkGDAXcOQYMBdw+5BgwF3DkGDAXfcOQYMBd9w5BgwF33DkGDAXcOQYMBdw5BgwF3D7kGDAXfcOQcMBdw+5BgwF3DkGDAXcOQYMBdw5BgwF3D7kGDAXfcPuQYMBdw5BgwF33D7kGDAXcOQYMBdw+5BgwF3D7kGDAXfcOQYMBdw5BgwF3DkGDAXcOQYMBdw+5BgwF3DkGDAXcOQYMBdw5BgwF3D7kGDAa35S51zGk7/JfufBfl7fuwed5Rp1x9J6LJfufBfl7fuwbZeiHm8X182YACjsAAAAAAAADxPHP39h/wKfeqPbHieOfv3D/AIFPvVF+P1OXrPpfvD3XD1WmWWvUdi51GQ1aZba/Vgz2M8vLs4vRH6Mhw5juGIaMhw5jsHCGQ+4cg5wwSyH3D7mO4YDIcPuQc4YIZDhzHcOEshw+5jsHAyHD7mOwYDIcPuY7BwhkNuH3IOcOBkOH3IOcMEshw+5juGAyH3DmOwcIZD7h9zHcOEsh9w+5jsGAyHDmO4YIZDhzHcOEsh9w+5jucuBdw+5juHAyHDmOwcIZD7h9zHYMEshw5jsGCGQ4cx2DhLIfcOY7BwMhw5juHAyHD7mOwYIZDh9yDnDhLIfcPuY7hgMh9w+5juHAyHD7mOwcIZDhzHcOEshw5jsGAyH3D7mO4YDwXKFOuOpPSZL9z4L8vb92DzHH0646n1Hp8l+58F+Xt+7Btl6Yebw/Xz/z3ZgAM3YAAAAAAAAHieOvv2x+BT71R7Y8Tx19+WPwKfeqL8fqcvWfS/eHrskq0y61+qZzz1nWZNV/F9r9WDNYplHd08OX+3CzyHIsGIppss4fciwYUbLPIciwYUbLOHkiwbYUbLOHIsG2FGyz7hyLBhRss89YeSLbBhRss+4ci2wYUbLPuHIsGFGyzhyLBhRss8h9yA==".getBytes());
+		photoStream.put(5, "LBhRss4ciwbYUbLPuHnrIsGFGyz7hyLBhRss4ciwYUbLPPWHnrIsGFGyzz1h9yLBhRss89YfciwYUbLPuH3IsGFGyz7hyLBhRss89YciwYUbLPIeSLBhRss+4eSLbBiKNlnnrDz1kW2DE0bLPPWHkiwYUbLOHnrIsGFGyz7hyLBhRss89YfciwYUbLPuH3IsGFGyz7h9yLBhRss+4eesiwYUbLPuHnrIsGFGzxXHU64yn1Hqcl+58F+Xt+7B5TjedcZT6j1eS/c+C/L2/dg1y9MPP6f62f8AnuzAAZu0AAAAAAAAPE8dfflj8Cn3qj2x4jjr78sfgU+9UX4/U5es+l+8PS5PV/eFr1GY8nXZRV/eFv1GY0CY7nHnWMKtIaSTQGIpfdVp6w0kmDCjdVpDSSYMKN1WnrDT1kmDCjdk2KL1+/bsWLdV27cqiiiiiNaqqpnSIiI88m5+HORzLsuymnOOUHPKMttzET9Xou00LPoiqurWJn/Vpj9pg/RiyHC4rOsx4nx8U8zlVuItTXHRTXVEzNf+zTE948Dyi8X4/jDiS/mWKu3Iw8VzThLEz9mzb16IiOuY0mZ9Ml4xiIuXLycvJyck8eE1EeZ9+/tDbH1f6Pdr+ArxU11x0O+Mn2xClfJXyfcU4au7wbxPNF+mNebi7Tepp6monSuPXMn5+YtgsZicFireKweIu4fEWqmt3bVc01Uz1xMdME7RPmIV/Azx74cmV/ep/wCmXnmBvZTnWOyq/XRXdwWJuYeuqjVaqqKppmY19GsG3uT/AJMOD845OsFxTn+c4/L+e5znq/rNq1Zo0vVW6emuidNdI88+eTS2Pxl/HY6/jcXdqu4jEXKrt25PnqrqnWZ/bMyb01/xQ9f+fvAceMXNwjq+XkjHCMcqmZiOz78mvJFX9m1x/wDbnzfxthZ9inRcecjONyjKLmdcO5nGb4O3RzldtIi5FHnamYmYrjTp9H7TT7G7voqZxmFWd5nkVV25cy/6pOJpoqnWm3ciumno6tYqnXr0gmNcpqqVz/G4MJ5I5Jyr2mmo8ky7HZ1m2GyrLrM3sXia4ot0R6Z65n0REazM+iIN2UcmvJ3wfg7NfHfEHPYy5S02qbs0U/7NFEc5MejX2QdRyIYPAYTl3zvB0RTFGEjGUYWN6bsUxp/sMeI5Zqczt8pmdzmtN2LleKqqsTXrpNnX+DXZdP8AcRGMY43ML58mXLy/h45TEVfbzNtn2sr5As1rjD4TMqcHcq6IrqxGIte299k8Pyy8DZZwZXlWIyjNLuOwmZRdmjnFmaYoTpiunoqiX6o8xrhileJvV2KLFV65VatzNVFE1TNNMzprMR6NdI19UETMTA==".getBytes());
+		photoStream.put(6, "OZj4nu5aTP4csYTG8Q5bg8xxH1bBX8XatYi88Uc3bqriKqmnojSJmdZ6IOraA0FKdE53FN/eTjke/wBP/wD1jCfIZ+C5HuTbG5fezHB8U4/E4Kw3PYi1j8PXatrDVNVFvSNImJnXzQfnJoN9cjc6/R64zn89/wAJQbYTjlNavM6jHm4sYyjlnzEe3u+/JxyPf6f/APrGE+Q1pyqZNw3kHENjB8LZx4VwVeEpu13vrNu8tya64mlrcREdEUzp5+nc8axsTkx5K824xws5piMTTleURMxGIuUNVd086U6x0RppNUzEevSSs/m7RDoxieCd+TlmY+9PAtJw8m9aOSXk1xFUYLC8ePmFUrTRGNw9czV1JEa/s1Nccp/J9m3AuNtxiq6cXgL8zFjF26dIqmP6NUf0atOnTWdfRM6TpWeOYi2vH1nHnOsT3+8TH93knkPJl8N5PmHEOd4bJ8rs87isTUtETOkRGms1TPoiIiZn1G6LXIvwhk+Ht+N3GlOGxFdOq037WHp/ZNzWZjfo9QxwnLwty9Vhxdsp7/zLRbSZmS4K/m2c4LKsNXbpv4zEW8PbquTMUxVXVFMTOkTOms9RuPEcivDWb2bk8IcbWMVepjWKLl23fpn11W9Jp9eknmPo/wDBnjPxDVm3hL6p4DxeFxPNcw/P/bqqXVoX+T010nz7ExxzcQzy63D8PLKJ8faf2eZ4/wCEsz4Kzm1lea38JevXcPTiKasNXVVSs1VU6S1NM660z6Oo860n6j5VeSnx64hsZt4e8H8zhKcNzX1TnddK66m1en/L0009BpTld5O/EDwX/HPhL6/zv/23NIif69Wur7eYnPinG59mfS9fhyxjjM/ml4dp6w0kmgNBnTt3bv5P+TDg/N+TrBcU5/nOPy/nuc56v6zatWaNL1VunpronTXSPPPnkzvJryRV/Ztcf61z5v42ws+xT41/xQ9f+fvA0KxtlrjEdnm8X4vNlnP4kxUzHs3Bx5yM43KMnuZ1w7mcZvg7dHOV20iLkUedqZiZiuNOn0ftPO8i+B4TzPinE2OMbmDt4CnBV125xOLnD0869ERpVFVOsrNXRr19R7D6KmcY+rO8zyKq7Xcy/wCqTiaaKp1pt3Irpp6OrWKp169IPKcM8B2eLOU7iDhvDZlGXWcDcxNy3cixzsTTReiiKdGp9FXn19BGsdpiF55sojPj5MvEXcean/t5TiujA4finNrGV1W5wFvG3qMLNu49M2ormKNKtZaF06dZ1OsaTK4kwHgfiHMso57n/qOLu4bnVV0rmltNZ010101k7XgDg7OuNM1qwOU26YotRFWIxFyZi3ZifNrPXOnREdM+qJkz1uXZHA==".getBytes());
+		photoStream.put(7, "k5eTek8jvAWUaYfiTjnmcXprNM4mxhv/AA1tJ5zlE5KsuyThXE8UcP8AEtrM8vw80Rcolap+1XTRGldE6TOtUdGkdBM8Uwyx67jymomf4mv5p5vk74Cznjn694JxOAsfUub5z61XXTq7aaLTV/kT59PQeRaes/UfIBwZ4s8PTm/hL634cwmFxPNcwnMfYqqXVpb+U010jzbnkv7nb/tj/wCm/wD9S88M1FQ5sf8AyWEcmUZZdo8dv5aJaTl5O58Xv8Ifij9d/wDy3g76zzf/AF3Nuuv7dNdtTP5VuDfEXiHD5R4S8Ic9hKcTzvMc1prXXSujVf5GuuvpM9Jq3d/qMdoxvvPd5Zp6w0kmg97xlyd+LvJ5kvF3hn6z4T5j+9vqyc3ztmq5+k866Lp5o18/QIxmTLnxxmImfPh4dpOXk9RyU8G+PXEN/KPCXg/mcJVied5jnddK6KV0an/L1119B7DIeRuiLuPxnFHEFrKcpw2Mu4azeuLbrxEUVzS/2p0oiV1jXWf2aTMxxzPdXLq+PCZxme8NTNIaT3HK3w3wdw7GV+KfEMZx9Y536zpjLV/m1Rf5OIXVqvP59Ni/JjyV5txjhZzS/iacryiJmIxFyhqrunnSnWOiNNJqmYj16SNJuiOqw0/Emaj7vAvJw09ZvWjkl5NcRVGCwvHj5hVK00RjcPXM1dSRGv7NTXHKfyfZtwLjbcYq5Ti8BfmYsYu3TpFUx/Rqj+jVp06azr6JnSdE8cx3V4+s4851ie/3iY/u8i0hpJNAaCtN91WkNJJo6wwo3WaThp6yTQGFG6rT1hpJMGgUbqtIaSTQGjrFG7yHGc64un1Hrsl+58F+Xt+7B4/jCdcXHqPYZL9z4L8vb92C+fphz9L9XJmAAyd4AAAAAAAAeI47++7H4FPvVHtzxHHf33Y/L0+9UX4/U5es+l/Du8pq/vG36jLY6/KqtMFb9RlOWmO7nxy7QswYi+4fcUtsswYi+4fcUbLMGIvuH3FGyzBiL7h9xRs/QfIfMU8g3Gd21/Lx9c83n6MLTp7Zk0Exuv6LGcYS9dzzhDHVQuYWedtUzOj6RNNymN5pmJ9VMmqONeH8fwpxJi8lzG3VTcsVzzdcxpF23/RrjaY+Hngtl3xhz8U68ucT71P/ABTL5POHfG7jHA8PfXfqX1vnP4fmucVLdVf6Osa6rp5/Sbf/ALnL/tl/6Z//AFPz2+5sD6O9WvLHkUfmP+Huk4a+JhHUTyxE5YZVUfDpOUPh3xR4xx3D313679U5v+H5rm2e3TX+jrOmjaef0G/uTzhzxu+jfgeH/rn1L63zn8PzXOKmMqr/AEdY11XTz+k059ImrTliz2Py/w==".getBytes());
+		photoStream.put(8, "a/8AP3gWxiIylhz5ZZ8XHN95mFP7nWij7V3jPSiPP/F2nt507SjMuAuRzh3GWsozC3m2e4inSYi5TXXXVGqxUvRboiZ10887n5nfcOV2iPENvwc8orkzuPioh3mQ8R5pkvE1niHBX/7+tXpuzVVGsVzVq0VR6YmJmJ9Zv/K+V7k74rwFvC8X5bbwt6I6aMXhvrFluumqImY/bEH5kfcPuRjlOPhpy8WHLU5eY947S/UlPAPI7xdTNGR4nCW8RVEzH1DHfwkf93VMxHdNN8rXJzmPAeMtXKr/ANdyzE1TTYxMUrMVR0pXHoq083omIneI8DavV2rtNy1cqoromKqaqZ0mJj0xJ+iOMsfis6+izhM0z2uq5j55qaLlz9KuYvpTVvM29Z19Osk9sonsx/Pw5Y/mmYma7/8A6/PbBiL7h9ylOzZZjfvIzOv0d+NJ/Pf8JQfnx9z9Aci06/R041n8/wD8HQX447uTrMr44/WP7tIZNhK8yzfB5dbnSvFYiixTO9VUUx+8/R/LZwzxnmGT5VwtwXldVWSYexEX4oxNq08x0UUTFVUTMREa9UzMemD85cJ5hbyzirKMyuz/AAeEx1m/X6qK4qn9x+hPpE8Xca8J5hleM4ezT6rleLsTRVphrVyOepmZ11qpmY1pmNI1/ozuMIips6jLknkw1r38/LVvkd5Sf9G//O4f/wCQ2xiMj4kxH0e82yvjTCzbzDLbVy7h6q71F2ubdqIrpqamZjXRqPPrpBqLy0cpP+kn/kcP/wDGY+ZcrfKBmWXYnLsbxBzuFxVmuzeo+p2IaiqJpqjWKNY1iZ8xMaR4tXLHqM5jau0xPu776MmOwWF5TabeLqoprxODu2cPNXaa01aeuaaao/aV5ZOAONvHPNc5jLcXmuDxWIru2b2Gibs025n7NE0x9qFjSPNp0dBqa3ertXKbluuqiuiYqpqpnSYmPNMSbI4c5b+OsotUWb2Lw2a2qI0iMbaarT9emYqmd5mSsTFVLXPHOOT8TCvFVLwVNeMy7GRVTN/CYqzVrExrRXRP74k7jk3q/wAInDX9bYX+2pN7cFcW8Ocs1jGcPcQ8O27GPs4abtN2iqKtKdYpmq3XpFVExNVPR0xOvp6YNI8LYOrJ+WHKssu3IqqwPEFmxXXp0TNGIimZ9g1qpPxpzjLGYqYj/qXt/pXzpyiYD+qbf9teNQsbb+lnM08omXz6Jym30/8AfXjTz7jkj80nSZVw4/oswYi+4crTo2fqPk84c8bvo34Hh/659S+t85/D81ziJjKq/wBHWNdV08/pOgn6OtFH2rvGelEef+LtPbzpPX/E61/5+8D8/ua5TFRcPO4ceScs5xzqLg==".getBytes());
+		photoStream.put(9, "zh3GWsozC3m2e4inSYi5TXXXVGqxUvRboiZ10887nj/os37mJ5TM0v3q5ru3crvV11T55mb1mZk0u5uD6JlWvKNmH9UXP7ayRjN5Q05sIw4c5u5nzLwnKRV/hE4l/rbFf21RufC46vk7+jlhMwy6ItZnm001U3ojpiu7rMVeuLdPRvBpPlKq05RuJv63xX9tUbj41t3OJPowZFjcDE3fBlNiu9TT0zEWqarNXRtrr6o1IjzK3JN48cT4uL/jt/y0Lfv3b96u9euV3btdU1V111TNVUz55mZ88nNvE3rdq7at3rlFu7EU3KaapiK4iYmImPT0xE+uDFfcOZ069n6D+iFOvjR/+p//ALGgmN8/Q+riauKKdenTCT/bGgapmKppnomJ0mDTL0w5eGf9/k/b+z0nJvV/hE4a/rbC/wBtSe/+lfOnKJgP6pt/2141xye36LPH3Dt65VEUW80w1VUz6Ii7TMmx/paW7lHHuWX5pmLdeV00U1adEzTduTMf+KP94j0SZzP+pxn7S1Cxv3lmnT6O/Bc/kf8AhKz8+xVMzER0zPmiD9EcvmEv5dyDcKYDE0zRfw17B2blM+iqnC3ImP8AfAwjtKOon/c4/wBf+nmvooTryiY/+qbn9tZPO8u3EeMz3lFzOzevVzhcuv14TD2tfs0JK1TEdc1RM6+qPRB330TKteUbMP6ouf21k1/ylVaco3E39b4v+2qE+iDCY/1WU/aGBk2ErzLN8Fl1udK8ViKLFM71VRTH7z9H8tnDPGeYZPlXC3BeV1zkmHsRF/m8TatPMdFFExVVEzERGvVMzHpg/OXCeYW8s4qynMrs/wAHhMdZv1+qm5TVP7j9CfSJ4u414TzDK8Zw9mn1XK8XZmirTDWrkc9TMzrrVTMxrTMaRr/RncYRGs2dRlyTyYa17+flq3yO8pP+jf8A53D/APyG2MRkfEmI+j3m2V8aYWbeYZbauXcPVXeou1zbtRFdNTUzMa6NR59dINQ+WjlJ/wBJP/I4f/4yGZcrfKBmWXYnL8bxBzuFxVmuzeo+p2IaiqJpqjWKImNYmemCY0jxauUdRnMbV2mJ93jWDEX3DmdO3ZZgxF9w4o2WYMRcOKNlmDEX3D7ijZZgxF9w4o2eY4snXFx6j2WS/c+C/L2/dg8VxROuKj1Htcl+58F+Xt+7A5PEHSfUyZgAMnoAAAAAAAAB4jjz77sfgU+9Ue3PEceffdn8vT71Rfj9Tl6z6X8Owyyr+86PUZTQdfl9WmFo9RkvuaU4Ynsu0BoIPuH3FJtdoDQQfeA+4otdoDQQcPuKLXaA0EH3gPuKLdjlOZYzKczw+ZZdiK8Pi8Nci5auUT001R/z5g==".getBytes());
+		photoStream.put(10, "Pcos5dyj5XbwmNtRpTiIoqm3r10V0fbo19MT0dHnk/Ob7h9yYmlM8Iz8+X6Kq5POQ3EROIt8d8zRPSkZth4020qoYYHOuRTk4xVOZZFXi89zi1FUWa6K6q5p1pmmftStuImJmNYiZ6T86vuH3Jv4hT8KZuMspmP8+z0fHvE17i3i7H8Q4jDW8NcxdVP8FbqmYoimimimNZ886UxrPXr5jY3jtwx/c0eJ/hP+PP8ANeYuf57zn6ap+h0+fbz9BpZw4iZhbLjjKIj4XaA0EH3DlaaW2ByKcRcNcPcUYu/xXhPrWW4rA14aqicPF6mKpuW6omqmfRpRPm1nzdBs+/w59H/iGvn8FxBZyqaumYoxk4eO7eidP2RB+cH3DlommeWFzcTMT/ns/RVvhPkE4fuxjMbxTGa02+mLNWNpvxMx/q2KYmfV5jxnLZyoWOMLWFyPIsJVg8iwVUVUU1UxTVdqiFplY6KaYjWIjfp9ERqhw+4mfaEY8dTE5TMzHyu0BoIPuHnrK01tdoNxcl/G3DGTcinFPDuZ5nzGaY7639Wscxcqd8NRRT9qmmaY1qiY6Zg0s+4fcmJpTkwjkipXaDeHJzyqcOZjwpRwXykYXn8Fboi3ZxdVE1wkfoxWv2qaqfNFdPT16eedEPuHEdk54xnFS/RM8n/IZiNcVb45mzanpi14VsRptpVQx5zlEr5G8o4Nx2VcJvmOd3+bpt4uXuc3EXKaqparSmNaYqj7EenSTTL7h9yZmPhSOPKJucpn/P0e35Jsw4NwXEeIjjjBTisrxGEqs06W5q5u5NdExX9mYqjopqjWnp6dzaNPA/IPmuuJwfGdWBtz0xbnMrdrT9l6hj87vuHETXsnPCcu8ZTD9I2OKeSrkry3GTwhfnO86v0JFfOTc16muREUxTr0zFPTPRtMaAqzTF1ZxOb1XpnGziPrM3PTzjM3+/pOtfcPuRPdOGOnfzL9J4jlH5IuO8BhLnHWXXMNjrFCy1u7MUzPnimuzLTTr6J0NacsdXJn/FXk7/6769/OP9Tm/wCW/wBv9H9voNbvuH3JnK4Ux4YxyiYma+L7LtAaCD7h9ytNrbp8duGP7mjxP8J/x5/mvMXP895z9NU/Q6fPt5+g060EH3D7kzNqYYRhde82u0Gyfo7cU5FwpxrjMx4gx31LC3Mtrs0XOarua1zctVRGlETPmpnp83QavfcPuI7TaeTHfGcZ93f8c4/C5lxrnuY4K7zuFxWZYi9ZrWaWoquVVUzpOkxrEx0T0ntORTlQjguu/lGcYevGZFi6pquUUxFVVmqY0mqInoqiY0iadtY9MTqx9w+497JxicdZ8P0biOE+QbiG9VmOD4pt5Q==".getBytes());
+		photoStream.put(11, "ERPp0ovUzMeqOjqPM8olnkeyLg3HZZwviKs1z2/zdNrFTVVd5qIuU1VS3RRGtMVR9mJnp6jTD7h9yZn7KRxzE98pn/P0bC5FePqOA+JruLxeHu4jL8Xa5nE0WtHp0nWmumJ0iZjp6NY6Jk2Zicy+jjmuIuY/G2eZxF6qa7lPN4yj7U9M/Zt/Zj9h+cX3D7iJo5OKM5u5iftLueIruXW+J8xuZDVNOXU427OBqiaomLUVzzc/a+1+jp5+nr6Tf+F4x5OOVLhXB5fxxi7WV5tho6bldzmVr0iKq7dyYVatI1pq/wB06RJ+Z33DiJpOeEZRHfvHu/Qd+1yLcnVfhfLsfXxRm1n7WDsTiab9FNz0VTNFMURpPpnWY88RqYHLTyjZBxfyWZHgcPmdOIzynEYfEY6xTh7lEUVxYri5pNVMUzEV1adEyaLfcPuNvZX8GJmMpmZmG0Po7cU5FwpxrjMx4gx31LC3Mtrs0V81Xc1rm5aqiNKImfNTPT5ug8dxzj8LmXGue5jgrvO4XFZjiL9mtZpaiq5VVTOk6TGsTHRPSdA+4fci+1LxhEZzn7yu0G8OTnlU4czHhSjgvlIwvP4K3RFuzi6qJrhI/RitftU1U+aKqenr0886IcPuI7JzxjOKl+iZ5P8AkMxGuKtcczZtT0xajNbEabaVUMed5RK+RvKODcdlXCb5jnd/m6beLl7nNxFymqqWq0pjWmKo+xHp0k0w/qD7kzMfCkceUT3ymf8AP0XYNBB/UH3K01tdoDQQfcOKLXaA0EH3Dii12gNBBw4otdoDQQcOKLef4knXEwe4yX7nwX5e37sHheIJ1xEHusl+58F+Xt+7BXk8Q26P15MwAGT0QAAAAAAAA8Px799Wfy9PvVHuDw/Hv31Z/L0+9UX4/U5es+l/C2Bq/van1F2MLBVaYeks5q8+J7LsG9ZBw4Ta7BiDhwWu3rDEHDgtdvWGIOHBa7esMQcOC12DEHDgtdgxBw4LXYN6yDhwWu0BiDhwWu3rDEHDgtdo3DEHDgtdgxBw/qBa7BiDhwWuwYg4cFrsG9ZBw4LXb1hiDhwWuwb1kHDgtdvWGIOHBa7esMQcOC12DRuQcOC12DEHDgtdgxBw4LXYNBBw4LXb1hiDhwWu3rDEHDgtdgxBw4LXb1hiDhwWuwYg4cFrsG9ZBw4LXYMQcOC12DEHDgtdvWGIOHBa7esN6yDhwW6jPJ1xEHvcl+58F+Xt+7Br/OJ1vwbAyX7nwX5e37sFOTxDo6L15MwAGT0QAAAAAAAA8Px9982fy9PvVHuDw/H33zZ/L0+9UX4/U5es+l/CGFq0s0lngw8PVpago5rTzYlkPAeDHcOKTbIeAw==".getBytes());
+		photoStream.put(12, "BjuHFFrvBy8GO4fYUWyHjrDwY77BxRbIeOsPBjuHFFsh46w8dZjuHFFsh4DwY7hxRbIeA8GO4cUWyHgPBjuHFFsh4DmO4cUWyHgPBjuHFFsh4Dx1mO4cUWyHgPBjuHFFruHgg4fYUWyHgOY7hxRbIeA8GO4fYUWyHg4eCDh9hRbIeA8GO4cUWyHgPBjvsHFFsh4Dx1mO+wcUWyHgPHWY7hxRbIeOsPHWY7hxRbIeA8GO4cUWyHgPBjuH2FFrvBy8GO4cUWyHgPHWY7hxRa7wcvBjvsHFFsh4DwY7hxRbIeOsPBjuHFFsh46w8GO+wcUWyHjrDx1mO4cUWyHg4cg4cUWwcznW7BsPJfufBfl7fuwa6x863DYuS/c+C/L2/dgryeIdPRevJmAAxekAAAAAAAAHh+Pvvmz+Xp96o9weI48jXOLX5en3qi/H6nL1n0v4dXZqjm46T7aOsjamFg+9Y3Nnlvto6w0dZ8axuNY3Ao0dZw0dZ8dA1gD7aOsNHWfGsbjWNwPto6w0dZ8dG41jcD7aOsNHWfGsbjWNwPto6w0dZ8axuNYA+2jrDR1nxrA1jcD7aOs5aOsnrA1gD7aOsNHWfGsDWNwPto6w0dZ8axuNY3A+2jrDR1nxrA1jcD7aOsNHWfGsbjWNwPto6w0dZ8awNY3A+2jrDR1nx0bjWNwPto6w0dZ8axuNYA+2jrDR1nx0bjWNwPto6w0dZ8axuNY3A+2jrDR1nx0DWNwPto6w0dZ8axuNYA+2jrDR1nxrG46NwPto6w0dZ8dG41gD7aOsNHWfGsHDQBRo6w0EmgPALWaOs4aOsi8HE3AWu0dZy0dZj85A5yAWyGjrOGjrIc5BzFcAtZo6w0dZKK4OYqgFqNHWGjrJ6wc9G4H20dYaOs+NYGsbgfbR1ho6z41jcdG4H20dYaOs+OjcaxuB9tHWGjrPjWNxrG4H20dYaOs+NYGsbgY+LnWs2Pkv3Pgvy9v3YNcX41qNkZN9z4L8vb92CnJ4h2dD6smWADF6QAAAAAAAAeM45jXNrX4Ee9UezPIcaU65pa/Aj3qi/H5cvWfSediJg+4mT7QIbPKp866nOpygQJcaz1A5QKBwOk5QKBx09Q1OVCgcdI6TlAoHGsjpOUCyBwNZ6jlAgHHT1DWTlAgHGpxqfSSFA41Gs9RykhAONRrscpIUDjpONT6WQgHGo1k5QIBx09RwfSBQONZByoUDjU4/YfSBAPnWeo51k5SQoHGuw1OUCAcdPUDlAoHzqGPpQgHxNUnGslECBCXSNJKoEBSOkhSyhQUipwuxdAgKRULsWUICkV2C7FlCApFZGklkCgpLpOYmY9BRAgKfLDU+kChL5w==".getBytes());
+		photoStream.put(13, "nKBAONR0nKyEkDg41PpAgEq41k2LlH3Tg/wKPdg1+psHKfuvCfgUe7BnyeHb0PqllAAyeiAAAAAAAAHk+MI1zO3+DHvVHrDy/Fka5jb/AAY/fJfDy5ur+m6JQpVQptbzKSUKVULsLKSUKVUKLKSUKVULsLKSUKVULsLKSUKVXYLsLKSUKVUKLKSUKVUKLKSUKVULsLKSUKVUKLKSU4UspyuwspFQpVTldhZSKhSq7BRZSShSyhRZSKhSqnKiykVClVOVFlIKFLLscrsLKRUKVULsLKSUKVUKLKSUKVULsLKSUKVXYKLKSUKWXY4UWUipypZThRZSShSq7BRZSSnCll2CiyklOFLKFFlIqcqVXYLsLKSUKVUKLKSUKVUKLKSU4UsoUWUkoUqoUWUipypVQuwspJQpVdgospJQpVQuwspJT3mV/dmF/Bo92DxCnuMt+7sN+DR+6DPk8Ozoo/NLIABk9AAAAAAAAAPN8TxrmFH4Ufvk9Ief4jjXHUfhR++S2Hlz9V9N0yhdi6hTZ5lILsF2LqFBSC7BS6hQUguwXYuoWQUguwXYushQUgoXYushQUguwXYuoUFILsFLqFBSChdiynKgpBdguxdZCgpBQuxdQoKQULsXUKCkF2Cl1CgpBdgpdQsgpBQuxdQoKQXYLsXUKCkF2C7F1CgpBQuxdQoKQXYLsXUKCkF2C7F1CgpBQuxdQoKQXYLsXUKCkF2Cl1kKCkFCl1CgpBQpdQgKQXYLsXUKCkFC7F1CgpBQpdQsgpBdgpdQs9QKQXYLsXUKCkF2Cl1kKCkFCl1CgpBdguxdZCgpBdgpdZCyCkFPZZf/ADDD/hU/ug8op6vA/wAxsfh0/uM+Tw7Oj9UrgAzd4AAAAAAAAdHn8a4yj8OP3yd4dPnca4qn8OP3yWw8sOp+m6tQpVQps86klClVCgpJQpVYCwCklClVCgpFTlSqhYBSShSqhQUkoUqoUFJKFKoFBSShSqhQUkoUqoWAUkoUqoUFJKFKoFBSSnCllCwCklOFLKFBSShSqwFBSShSqhQUkpwpZQoKSU4UsoUFJKFKqFBSShSqhQUkoUqsBQUkoUqoUFJKcKWQKCklClVCgpJQpVQoKSUKVUKCklClVCgpJQpVAsApJQpVQoKSUKVUKCklOFLIFBSShSqhQUkoUqoUFIqcqVUICklPTYL+Z2Pw6f3Hnlg9FhP5pZ/Up/cZ8nh1dJ6pVABm7gAAAAAAAA6vNo1xNPR/Q/8AeTtDrsyjW/T+r/7yWw8sOoi8GAuwXYrpI0k1twapKFK6SFnqFmqSnC7FlGkizVJdgpVZCyLNUlC7FVkLIs1SXYKVWRpIs1SXYLsVWQos1Q==".getBytes());
+		photoStream.put(14, "NUl2OF2LLIUWapLsF2KrI0kWaorscrsVWRpIs1SXYLsV0kaSLNUV2OVKrIWRZqkoXYrpIWRZqipyuxVZGkizVFTldiqhRZqiuxyuxXQaSLNUlC7FVCyLNUl2C7FVkLIs1RU5XYqsjSRZqkuxwuxbSRpIs1SXYLsVWRpIs1RXY5XYqsjSRZqioXYtpsFkWaorsF2LLI0nqFmqKnKlVnqCz1CzVJQuxXSeoaCzVJdguxXSRpIs1RXYKW0nqGkizVFTldiqyNJFmqS7Bdiuk9Q0kWapKF2KqFnqFmqS7BSukhZ6hZqkoUqs9QWRZqkux3mG/m1r9SP3HUaSdvh/5C3+rH7imbq6WKmVAAZuwAAAAAAAAMLHxrej9X4maYmLjW7HqJx8suaLxYqhSihS9uXVNQpRQos1TUKUUKLNU1ClFCizVNQpRQoNU1ClFCizVNQpRQos1TUKUUKLNU1ClFC7CzVNQpRQos1TUKUUKLNU1ClFCizVNQpRQos1TUKUUKLNU1ClFCg1TUKUUKLNU1ClF2CizVNQpRQuws1TUKUUKLNU1ClFCizVNQpRQos1TUKUUKLNU1ClFCizVNQpRQuws1TUKUUKLNU1ClFC7CzVNQpRQos1TUKUUKLNU1ClFCizVNQpRQos1TULuUUKLNU1ClF2CizVNQpRQoNU1ClFCizVNTsrP8jR+rBgrsZ9r+Tp9UFcm3BFTL6ABV0gAAAAAAABDERrXHqLk7sa1fsEK5xcILAWCmmw02LWy0TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02Gmws0TWAsFF2Gmws0TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNU1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNU1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNE1gLBTTYabCzVNYCwU02Gmws0TWAsFF2Gmws1TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02Gmws0TWAsFNNhpsLNU1gLBTTYabCzRNYCwU02C7CzRNYCwU02Gmws1TWAsFNNhpsLNE1gLBTTYabCzRNYCwU02C7CzRNYMmj9Cn1EtNi1P6MeoiZXwipcgAhoAAAAAAAAHExqcnNMawExFvjQabFVCkWapabDTYqoUWapabDQqoUWapabDTYqoUWapabDTYqoUWapabDTYqoUWapaDTYqoUWapabDTYqoUWapabBdiqhRZqlpsNNiqnCizVPQabFVOFFmqeg0KqFFmqWmw02A==".getBytes());
+		photoStream.put(15, "qoUWapabDTYqoUWapabDTYqoUWapabDTYqoUWapaDTYqoUWapaDTYqoUWapLsNNiqhRadUtAuxVQotGqWmw0KqFFmqWmw02KqFFmqS7DTYqoUWnVLTYabFVCizVLTYLsVUKLRqlpsNCinKizVLQabFVCizVLTYabFVCizVLTYabFVCizVLTYabFVCizVLTYabFVCizVLTYabFVCizVLTYLsVUKLTqlpsclFPifOETFAAJQAAAAAAAAFbNOtE+skZOEjW3PrIlbHyKFLLsF2IXRQKWXYKBFICll2CgRUKWXYKBFYCQWXYKBFYCll2C7ARQIWXYLsBFQhZdguwEVCll2C7ARQKWXYLsBFQhZdgoEVCll2C7ARSAsFlC7BKKBSyhdghFQhZdguwSigWCy7BdghFQhZdgoEVCll2C7BKKhYLKF2AikBYLLsF2CEUCFlC7ARWApZdguwEUCwWXYLsEoqFLKF2CEVCllC7ARUIWULsBFAkFlC7ARSApZdguwEVCll2C7ARUKWXYLsBFQpZdguwEUCwWXYLsBFQpZdguwEUCll2C7ARQx6/059ZnLsYV3+Uq9ckwrk+QASoAAAAAAAAGbgKdbMz/rf+0GEdllca4er9ef3QRK2PlRZCl1CyVtpSCyFkuoUWUgoUupwsiykVkKXU4WRZSKhS6hRZSChZLqFFlIKFLKcqLKQUKXU4UWUishS6yFFlIKFLIcqLKQUKXUKLKQUKXU4UWUioUsoUWUioUspyospBZCl1CiykFCllOVFlIKFLrIUWUgoUupwospFQpZZOVFlIIFLocILKRUKXWQospBQpdQospBQpdQospBQpdQospBdgsllOVFlIKFk7PLsnzTMm8HZbjMYn6XMWKrmnr0iTijKczrzGMuoy7F1Y2ddMPFmqbk6RrP2dNfNEz+wnurtjdW61QpdQpFrUgoUuoWRZSChS6hRZSChS6lsbgsXgcVXhcbhb2GxFGj2r1uaK6dY1jWJ6Y6JiQjt4YShZOwy/LMwzG7NrL8DicZcpjWaLFqq5MR16RBG9hr9i/VYvWblu9TK1W66ZiqJ6piekkuLq2KoWTscdleY4G3ZuY3AYrC0X4mbVV6zVRFyI01WZjp01jzdcGKoIqYuEFCl1CkWmkFCl1CiykFOrvfy1f60/vO7U6XEfzi5+vP7yYUzfAALKAAAAAAAAB2uTxrhav15/dB1R3WRRrhK/xJ/dBErY+WSoQuoUhogoWC6hQIKFLqFgCCwFLLByoEECF1CwBBQpdQoEFCl1OFAigUusBYAgoUsoUCKhS6nCgRWApdQoEFgLBdQoEFCl1CgQUKWUKBFQsF1gKBBQsF1CgQULBQ==".getBytes());
+		photoStream.put(16, "EFgIXU4UCKhS6nCgRULBdQoEFCl1CgQUKWU5UCChS6nCgRUKWU5UD3nKNnWacPZvb4XyPHX8twGXWLVNMYaubc3a6qIqqrqqjpmZmfYT5Lc1zLOOVPJMRmmMu4u7atXbVFd2daopi1dmI19PTVPnJ1Z/wxnmEwscV5fmUY/DWqbP1vL66GvUU/ovTX0ax1ksgzzhzJOO8vzjLsBmFrLsLbrpuU1103L1yqqiultNYpj9KmNNfQbX+aJvs8v8KfwcuPT81T3qO8/r9yzw1wrmWT5nTkuaZjezTLMLVirtV61TTYv0UaPNER9qPP0a7dB2PBHJ/gc6yHD47FYXiC7dvt9rDRYt2relUxHTdqia+iInWnr09B53g7N8Lk3hn6zbvV/Xspv4K3zcROlda6TOsx0dHTprOx3N/iPhjMclyqnOMuzS7j8swtOHtWbV6mnDXop8016/ajX06RruRjOPmVubHni8cZmrjv7+P27X/CeB4EwVPGPEGQ5nmFy3ayzAXMVRiaIiI6Iommao0nWFr1mI6ejokxsy4f4axXCeNzrhvG5nXXlty1Ti7eNoohouStNVC+bp9E6nZY/jDK8RxdxPm9GHxkWM2ymvBWKZopemuq3bpiaobSI1onzTM+boOhyTN8LguEeIcou271V/Mvq3M1U0wlPN3JqqaddY6J6NIkTr4j7/APxOEdRNZZTN/l7e3/s7nF8NcE5TZya5nOZ5xTVmWXWMTNvD00VTaqriWqmZj9D0RERM9E9PmPnCcnk+NedZbicRirmCyiKa7tWFsTcvXYriJoppoj+lMT6o0k6jjHN8LnPgb6tbvUfUcpsYK7zkRGtdDazGkz9np9Ok7HpL/H2GjjPOsxsWMfGWZrbtUXKbd3mcRRNuimIqpqpmdJiYq6NemJ6SfyX3VnHqYxvGZuYn9u/t+zr+KeC8DhuG7+eZTYz7CW8LcooxFjN8LzVcxVOkVUTERExrpExv/vx+WqnXlMzafwf7G2ZnE/EeTYzI8RgcDjuLcZdvr9549rVGlUVfoUzpV5tOnzef0HT8oGb4XiHi7HZvg7d63YxHNrTdpiKoW3TTOukzHnpn0kZzjVQv02PLOcTyX7+f2/8Art7+PxvD3JfkU5PibuDvZricTexN6xVNFdXN1RRTS0dOmnToccbY3FXsn4P4rm4ubXbVyK76w1VVi7EUVz6Jn1mNkWeZHd4co4f4mweOu4bD3qr2Fv4KqmLtuav0qdKuiaZnpI8SZ3lucZlleGowmIwmRZfTTZotUVRVe5tta6tZ6Hn/AHa6Ccu3n4RjxTHJ3x98pmfmJjx9/bt9mdx9jMXmXAHB2Nx+IuYnE3Zx013Lkw==".getBytes());
+		photoStream.put(17, "P2HhVNh59m/AmO4WwWUYe3xJTXltu/8AUqrkWdKq7kt/CTE9MNEeaInTU8GpXk8t+k7YTFTHefavMzKChS6wcKUdSKhSynKwBBDoMV/Orv68/vPTKeaxn87vfiVfvJhTJIAEqAAAAAAAAB33Dsa4Kv8AEn90HQmZgcxv4O1Nu3RbmJqb7UT8diExNS9IoU6Lw5i+zsd2fiPDmL7Ox3Z+IpfaHeqF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6oXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6oXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3qhdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6oXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHeqF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6oXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3qhdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersFOi8OYvs7Hdn4jw5i+zsd2fiKNod6uwXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6uwXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BTovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6uwXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDeL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6uwU6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHeqFOi8OYvs7Hdn4jw5i+zsd2fiKNod6oU6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3q7BdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6oXY6Lw5i+zsd2fiPDmL7Ox3Z+Io2h3qhdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHersF2Oi8OYvs7Hdn4jw5i+zsd2fiKNod6uwU6Lw3i+zsd2fiPDmL7Ox3Z+Io2h3qhdjovDmL7Ox3Z+I8OYvs7Hdn4ijaHeqeVx389v/iVfvM3w5i+zsd2fidderm7dru1RETXVNU6biFcpt8gAlUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==".getBytes());
+		photoStream.put(18, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//2Q==".getBytes());
+		photoPackage.setPhotoStream(photoStream);
+		Vehicle vehicle = new Vehicle();
+		vehicle.setSimCode(simNo);
+		vehicle.setId(vehicleId);
+		vehicle.setCarNo(carNo);
+		vehicle.setName(carNo);
+		service.handle0801(photoPackage, header, vehicle);
+	}
+	
+}

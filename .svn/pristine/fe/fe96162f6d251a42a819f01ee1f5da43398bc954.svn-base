@@ -1,0 +1,164 @@
+package com.tiamaes.bike.api.information.driver.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.driver.service.DriverServiceInterface;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/driver")
+@Api(tags = {"driver"}, description = "用户信息管理")
+public class DriverController {
+	private static Logger logger = LogManager.getLogger(DriverController.class);
+	@Resource
+	private DriverServiceInterface driverService;
+	
+	/**
+	 * 用户状态
+	 * @return
+	 */
+	@ApiOperation(value = "用户状态下拉列表初始化", notes = "用户状态下拉列表初始化")
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<>();
+		result.put("state", User.State.values());
+		return result;
+	}
+	
+	/**
+	 * 用户列表页面 分页查询
+	 * @param driver
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户列表", notes = "分页获取全部用户信息")
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<User> page(@RequestBody User user, @PathVariable Map<String,String> pathVariable, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<User> pagination = new Pagination<>(number, pageSize);
+		List<User> list = driverService.getListOfDrivers(user, pagination);
+		return new PageInfo<User>(list);
+	}
+	
+	/**
+	 * 获取用户详情
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户信息", notes = "根据username获取用户详情",response = User.class)
+	@RequestMapping(value = "/{username}", method = RequestMethod.GET)
+	public @ResponseBody User get(@PathVariable("username")String username, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(username);
+		}
+		User user = driverService.getDriverByUsername(username);
+		return user;
+	}
+	
+	/**
+	 * 添加用户信息
+	 * @param driver
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "增加用户", notes = "新增用户信息",response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	@RequestMapping(method = RequestMethod.PUT)
+	public @ResponseBody User add(@RequestBody User user, @CurrentUser com.tiamaes.security.core.userdetails.User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(user.toString());
+		}
+		user = driverService.addDriver(user);
+		return user;
+	}
+	
+	/**
+	 * 更新用户昵称
+	 * @param user
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新用户昵称", notes = "更新用户昵称",response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	@RequestMapping(value = "/{username}", method = RequestMethod.PUT)
+	public @ResponseBody User updateNickname(@RequestBody User user, @PathVariable("username")String username, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(user.toString());
+		}
+		user.setUsername(username);
+		user = driverService.updateDriverNickname(user);
+		return user;
+	}
+	
+	/**
+	 * 更新用户黑白名单信息
+	 * @param user
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新用户黑白名单信息", notes = "更新用户黑白名单信息",response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	@RequestMapping(value = "/state/{username}", method = RequestMethod.GET)
+	public @ResponseBody User updateState(@PathVariable("username")String username, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		User user = driverService.updateDriverState(username);
+		return user;
+	}
+	
+	/**
+	 * 删除用户信息
+	 * @param username
+	 * @param operator
+	 */
+	@ApiOperation(value = "删除用户", notes = "删除用户信息")
+	@RequestMapping(value = "/{username}", method = RequestMethod.DELETE)
+	public @ResponseBody void delete(@PathVariable("username")String username, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(username);
+		}
+		if(StringUtils.isNotBlank(username)){
+			User user = driverService.getDriverByUsername(username);
+			driverService.deleteDriver(user);
+		}
+	}
+	
+	/**
+	 * 验证身份证号是否存在
+	 * @return
+	 */
+	@ApiOperation(value = "验证身份证是否存在", notes = "验证身份证号是否存在")
+	@RequestMapping(value = "/identityCard/{identityCard}", method = RequestMethod.GET)
+	public @ResponseBody Map<String,Object> checkIdentityCard(@PathVariable String identityCard){
+		Map<String,Object> result = new HashMap<>();
+		boolean exist = driverService.checkIdentityCard(identityCard);
+		result.put("state", exist);
+		return result;
+	}
+	
+}

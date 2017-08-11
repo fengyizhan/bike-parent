@@ -1,0 +1,255 @@
+package com.tiamaes.bike.common.bean.system;
+
+import java.io.IOException;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "User", description = "用户实体")
+public class User extends com.tiamaes.security.core.userdetails.User {
+	private static final long serialVersionUID = -2159435930113491704L;
+	@ApiModelProperty(value="手机号码")
+	private String mobile;
+	@ApiModelProperty(value="电子邮件")
+	private String email;
+	@ApiModelProperty(value="创建时间")
+	private Date createDate;
+	@ApiModelProperty(value="最后实名认证时间")
+	private Date identifyDate;
+	@ApiModelProperty(value="用户首页")
+	private String index = "index.html";
+	@ApiModelProperty(value="身份证号")
+	private String identityCard;
+	@ApiModelProperty(value="ic卡号")
+	private String icCardNumber;
+	@ApiModelProperty(value="黑白名单标识")
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State state;
+	@ApiModelProperty(value="用户状态")
+	@JsonDeserialize(using = Stage.Deserializer.class)
+	private Stage stage;
+	public Stage getStage() {
+		return stage;
+	}
+
+	public void setStage(Stage stage) {
+		this.stage = stage;
+	}
+
+	public String getMobile() {
+		return mobile;
+	}
+
+	public void setMobile(String mobile) {
+		this.mobile = mobile;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	public Date getIdentifyDate() {
+		return identifyDate;
+	}
+
+	public void setIdentifyDate(Date identifyDate) {
+		this.identifyDate = identifyDate;
+	}
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public String getIndex() {
+		return index;
+	}
+
+	public void setIndex(String index) {
+		this.index = index;
+	}
+	
+	public String getIdentityCard() {
+		return identityCard;
+	}
+	
+	public void setIdentityCard(String identityCard) {
+		this.identityCard = identityCard;
+	}
+	
+	public String getIcCardNumber() {
+		return icCardNumber;
+	}
+
+	public void setIcCardNumber(String icCardNumber) {
+		this.icCardNumber = icCardNumber;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+	
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum State implements com.tiamaes.bike.common.Enum<State> {
+
+		WHITE("白名单"), BLACK("黑名单");
+
+		private String name;
+
+		State(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static State valueOf(@JsonProperty("index") final int index) {
+			State[] types = State.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<State> {
+			@Override
+			public State deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return State.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return State.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return State.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Stage implements com.tiamaes.bike.common.Enum<Stage> {
+		/**
+		 * 这里的状态是有业务先后顺序的，必须严格按照业务设定
+		 */
+		REGISTED("已注册"), DEPOSITED("已交押金"),CERTIFICATED("已实名认证");
+
+		private String name;
+
+		Stage(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static Stage valueOf(@JsonProperty("index") final int index) {
+			Stage[] types = Stage.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<Stage> {
+			@Override
+			public Stage deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Stage.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return Stage.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Stage.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

@@ -1,0 +1,157 @@
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('DriverController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/
+			var Driver = $resource("api/information/driver/:id", { "id" : "@id" }, {
+				init: { method: 'GET', url: 'api/information/driver/init'},
+				validateName: {method: 'GET', isArray: true, url: 'api/information/vehicle/search/:name'},
+				validateLicenseNo: {method: 'GET', url: 'api/information/driver/licenseNo/:licenseNo'},
+				validateIdentityCard: {method: 'GET', url: 'api/information/driver/identityCard/:identityCard'},
+				get: { method: 'GET'},
+				save: { method: 'PUT'},
+				remove: { method: 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			$scope.searchForm = {
+				data:{
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "驾驶员信息详情";
+				$scope.dialog.title2 = "从业资格证信息";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.title = "新增驾驶员信息";
+				$scope.dialog.title2 = "新增从业资格证信息";
+				$scope.dialog.data = {
+					"sex":$scope.dialog.driverSexs[0],
+					"isMaster": true,
+					"birthday" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"examineYear" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"licenseDate" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"invalidDate" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+				};
+				$scope.dialog.show();
+			}
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "修改驾驶员信息";
+				$scope.dialog.title2 = "修改从业资格证信息";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该驾驶员信息?',callback:function(){
+                    Driver.remove({"id":target.id},function(response){
+                    	$scope.pagination.remove(target);
+                    });
+				}}).show();
+			};
+			
+			/**============================================页面元素初始化部分============================================**/
+			
+			/**============================================对话框元素初始化部分============================================**/			
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				Driver.init(function(response){
+					$scope.dialog.driverSexs = response.driverSexs;
+					$scope.dialog.licenseTypes = response.licenseTypes;
+				});
+				dialog.birthday = {
+					"open": function($event) {
+						dialog.birthday.opened = true;
+					}
+				};
+				dialog.examineYear = {
+					"open": function($event) {
+						dialog.examineYear.opened = true;
+					}
+				};
+				dialog.licenseDate = {
+					"open": function($event) {
+						dialog.licenseDate.opened = true;
+					}
+				};
+				dialog.invalidDate = {
+					"open": function($event) {
+						dialog.invalidDate.opened = true;
+					}
+				};
+				//根据车牌号查询车辆
+				dialog.validateName = function(name){
+					if(name && name.length > 3){
+						Driver.validateName({'name':name}, function(response){
+							dialog.vehicles = response;
+						});
+					}
+				};
+				//验证从业资格证号是否存在
+				dialog.validateLicenseNo = function(licenseNo){
+					return $q(function(resolve, reject) {
+						if(licenseNo === undefined){
+							reject();
+						}else if(licenseNo !== dialog.data.licenseNo){
+							Driver.validateLicenseNo({"licenseNo": licenseNo}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				//验证身份证号是否存在
+				dialog.validateIdentityCard = function(identityCard){
+					return $q(function(resolve, reject) {
+						if(identityCard === undefined){
+							reject();
+						}else if(identityCard !== dialog.data.identityCard){
+							Driver.validateIdentityCard({"identityCard": identityCard}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				dialog.submit = function(event){
+					event.preventDefault();
+					Driver.save(dialog.data,function(response){
+						if($scope.dialog.increased){
+							$scope.pagination.unshift(response);
+						}else{
+							$scope.pagination.refresh(response);
+						}
+                    });
+					$scope.dialog.close();
+				};
+			});
+		}]);
+	});
+})(window.angular);

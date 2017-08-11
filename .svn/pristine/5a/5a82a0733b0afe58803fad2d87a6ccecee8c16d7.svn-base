@@ -1,0 +1,35 @@
+package com.tiamaes.bike.reporter.integrated.borrow.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.BorrowRecord;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * 车辆租借记录接口
+ * @author kangty
+ */
+public interface BorrowQueryServiceInterface {
+	/**
+	 * 获取车辆租借记录列表
+	 * @param alarmRecord
+	 * @param pagination
+	 * @return
+	 */
+	public List<BorrowRecord> getListOfBorrowRecords(Parameters<BorrowRecord> parameters, Pagination<BorrowRecord> pagination);
+
+	/**
+	 * 获取指定车辆的租借记录
+	 * @param bikeId
+	 * @return
+	 */
+	public List<BorrowRecord> getListOfBikeBorrowRecord(int bikeId);
+	
+	/**
+	 * 获取指定车辆已使用时间
+	 * @param bikeId
+	 * @return
+	 */
+	String getBikeUserTimeInfo(int bikeId);
+}

@@ -1,0 +1,53 @@
+package com.tiamaes.bike.reporter.integrated.photo.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.PhotoRecord;
+import com.tiamaes.bike.reporter.integrated.photo.service.PhotoRecordServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/integrated/photo")
+@Api(tags = {"photoQuery"}, description = "设备拍照记录查询")
+public class PhotoQueryController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(PhotoQueryController.class);
+	@Resource
+	private PhotoRecordServiceInterface photoRecordService;
+	
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "设备拍照分页信息", notes = "获取当前页的设备拍照列表数据")
+	@ApiImplicitParam(name = "photoRecord", value = "设备拍照记录实体", required = true, dataType = "PhotoRecord")
+	public @ResponseBody PageInfo<PhotoRecord> page(@RequestBody PhotoRecord photoRecord, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<PhotoRecord> pagination = new Pagination<PhotoRecord>(number, pageSize);
+		//封装参数
+		Parameters<PhotoRecord> parameters = new Parameters<PhotoRecord>();
+		parameters.setUser(operator);
+		parameters.setModel(photoRecord);
+		List<PhotoRecord> list = photoRecordService.getListOfPhotoRecords(parameters, pagination);
+		return new PageInfo<PhotoRecord>(list);
+	}
+	
+}

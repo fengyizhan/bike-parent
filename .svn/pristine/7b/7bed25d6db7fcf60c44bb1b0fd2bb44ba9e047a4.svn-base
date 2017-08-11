@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.reporter.integrated.trips.persistence.TripsQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.TripRecord" id="tripRecordMap">
+		<id property="id" column="id"/>
+		<result property="beginTime" column="beginTime"/>
+		<result property="endTime" column="endTime"/>
+		<result property="loadCube" column="loadCube"/>
+		<result property="total" column="total"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="carNo" column="carNo"/>
+			<result property="simCode" column="simNo"/>
+			<association property="company" javaType="com.tiamaes.bike.common.bean.information.Company">
+				<result property="id" column="companyId"/>
+				<result property="name" column="companyName"/>
+			</association>
+			<association property="department" javaType="com.tiamaes.bike.common.bean.information.Department">
+				<result property="id" column="departmentId"/>
+				<result property="name" column="departmentName"/>
+			</association>
+		</association>
+		<association property="driver" javaType="com.tiamaes.bike.common.bean.information.Driver">
+			<result property="identityCard" column="driverNo"/>
+			<result property="name" column="driverName"/>
+			<result property="telephone" column="driverPhone"/>
+		</association>
+		<association property="beginStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+			<result property="id" column="beginStationId"/>
+			<result property="name" column="beginStationName"/>
+		</association>
+		<association property="endStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+			<result property="id" column="endStationId"/>
+			<result property="name" column="endStationName"/>
+		</association>
+	</resultMap>
+	<sql id="userDataAuthorities">
+		AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+		WHERE T2.userId = ${userId}  
+		AND T2.levels = 2
+		AND T2.targetId = ${innerField} 
+		)
+    </sql>
+	<!-- 查询车辆进出场记录列表 -->
+	<select id="getListOfTripRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="tripRecordMap">
+		SELECT t.id,
+		       t.companyId,
+		       t.companyName,
+		       t.departmentId,
+		       t.departmentName,
+		       t.vehicleId,
+		       t.carNo,
+		       t.simNo,
+		       t.driverNo,
+		       t.driverName,
+		       t.driverPhone,
+		       t.beginStationId,
+		       t.beginStationName,
+		       t.beginTime,
+		       t.endStationId,
+		       t.endStationName,
+		       t.endTime
+		  FROM tb_project_trips t
+		<where>
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.companyId = #{model.company.id}
+			</if>
+			<if test="model.department != null and model.department.id != null">
+		     AND t.departmentId = #{model.department.id}
+			</if>
+			<if test="model.beginStation != null and model.beginStation.id != null">
+		     AND t.beginStationId = #{model.beginStation.id}
+			</if>
+			<if test="model.driver != null and model.driver.name != null and model.driver.name.trim() !=''">
+		     AND t.driverName LIKE CONCAT('%',#{model.driver.name},'%')
+			</if>
+			<if test="model.driver != null and model.driver.telephone != null and model.driver.telephone.trim() !=''">
+		     AND t.driverPhone LIKE CONCAT('%',#{model.driver.telephone},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.carNo != null and model.vehicle.carNo.trim() !=''">
+		     AND t.carNo LIKE CONCAT('%',#{model.vehicle.carNo},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.simCode != null and model.vehicle.simCode.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{model.vehicle.simCode},'%')
+			</if>
+			<if test="model.queryStartTime != null">
+		     AND t.beginTime&gt;=#{model.queryStartTime} 
+			</if>
+			<if test="model.queryEndTime != null">
+		     AND #{model.queryEndTime}&gt;=t.beginTime
+			</if>
+			<if test="model.queryStartTime != null">
+		     AND t.endTime&gt;=#{model.queryStartTime} 
+			</if>
+			<if test="model.queryEndTime != null">
+		     AND #{model.queryEndTime}&gt;=t.endTime
+			</if>
+			<include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include>
+		</where>
+		ORDER BY t.beginTime DESC, t.endTime DESC
+	</select>
+	<!-- 查询车辆进出场记录总数 -->
+	<select id="getTotalOfTripRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1)
+		  FROM tb_project_trips t
+		<where>
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.companyId = #{model.company.id}
+			</if>
+			<if test="model.department != null and model.department.id != null">
+		     AND t.departmentId = #{model.department.id}
+			</if>
+			<if test="model.beginStation != null and model.beginStation.id != null">
+		     AND t.beginStationId = #{model.beginStation.id}
+			</if>
+			<if test="model.driver != null and model.driver.name != null and model.driver.name.trim() !=''">
+		     AND t.driverName LIKE CONCAT('%',#{model.driver.name},'%')
+			</if>
+			<if test="model.driver != null and model.driver.telephone != null and model.driver.telephone.trim() !=''">
+		     AND t.driverPhone LIKE CONCAT('%',#{model.driver.telephone},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.carNo != null and model.vehicle.carNo.trim() !=''">
+		     AND t.carNo LIKE CONCAT('%',#{model.vehicle.carNo},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.simCode != null and model.vehicle.simCode.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{model.vehicle.simCode},'%')
+			</if>
+			<if test="model.queryStartTime != null">
+		     AND t.beginTime&gt;=#{model.queryStartTime} 
+			</if>
+			<if test="model.queryEndTime != null">
+		     AND #{model.queryEndTime}&gt;=t.beginTime
+			</if>
+			<if test="model.queryStartTime != null">
+		     AND t.endTime&gt;=#{model.queryStartTime} 
+			</if>
+			<if test="model.queryEndTime != null">
+		     AND #{model.queryEndTime}&gt;=t.endTime
+			</if>
+			<include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include>
+		</where>
+	</select>
+	
+	<!-- 根据时间统计趟次 -->
+	<select id="getTotalByTime" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="tripRecordMap">
+		SELECT COUNT(1) as total, SUM(IFNULL(t.loadCube, 0)) as loadCube
+		  FROM tb_project_trips t
+			<where> 
+				<if test="startTime != null">
+			     	AND t.beginTime>=#{startTime} 
+				</if>
+				<if test="endTime != null">
+			     	AND #{endTime}>=t.beginTime
+				</if>
+				<include refid="userDataAuthorities">
+				  	<property name="userId" value="#{user.username}"/>
+				  	<property name="innerField" value="t.DEPARTMENTID"/>
+			    </include>
+			</where>
+	</select>
+	
+	<!-- 查询车辆进出场记录列表 -->
+	<select id="getListOfOngoingProjectInfoDetail" parameterType="com.tiamaes.bike.common.bean.information.Project" resultType="com.tiamaes.bike.common.bean.homepage.OngoingProjectTripInfo">
+		SELECT DISTINCT(t2.vehicleId), t1.carNo, t2.driverName, t2.driverPhone AS telephone, t1.tripCount
+		  FROM (SELECT COUNT(id) AS tripCount, carNo
+		          FROM tb_project_trips
+		         WHERE beginStationId = #{beginStation.id}
+		           AND endStationId = #{endStation.id}
+		         GROUP BY carNo) t1,
+		       tb_project_trips t2
+		 WHERE t1.carNo = t2.carNo
+	</select>
+	
+	<!-- 查询车辆进出场记录总数 -->
+	<select id="getCountOfTripRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1)
+		  FROM tb_project_trips t
+		<where>
+			<if test="model.projectId != null and model.projectId != null">
+		     AND t.projectId = #{model.projectId}
+			</if>
+			<include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.DEPARTMENTID"/>
+		    </include>
+		</where>
+	</select>
+</mapper>

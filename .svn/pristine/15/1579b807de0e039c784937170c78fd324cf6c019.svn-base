@@ -1,0 +1,58 @@
+package com.tiamaes.bike.authority;
+
+import static org.junit.Assert.assertNotNull;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.authority.user.service.UserServiceInterface;
+import com.tiamaes.security.core.userdetails.User;
+import com.tiamaes.security.provisioning.MutableUser;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class UserTest {
+	private static Logger logger = LogManager.getLogger(UserTest.class);
+	
+
+	@Autowired
+	private UserServiceInterface userService;
+	@Resource
+	private PasswordEncoder passwordEncoder;
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+
+	
+	@Test
+	public void changepassword() throws Exception {
+		User user=new User();
+		user.setUsername("15238006102");
+		user.setPassword(passwordEncoder.encode("123456"));
+		MutableUser p_user=new MutableUser(user);
+		userService.upadatePassword(p_user);
+	}
+
+
+	
+}

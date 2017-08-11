@@ -1,0 +1,42 @@
+package com.tiamaes.bike.reporter.information.project.service;
+
+import java.util.List;
+import java.util.Map;
+
+import com.tiamaes.bike.common.bean.homepage.OngoingProjectInfo;
+import com.tiamaes.bike.common.bean.homepage.OngoingProjectTripInfo;
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.security.core.userdetails.User;
+
+public interface ProjectServiceInterface {
+	
+	/**
+	 * 获取正在进行的项目信息
+	 * @param ongoing
+	 * @param operator 
+	 * @return
+	 */
+	List<OngoingProjectInfo> getListOfOngoingProjectInfo(Map<String, Integer> ongoing, User operator);
+
+	/**
+	 * 根据工程id获取工程信息
+	 * @param id
+	 * @return
+	 */
+	Project getProjectById(String id);
+
+	/**
+	 * 获取工程趟次列表
+	 * @param project
+	 * @return
+	 */
+	List<OngoingProjectTripInfo> getListOfOngoingProjectInfoDetail(Project project);
+	
+	/**
+	 * 获取正在进行的工程id
+	 * @param date
+	 * @return
+	 */
+	Map<String, Object> getMessageOfProject(String date);
+
+}

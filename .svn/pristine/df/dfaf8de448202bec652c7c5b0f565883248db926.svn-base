@@ -1,0 +1,83 @@
+package com.tiamaes.bike.api.information.department.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Department;
+
+public interface DepartmentMapper {
+	
+	/**
+	 * 根据部门编号查询部门信息
+	 * @param id
+	 * @return
+	 */
+	Department getDepartmentById(@Param("id")String id);
+	
+	/**
+	 * 查询所有部门列表
+	 * @return
+	 */
+	List<Department> getListOfDepartments();
+	
+	/**
+	 * 查询符合条件的所有部门列表
+	 * @param department
+	 * @return
+	 */
+	List<Department> getListOfDepartments(Parameters<Department> parameters);
+	/**
+	 * 查询注册公司数
+	 * @return
+	 */
+	int getTotalOfDepartments(Parameters<Department> parameters);
+	
+	/**
+	 * 保存公司
+	 * @param department
+	 */
+	void addDepartment(Department department);
+	
+	/**
+	 * 更新公司
+	 * @param department
+	 */
+	void updateDepartment(Department department);
+	
+	/**
+	 * 删除公司
+	 * @param department
+	 */
+	void deleteDepartment(Department department);
+	
+	/**
+	 * 检查公司名是否已经存在
+	 * @param name
+	 * @param parentId
+	 * @param id
+	 * @return
+	 */
+	boolean hasExists(@Param("name")String name, @Param("parentId")String parentId, @Param("id")String id);
+	
+	/**
+	 * 获取所有公司列表，用于下拉菜单生成
+	 * @return
+	 */
+	List<Department> getDepartments();
+	
+	/**
+	 * 根据公司id获取部门下拉列表
+	 * @param id
+	 * @return
+	 */
+	List<Department> getDepartmentsByCompanyId(@Param("id")String id);
+
+	/**
+	 * 根据公司id获取公司在部门中的关联量
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfCompany(String id);
+}

@@ -1,0 +1,68 @@
+package com.tiamaes.bike.reporter.integrated.borrow.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.BorrowRecord;
+import com.tiamaes.bike.reporter.integrated.borrow.service.BorrowQueryServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/integrated/borrow")
+@Api(tags = {"borrowQuery"}, description = "车辆租借记录查询")
+public class BorrowQueryController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(BorrowQueryController.class);
+	@Resource
+	private BorrowQueryServiceInterface borrowQueryService;
+	
+	@ApiOperation(value = "车辆租借分页信息", notes = "获取当前页的车辆租借列表数据")
+	@ApiImplicitParam(name = "borrowRecord", value = "车辆租借记录实体", required = true, dataType = "BorrowRecord")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	public @ResponseBody PageInfo<BorrowRecord> page(@RequestBody BorrowRecord borrowRecord, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<BorrowRecord> pagination = new Pagination<BorrowRecord>(number, pageSize);
+		Parameters<BorrowRecord> parameters = new Parameters<BorrowRecord>();
+		parameters.setUser(operator);
+		parameters.setModel(borrowRecord);
+		
+		List<BorrowRecord> list = borrowQueryService.getListOfBorrowRecords(parameters, pagination);
+		return new PageInfo<>(list);
+	}
+	
+	@RequestMapping(value = "/bike/{bikeId}/borrowRecord", method = RequestMethod.GET)
+	@ApiOperation(value = "车辆租借信息", notes = "获取指定车辆的租借列表数据")
+	public @ResponseBody List<BorrowRecord> bikeBorrowRecord(@PathVariable("bikeId") int bikeId) {
+		return borrowQueryService.getListOfBikeBorrowRecord(bikeId);
+	}
+	
+	@RequestMapping(value = "/bike/{bikeId}/countTime", method = RequestMethod.GET)
+	@ApiOperation(value = "车辆租借信息", notes = "获取指定车辆的使用时长")
+	public @ResponseBody Map<String, String> bikeBorrowCountTime(@PathVariable("bikeId") int bikeId) {
+		Map<String, String> result = new HashMap<>();
+		result.put("countTime", borrowQueryService.getBikeUserTimeInfo(bikeId));
+		return result;
+	}
+	
+}

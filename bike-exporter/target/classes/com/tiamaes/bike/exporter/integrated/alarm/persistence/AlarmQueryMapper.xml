@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.exporter.integrated.alarm.persistence.AlarmQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.AlarmRecord" id="alarmRecordMap">
+		<id property="id" column="id"/>
+		<result property="warnCode" column="warnCode" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="warnContent" column="warnContent"/>
+		<result property="directionType" column="directionType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createDate" column="createDate"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="place" column="place"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="vehicleName"/>
+			<result property="simNo" column="simNo"/>
+		</association>
+	</resultMap>
+	
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	<!-- 查询报警记录列表 -->
+	<select id="getListOfAlarmRecords" parameterType="com.tiamaes.bike.common.bean.integrated.AlarmRecord" resultMap="alarmRecordMap">
+		SELECT t.id,
+			   IFNULL(t.vehicleName,'无')     AS vehicleName,
+		       IFNULL(t.simNo,'无')           AS simNo,
+		       t.warnCode,
+		       t.createDate,
+		       CONCAT_WS(',', t.lng, t.lat)   AS place
+		  FROM tb_bike_warning_info t
+		<where>
+			<if test="warnCode != null and warnCode.index != null">
+		     AND t.warnCode = #{warnCode.index}
+			</if>
+			<if test="vehicle != null and vehicle.name != null and vehicle.name.trim() !=''">
+		     AND t.vehicleName LIKE CONCAT('%',#{vehicle.name},'%')
+			</if>
+			<if test="vehicle != null and vehicle.simNo != null and vehicle.simNo.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{vehicle.simNo},'%')
+			</if>
+			<if test="startTime != null">
+		     AND t.createDate &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createDate
+			</if>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{userId}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+</mapper>

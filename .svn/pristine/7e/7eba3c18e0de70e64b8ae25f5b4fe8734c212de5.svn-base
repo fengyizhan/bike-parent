@@ -1,0 +1,76 @@
+package com.tiamaes.bike.connector.handler;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.connector.protocol.handler.SerialRepository;
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Message;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
+
+@Component
+@ChannelHandler.Sharable
+public class CustomizeProtocolEncoder extends MessageToByteEncoder<Message> {
+	
+	private static final Logger logger = LoggerFactory.getLogger(CustomizeProtocolEncoder.class);
+	
+	@Autowired
+	private SerialRepository serialRepository;
+	
+	@Override
+	protected void encode(ChannelHandlerContext ctx, Message message, ByteBuf out) throws Exception {
+		Header header = message.getHeader();
+		if(header.getSerialNo() == 0){
+			header.setSerialNo(serialRepository.generateSerialNo(String.valueOf(header.getTerminalId())));
+		}
+		
+		byte[] array1 = header.toBytes();
+		byte[] array2 = message.toBytes();
+		
+		byte[] array3 = ArrayUtils.addAll(array1, array2);
+		
+		byte checksum = 0;
+		for (int i = 0; i < array3.length; i++) {
+			checksum ^= array3[i];
+		}
+		
+		//这里需要转义
+		//0x7e <————> 0x7d 后紧跟一个 0x02； 
+		//0x7d <————> 0x7d 后紧跟一个 0x01。 
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		for(byte arr : array3){
+			if (arr == 0x7e) {
+				buffer.writeByte(0x7d);
+				buffer.writeByte(0x02);
+			} else if(arr == 0x7d) {
+				buffer.writeByte(0x7d);
+				buffer.writeByte(0x01);
+			} else {
+				buffer.writeByte(arr);
+			}
+		}
+		array3 = new byte[buffer.readableBytes()];
+		buffer.readBytes(array3);
+		
+		array3 = ArrayUtils.add(array3, 0, (byte)0x7e);
+		array3 = ArrayUtils.add(array3, checksum);
+		array3 = ArrayUtils.add(array3, (byte)0x7e);
+		
+		if(logger.isTraceEnabled()){
+			logger.trace("SEND: {}", Hex.encodeHexString(array3));
+		}
+		
+		out.writeBytes(array3);
+	}
+
+}

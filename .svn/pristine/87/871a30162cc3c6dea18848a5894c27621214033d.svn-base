@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.terminal.persistence.TerminalMapper">
+	<resultMap id="terminalMap" type="com.tiamaes.bike.common.bean.information.Terminal">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="simNo" property="simNo"/>
+		<result column="remark" property="remark"/>
+		<result column="createDate" property="createDate"/>
+		<result column="authentication" property="authentication"/>
+		<result column="softwareVersion" property="softwareVersion"/>
+		<result column="hardwareVersion" property="hardwareVersion"/>
+		<result column="protocolVersion" property="protocolVersion"/>
+		<result column="state" property="state" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result column="registered" property="registered"/>
+		<association property="factory" column="factoryId" javaType="com.tiamaes.bike.common.bean.information.Terminal$Factory">
+			<id property="id" column="factoryId"/>
+			<result property="name" column="factoryName"/>
+		</association>
+		<association property="type" column="typeId" javaType="com.tiamaes.bike.common.bean.information.Terminal$Type">
+			<id property="id" column="typeId"/>
+			<result property="name" column="terminalTypeName"/>
+		</association>
+	</resultMap>
+	
+	<!-- 根据Id查询终端信息信息 -->
+	<select id="getTerminalById" parameterType="String" resultMap="terminalMap">
+		<![CDATA[
+		SELECT 
+			   t.id 
+		      ,t.name 
+		      ,trim(t.simNo) AS simNo
+		      ,t.createDate 
+		      ,t.softwareVersion 
+		      ,t.hardwareVersion 
+		      ,t.protocolVersion 
+		      ,t.authentication 
+		      ,t.state 
+		      ,t.registered
+		      ,t.remark
+		      ,b1.id typeId
+		      ,b2.id factoryId
+		      ,b1.name terminalTypeName
+		      ,b2.name factoryName
+		  FROM TB_Terminal t 
+			  LEFT JOIN TB_TERMINALTYPE b1 on t.typeId=b1.id 
+			  LEFT JOIN TB_FACTORY_DICTIONARY b2 on t.factoryId=b2.id 
+		WHERE t.id = #{id}
+		]]>
+	</select>
+	<!-- 根据终端编号查询终端信息 -->
+	<select id="getTerminalByName" parameterType="String" resultMap="terminalMap">
+		<![CDATA[
+		SELECT 
+			   t.id 
+		      ,t.name 
+		      ,trim(t.simNo) AS simNo
+		      ,t.createDate 
+		      ,t.softwareVersion 
+		      ,t.hardwareVersion 
+		      ,t.protocolVersion 
+		      ,t.authentication 
+		      ,t.state 
+		      ,t.registered
+		      ,t.remark
+		      ,b1.id typeId
+		      ,b2.id factoryId
+		      ,b1.name terminalTypeName
+		      ,b2.name factoryName
+		  FROM TB_Terminal t 
+			  LEFT JOIN TB_TERMINALTYPE b1 on t.typeId=b1.id 
+			  LEFT JOIN TB_FACTORY_DICTIONARY b2 on t.factoryId=b2.id 
+		WHERE t.name = #{name}
+		]]>
+	</select>
+	
+	<!-- 查询终端信息列表 -->
+	<select id="getAllTerminals" parameterType="com.tiamaes.bike.common.bean.information.Terminal" resultMap="terminalMap">
+		SELECT 
+			   t.id 
+		      ,t.name 
+		      ,trim(t.simNo) AS simNo
+		      ,t.createDate 
+		      ,t.softwareVersion 
+		      ,t.hardwareVersion 
+		      ,t.protocolVersion 
+		      ,t.authentication 
+		      ,t.state 
+		      ,t.registered
+		      ,t.remark
+		      ,b1.id typeId
+		      ,b2.id factoryId
+		      ,b1.name terminalTypeName
+		      ,b2.name factoryName
+		  FROM TB_Terminal t 
+		   	  LEFT JOIN TB_TERMINALTYPE b1 on t.typeId=b1.id 
+			  LEFT JOIN TB_FACTORY_DICTIONARY b2 on t.factoryId=b2.id 
+		<where>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{name},'%'))
+			</if>
+			<if test="factory != null and factory.id != null">
+		     AND t.factoryId LIKE CONCAT('%',CONCAT(#{factory.id},'%'))
+			</if>
+			<if test="simNo != null and simNo != ''">
+		     AND t.simNo LIKE CONCAT('%',CONCAT(#{simNo},'%'))
+			</if>
+			<if test="binded != null and binded ==true">
+		     AND t.registered = 1
+			</if>
+			<if test="binded != null and binded ==false	">
+		     AND t.registered = 0
+			</if>
+			<if test="state != null and state.index != null">
+		     AND t.state = #{state.index}
+			</if>
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<select id="getTotalOfTerminals" parameterType="com.tiamaes.bike.common.bean.information.Terminal" resultType="int">
+		SELECT 
+			COUNT(1) 
+		FROM  TB_Terminal t
+			  LEFT JOIN TB_TERMINALTYPE b1 on t.typeId=b1.id 
+			  LEFT JOIN TB_FACTORY_DICTIONARY b2 on t.factoryId=b2.id 
+		<where>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{name},'%'))
+			</if>
+			<if test="factory != null and factory.id != null">
+		     AND t.factoryId LIKE CONCAT('%',CONCAT(#{factory.id},'%'))
+			</if>
+			<if test="simNo != null and simNo != ''">
+		     AND t.simNo LIKE CONCAT('%',CONCAT(#{simNo},'%'))
+			</if>
+			<if test="binded != null and binded ==true">
+		     AND t.registered = 1
+			</if>
+			<if test="binded != null and binded ==false">
+		     AND t.registered = 0
+			</if>
+			<if test="state != null and state.index != null">
+		     AND t.state = #{state.index}
+			</if>
+		</where>
+	</select>
+	
+	
+	<!-- 保存终端信息 -->
+	<insert id="addTerminal" parameterType="com.tiamaes.bike.common.bean.information.Terminal">
+		INSERT INTO TB_Terminal (id,name,state,typeId,factoryId,softwareVersion,hardwareVersion,
+								 remark)
+						VALUES(#{id,jdbcType=CHAR},
+							   #{name,jdbcType=VARCHAR}, 
+							   #{state,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler}, 
+							   #{type.id,jdbcType=CHAR}, 
+							   #{factory.id,jdbcType=VARCHAR}, 
+							   #{softwareVersion,jdbcType=VARCHAR}, 
+							   #{hardwareVersion,jdbcType=VARCHAR}, 
+							   #{remark,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 更新终端信息 -->
+	<update id="updateTerminal" parameterType="com.tiamaes.bike.common.bean.information.Terminal">
+		UPDATE TB_Terminal SET 
+							state = #{state,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+							softwareVersion = #{softwareVersion,jdbcType=VARCHAR},
+							hardwareVersion = #{hardwareVersion,jdbcType=VARCHAR},
+							remark = #{remark,jdbcType=VARCHAR} 
+					WHERE id = #{id}
+	</update>
+
+	<!-- 删除终端信息 -->
+	<delete id="deleteTerminal" parameterType="com.tiamaes.bike.common.bean.information.Terminal">
+		DELETE FROM TB_Terminal WHERE id = #{id}
+	</delete>
+	
+	<!-- 检查终端编号是否存在 -->
+	<select id="hasExists" parameterType="String" resultType="boolean">
+		<![CDATA[ select COUNT(1) from TB_Terminal T where T.name = #{name} ]]> 
+	</select>
+</mapper>

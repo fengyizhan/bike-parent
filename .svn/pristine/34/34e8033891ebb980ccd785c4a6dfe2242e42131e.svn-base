@@ -1,0 +1,64 @@
+package com.tiamaes.bike.common.bean.system;
+
+import java.util.Date;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "User", description = "用户实体")
+public class User extends com.tiamaes.security.core.userdetails.User {
+	private static final long serialVersionUID = -2159435930113491704L;
+	/**
+	 * 手机号码
+	 */
+	@ApiModelProperty(value="手机号码")
+	private String mobile;
+	/**
+	 * 电子邮件
+	 */
+	@ApiModelProperty(value="电子邮件")
+	private String email;
+	/**
+	 * 创建时间
+	 */
+	@ApiModelProperty(value="创建时间")
+	private Date createDate;
+	/**
+	 * 用户首页
+	 */
+	@ApiModelProperty(value="用户首页")
+	private String index = "index.html";
+
+	public String getMobile() {
+		return mobile;
+	}
+
+	public void setMobile(String mobile) {
+		this.mobile = mobile;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public String getIndex() {
+		return index;
+	}
+
+	public void setIndex(String index) {
+		this.index = index;
+	}
+
+}

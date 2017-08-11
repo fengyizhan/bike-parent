@@ -1,0 +1,937 @@
+package com.tiamaes.bike.utils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.poi.hssf.util.CellRangeAddress;
+import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+@SuppressWarnings("deprecation")
+public class ExcelOutPutUtil {
+	
+	/**
+	 * 车辆报警记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportAlarmRecord(File inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		// 写入查询参数
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("warnCode".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("dealStatus".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+			
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{1,3,5,7,9,11,14}, rowId+4);
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 1 || columnId == 3 || columnId == 5
+						|| columnId == 7 || columnId == 9 || columnId == 11 || columnId == 13
+						|| columnId == 14 || columnId == 16) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 16) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 司机签到记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportDriverCardRecord(String inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("driverName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("telephone".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{1,3,5,8,10,12}, rowId+4);
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 1 || columnId == 3 || columnId == 5
+						|| columnId == 7 || columnId == 8 || columnId == 10 || columnId == 12) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 12) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 设备拍照记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportPhotoRecord(String inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("operator".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("driverName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("telephone".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 10;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{1,4,5,8,10,12}, rowId+4);
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 1 || columnId == 3 || columnId == 4
+						|| columnId == 6 || columnId == 8 || columnId == 10 || columnId == 12 
+						|| columnId == 14) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 14) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 车辆进出场记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportStationRecord(String inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("stationName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("state".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("driverName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("telephone".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 10;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 13;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{1,4,6,8,11}, rowId+4);
+			sheet.addMergedRegion(new CellRangeAddress(rowId+4, rowId+4, 13, 16));
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 1 || columnId == 3 || columnId == 4
+						|| columnId == 6 || columnId == 8 || columnId == 10 || columnId == 11 
+						|| columnId == 13) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 13) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 车辆趟次记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportTripRecord(String inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("stationName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("driverName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("telephone".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 10;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{0,2,5,8,10,12,14,16}, rowId+4);
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 2 || columnId == 4 || columnId == 5
+						|| columnId == 7 || columnId == 8 || columnId == 10 || columnId == 12 
+						|| columnId == 14 || columnId == 16) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 16) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 车辆上下线记录导出
+	 * @param inputFile
+	 * @param out
+	 * @param dataList
+	 * @param param
+	 * @throws Exception
+	 */
+	public static void exportOnlineRecord(String inputFile, OutputStream out,
+			List<List<String>> dataList, Map<String, String> param) throws Exception{
+		// 用模板文件构造poi
+		Workbook wb = new XSSFWorkbook(new FileInputStream(inputFile));
+		// 直接取模板第一个sheet对象
+		Sheet sheet = wb.getSheetAt(0);
+		//宽度自适应
+		sheet.autoSizeColumn(1, true);
+		//字体
+		Font font = wb.createFont();
+		font.setFontName("宋体");//字体
+		font.setFontHeightInPoints((short) 12);//字号
+		font.setColor(HSSFColor.BLACK.index);//颜色
+		// 得到模板的第一个sheet的第五行对象 为了得到模板样式
+		Row row = sheet.getRow(4);
+		// 取得Excel文件的总列数
+		int columns = row.getPhysicalNumberOfCells();
+		// 创建样式数组
+		CellStyle[] styleArray = getStyleArray(wb, font, columns);
+		
+		if (param != null && !param.isEmpty()) {
+			int iRow = 0;
+			int iCol = 0;
+			// 首先对各位置进行需要手动写入的数据进行赋值
+			Iterator<Entry<String, String>> iterator = param.entrySet().iterator();
+			while (iterator.hasNext()) {
+				XSSFRichTextString val = new XSSFRichTextString("");
+				Map.Entry<String, String> entry = iterator.next();
+				if ("company".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 1;
+				}
+				if ("department".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 4;
+				}
+				if ("carNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 7;
+				}
+				if ("simNo".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 10;
+				}
+				if ("driverName".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 2;
+					iCol = 13;
+				}
+				if ("telephone".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 1;
+				}
+				if ("startTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 4;
+				}
+				if ("endTime".equals(entry.getKey().toString())) {
+					val = new XSSFRichTextString(entry.getValue().toString());
+					iRow = 3;
+					iCol = 7;
+				}
+				setCellValue(sheet, iRow, iCol, val);
+			}
+		}
+		
+		// 循环对每一个单元格进行赋值
+		// 定位行
+		for (int rowId = 1; rowId <= dataList.size(); rowId++) {
+			Cell cell = null;
+
+			if (dataList.get(rowId - 1) == null) {
+				continue;
+			}
+			// 合并单元格
+			mergedRegion(sheet, new int[]{1,3,5,7,9,11,13,15}, rowId+4);
+			// 创建一个新的rowId行 行对象
+			// 新建的行对象
+			Row tempRow = sheet.createRow(rowId+4);
+			//设置行高
+			tempRow.setHeight((short) 400);
+
+			// 依次取第rowId行数据 每一个数据是valueList
+			List<String> valueList = dataList.get(rowId - 1);
+			int dataIndex = 0;
+			// 定位列
+			for (int columnId = 0; columnId < columns; columnId++) {
+				// 依次取出对应与colunmId列的值
+				// 每一个单元格的值
+				String dataValue = "";
+				if (valueList.get(dataIndex) != null) {
+					dataValue = valueList.get(dataIndex).toString();
+				}
+				// 创建新的rowId行 columnId列 单元格对象
+				// 新建的单元格对象
+				cell = tempRow.createCell(columnId);
+				cell = setStyle(styleArray, columnId, row, cell);
+				if (columnId == 0 || columnId == 1 || columnId == 3 || columnId == 5
+						|| columnId == 7 || columnId == 9 || columnId == 11 || columnId == 13 
+						|| columnId == 15) {
+					// 设置值 统一为String
+					cell.setCellValue(dataValue);
+					dataIndex = dataIndex + 1;
+				}
+				if (columnId == 15) {
+					dataIndex = 0;
+				}
+			}
+		}
+		
+		// 将模板的内容写到输出文件上
+		wb.write(out);
+		out.flush();
+		
+		// 操作结束，关闭文件
+		out.close();
+	}
+	
+	/**
+	 * 获取模板的样式数组
+	 * @param wb
+	 * @param font
+	 * @param columns
+	 * @return
+	 */
+	private static CellStyle[] getStyleArray(Workbook wb, Font font, int columns) {
+		// 创建样式数组
+		CellStyle[] styleArray = new XSSFCellStyle[columns];
+
+		// 一次性创建所有列的样式放在数组里
+		for (int s = 0; s < columns; s++) {
+			// 得到数组实例
+			styleArray[s] = wb.createCellStyle();
+			styleArray[s].setFont(font);
+			 //下边框
+			styleArray[s].setBorderBottom(CellStyle.SOLID_FOREGROUND);
+	        //下边框颜色
+			styleArray[s].setBottomBorderColor(IndexedColors.BLACK.getIndex());//黑色
+	        //左边框
+			styleArray[s].setBorderLeft(CellStyle.SOLID_FOREGROUND);
+	        //左边框颜色
+			styleArray[s].setLeftBorderColor(IndexedColors.BLACK.getIndex());
+	        //右边框
+			styleArray[s].setBorderRight(CellStyle.SOLID_FOREGROUND);
+	        //右边框颜色
+			styleArray[s].setRightBorderColor(IndexedColors.BLACK.getIndex());
+	        //上边框
+			styleArray[s].setBorderTop(CellStyle.SOLID_FOREGROUND);
+	        //上边框颜色
+			styleArray[s].setTopBorderColor(IndexedColors.BLACK.getIndex());
+		}
+		return styleArray;
+	}
+	
+	/**
+	 * 合并指定单元格
+	 * @param sheet
+	 * @param col
+	 * @param rowId
+	 */
+	private static void mergedRegion(Sheet sheet, int[] col, int rowId) {
+		for (int i = 0; i < col.length; i++) {
+			sheet.addMergedRegion(new CellRangeAddress(rowId, rowId, col[i], col[i]+1));
+		}
+	}
+	
+	/**
+	 * 设置单元格样式
+	 * @param styleArray
+	 * @param columnId
+	 * @param row
+	 * @param cell
+	 * @return
+	 */
+	private static Cell setStyle(CellStyle[] styleArray, int columnId, Row row, Cell cell) {
+		CellStyle style = null;
+		Cell templateCell = null;
+
+		// 取出colunmId列的的style
+		// 模板每一列的样式
+		style = styleArray[columnId];
+		// 取模板第colunmId列的单元格对象
+		// 模板单元格对象
+		templateCell = row.getCell(columnId);
+		// 如果对应的模板单元格 样式为非锁定
+		if (templateCell.getCellStyle().getLocked() == false) {
+			// 设置此列style为非锁定
+			style.setLocked(false);
+			style.setAlignment(XSSFCellStyle.ALIGN_CENTER);
+			// 设置到新的单元格上
+			cell.setCellStyle(style);
+		}
+		// 否则样式为锁定
+		else {
+			// 设置此列style为锁定
+			style.setLocked(true);
+			style.setAlignment(XSSFCellStyle.ALIGN_CENTER);
+			// 设置到新单元格上
+			cell.setCellStyle(style);
+		}
+		return cell;
+	}
+	
+	/**
+	 * 向指定单元格设置内容s
+	 * @param sheet
+	 * @param iRow
+	 * @param iCol
+	 * @param val
+	 */
+	private static void setCellValue(Sheet sheet, int iRow, int iCol, XSSFRichTextString val){
+        Row row = sheet.getRow((short)iRow);
+		Cell cell = row.getCell((short)iCol);
+        cell.setCellValue(val);
+    }
+	
+}

@@ -1,0 +1,103 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.IOException;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+public enum WarnCode implements com.tiamaes.bike.common.Enum<WarnCode> {
+
+	ILLEGALMOVEMENT("非法移动报警"), 
+	LOWPOWER("低电量报警"), 
+	STOLEN("车辆被盗报警"), 
+	ZIGBEEFAULT("ZigBee模块发生故障"), 
+	GNSSFAULT("GNSS模块发生故障"), 
+	GNSSSNIP("GNSS天线未接或被剪断"), 
+	GNSSSHORTCIRCUIT("GNSS天线短路"), 
+	BLUETOOTHFAULT("蓝牙模块发生故障"), 
+	RESERVE8("保留"), 
+	RESERVE9("保留"), 
+	RESERVE10("保留"), 
+	RESERVE11("保留"), 
+	RESERVE12("保留"), 
+	RESERVE13("保留"), 
+	RESERVE14("保留"), 
+	RESERVE15("保留");
+
+	private String name;
+
+	WarnCode(String name) {
+		this.name = name;
+	}
+
+	@Override
+	@JsonProperty("value")
+	public String getValue() {
+		return name();
+	}
+
+	@Override
+	@JsonProperty("name")
+	public String getName() {
+		return this.name;
+	}
+
+	@Override
+	@JsonProperty("index")
+	public int getIndex() {
+		return this.ordinal();
+	}
+
+	@JsonCreator
+	public static WarnCode valueOf(@JsonProperty("index") final int index) {
+		WarnCode[] roleTypes = WarnCode.values();
+		if (index >= 0 && index < roleTypes.length) {
+			return roleTypes[index];
+		}
+		return null;
+	}
+	
+	
+	public boolean warnging(final long warnCode) {
+		return (warnCode >> this.ordinal() & 0x01) == 1;
+	}
+	
+	public static class Deserializer extends JsonDeserializer<WarnCode> {
+		@Override
+		public WarnCode deserialize(JsonParser jp, DeserializationContext ctxt)
+				throws IOException, JsonProcessingException {
+			JsonToken currentToken = jp.getCurrentToken();
+			switch (currentToken) {
+			case VALUE_NUMBER_INT:
+				return WarnCode.valueOf(jp.getIntValue());
+			case VALUE_STRING:
+				String text = jp.getText();
+				if (StringUtils.isNotBlank(text)) {
+					return WarnCode.valueOf(text.trim().toUpperCase());
+				}
+			case START_OBJECT:
+				JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+				if (jsonNode != null && jsonNode.isValueNode()) {
+					text = jsonNode.asText();
+					if (StringUtils.isNotBlank(text)) {
+						return WarnCode.valueOf(text.trim().toUpperCase());
+					}
+				}
+			default:
+				break;
+			}
+			return null;
+		}
+	}
+	
+}

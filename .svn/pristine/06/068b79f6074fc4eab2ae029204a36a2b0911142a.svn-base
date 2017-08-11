@@ -1,0 +1,80 @@
+package com.tiamaes.bike.api.information.command.controller;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.command.service.CommandServiceInterface;
+import com.tiamaes.bike.common.bean.command.Command;
+import com.tiamaes.bike.common.bean.command.UnlockCommand;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/command")
+@Api(tags = {"command"}, description = "用户操作指令")
+public class CommandController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(CommandController.class);
+	@Resource
+	private ObjectMapper objectMapper;
+	@Autowired
+	private CommandServiceInterface commandService;
+	
+	/**
+	 * 解锁车辆
+	 * @param id
+	 * @param operator
+	 */
+	@ApiOperation(value = "解锁车辆", notes = "根据终端编号解锁车辆") 
+	@ApiImplicitParam(name = "id", value = "终端编号", required = true, dataType = "int")
+	@RequestMapping(value = "/unlock/{id}", method = RequestMethod.GET)
+	public @ResponseBody void unlock(@PathVariable("id") int id, @CurrentUser User operator) {
+		Assert.notNull(id,"操作指令不能为空");
+		Assert.notNull(operator,"操作用户不能为空");
+		
+		Command command = new UnlockCommand();
+		command.setId(UUIDGenerator.getUUID());
+		command.setTerminalId(id);
+		command.setSeqNo(new Date().getTime());
+		commandService.sendCommand(command);
+	}
+	
+	/**
+	 * 操作指令响应
+	 * @param id
+	 * @param mid
+	 * @param sid
+	 */
+	@ApiOperation(value = "操作指令响应", notes = "操作指令响应结果回调")
+	@ApiImplicitParams({ 
+		@ApiImplicitParam(name = "id", value = "终端编号", required = true, dataType = "int"),
+		@ApiImplicitParam(name = "sid", value = "序列编号", required = true, dataType = "long")
+	})
+	@RequestMapping(value = "/completed/{id}/{sid}", method = RequestMethod.DELETE)
+	public @ResponseBody void completed(@PathVariable("id") int id, @PathVariable("sid") long sid) {
+		Assert.notNull(id,"终端编号不能为空");
+		Assert.notNull(sid,"消息序列号不能为空");
+		Command command = commandService.getCommandBy(id, sid);
+		
+		commandService.completed(command);
+	}
+	
+}

@@ -1,0 +1,131 @@
+package com.tiamaes.bike.api.information.department.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.department.persistence.DepartmentMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * 部门信息管理接口实现类
+ * @author kangty
+ */
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class DepartmentService implements DepartmentServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(DepartmentService.class);
+
+	@Resource
+	private DepartmentMapper departmentMapper;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Department> operator;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Department getDepartmentById(String id) {
+		Assert.notNull(id, "公司编号不能为空!");
+		Department department = operator.get(RedisKey.DEPARTMENTS, id);
+		if (department == null) {
+			department = departmentMapper.getDepartmentById(id);
+			if (department != null) {
+				operator.putIfAbsent(RedisKey.DEPARTMENTS, department.getId(), department);
+			}
+		}
+		return department;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Department> getListOfDepartments(Parameters<Department> parameters, Pagination<Department> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		List<Department> departmentList = departmentMapper.getListOfDepartments(parameters);
+		return departmentList;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfDepartments(Parameters<Department> parameters) {
+		return departmentMapper.getTotalOfDepartments(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Department addDepartment(Department department) {
+		Assert.notNull(department);
+		Assert.notNull(department.getName(), "部门名称不能为空");
+		Assert.isTrue(!departmentMapper.hasExists(department.getName(), department.getCompany().getId(), null), "所在公司已存在此部门名称");
+		departmentMapper.addDepartment(department);
+		Department result = departmentMapper.getDepartmentById(department.getId());
+		if (result != null) {
+			operator.putIfAbsent(RedisKey.DEPARTMENTS, result.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Department updateDepartment(Department department) {
+		Assert.notNull(department);
+		Assert.notNull(department.getName(), "部门名称不能为空");
+		Assert.notNull(department.getCompany(), "公司不能为空");
+		Assert.isTrue(!departmentMapper.hasExists(department.getName(), department.getCompany().getId(), department.getId()), "所在公司已存在此部门名称");
+		departmentMapper.updateDepartment(department);
+		Department result = departmentMapper.getDepartmentById(department.getId());
+		if (result != null) {
+			operator.put(RedisKey.DEPARTMENTS, result.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteDepartment(Department department) {
+		Assert.notNull(department, "公司不能为空!");
+		departmentMapper.deleteDepartment(department);
+		Department result = departmentMapper.getDepartmentById(department.getId());
+		if (result == null) {
+			operator.delete(RedisKey.DEPARTMENTS, department.getId());
+		}
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkDepartmentName(Optional<String> id, String name, String parentId) {
+		return departmentMapper.hasExists(name, parentId, id.isPresent() ? id.get() : null);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Department> getDepartments() {
+		return departmentMapper.getDepartments();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Department> getDepartmentsByCompanyId(String id) {
+		return departmentMapper.getDepartmentsByCompanyId(id);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfCompany(String id) {
+		return departmentMapper.getTotalUseOfCompany(id);
+	}
+
+}

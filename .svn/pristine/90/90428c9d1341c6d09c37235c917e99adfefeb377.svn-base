@@ -1,0 +1,176 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Calendar;
+import java.util.Date;
+
+import org.apache.commons.codec.DecoderException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8001;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 驾驶员身份信息采集上报0x0702
+ * 
+ * @author lsl
+ *
+ */
+@Component
+public class Protocol0702Handler extends ProtocolHandler {
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws DecoderException{
+		String simNo = request.getHeader().getSimNo();
+		// 返回结果0成功1失败
+		int result = 0;
+		// 解析body获取驾驶员姓名，身份证号，从业资格证，发证机构
+		DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+		Attribute<Vehicle> attribute = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle vehicle = attribute.get();
+		try {
+			driverSigninInfo = decodeBody(request,vehicle);
+		} catch (UnsupportedEncodingException e) {
+			result = 1;
+			Message8001 response = new Message8001(simNo);
+			response.setResponseBody(request.getHeader(), result);
+			return response;
+		}
+		vehicle.setSimCode(simNo);
+		driverSigninInfo.setVehicle(vehicle);
+		//放入对应入库队列中 DRIVERSIGNININFO
+		kafkaTemplate.send(MessageBuilder.withPayload(driverSigninInfo).setHeader(KafkaHeaders.TOPIC, driverSigninInfo.getClass().getName()).build());
+		
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), result);
+		return response;
+	}
+	
+	public static DriverSigninInfo decodeBody(Message request,Vehicle vehicle) throws UnsupportedEncodingException{
+		byte[] bytebody = request.getBody();
+		String terminalType = vehicle.getTerminal().getType().getId();
+		//如果不是博实结的设备，走jtt-808 2011的协议
+		if(!terminalType.startsWith("BSJ")){
+			return decodeBody_old(request);
+		}
+		DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+		Driver driver = new Driver();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		//插拔卡状态
+		short stateByte = buffer.readUnsignedByte();
+		if(stateByte == 1){
+			driverSigninInfo.setState(DriverSigninInfo.State.IN);
+		}else if(stateByte == 2){
+			driverSigninInfo.setState(DriverSigninInfo.State.OUT);
+		}else{
+			return decodeBody_old(request);
+		}
+		//插拔卡时间
+		byte[] timeBytes = new byte[6];
+		buffer.readBytes(timeBytes);
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2000 + Integer.parseInt(Integer.toUnsignedString(timeBytes[0], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[1], 16)) - 1,
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[2], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[3], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[4], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[5], 16)));
+		Date createTime = calendar.getTime();
+		driverSigninInfo.setCreateTime(createTime);
+		//只有插入时才会有以下字段
+		if(stateByte == 1){
+			//IC卡读取结果
+			short resultByte = buffer.readUnsignedByte();
+			if(resultByte > 4){
+				driverSigninInfo.setResult(DriverSigninInfo.Result.FAILD5);
+			}else{
+				driverSigninInfo.setResult(DriverSigninInfo.Result.valueOf(resultByte));
+			}
+			//只有读卡成功时才会有以下字段
+			if(resultByte == 0){
+				short nameLength = buffer.readUnsignedByte();
+				byte[] nameBytes = new byte[nameLength];
+				buffer.readBytes(nameBytes);
+				// 驾驶员姓名
+				String name = new String(nameBytes, "GBK").trim();
+				driver.setName(name);
+				byte[] licenseNoBytes = new byte[20];
+				buffer.readBytes(licenseNoBytes);
+				// 从业资格证
+				String licenseNo = new String(licenseNoBytes, "GBK").trim();
+				driver.setLicenseNo(licenseNo);
+				short licenseAgencyLength = buffer.readUnsignedByte();
+				byte[] licenseAgencyBytes = new byte[licenseAgencyLength];
+				buffer.readBytes(licenseAgencyBytes);
+				// 发证机构名称
+				String licenseAgency = new String(licenseAgencyBytes, "GBK").trim();
+				driver.setLicenseAgency(licenseAgency);
+				
+				//证件有效期YYMMDD
+				byte[] invalidDateBytes = new byte[4];
+				buffer.readBytes(invalidDateBytes);
+				calendar.set(Integer.parseInt(Integer.toUnsignedString(invalidDateBytes[0], 16)) * 100 + Integer.parseInt(Integer.toUnsignedString(invalidDateBytes[1], 16)),
+						Integer.parseInt(Integer.toUnsignedString(invalidDateBytes[2], 16)) - 1,
+						Integer.parseInt(Integer.toUnsignedString(invalidDateBytes[3], 16)));
+				Date invalidDate = calendar.getTime();
+				driver.setInvalidDate(invalidDate);
+				driverSigninInfo.setDriver(driver);
+			}
+		}
+		return driverSigninInfo;
+	}
+	
+	public static DriverSigninInfo decodeBody_old(Message request) throws UnsupportedEncodingException {
+		DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		Driver driver = new Driver();
+		byte[] bytebody = request.getBody();
+		buffer.writeBytes(bytebody);
+		short nameLength = buffer.readUnsignedByte();
+		byte[] nameBytes = new byte[nameLength];
+		buffer.readBytes(nameBytes);
+		// 驾驶员姓名
+		String name = new String(nameBytes, "GBK").trim();
+		driver.setName(name);
+		byte[] identityCardBytes = new byte[20];
+		buffer.readBytes(identityCardBytes);
+		// 身份证号
+		String identityCard = new String(identityCardBytes, "GBK").trim();
+		driver.setIdentityCard(identityCard);
+		byte[] licenseNoBytes = new byte[40];
+		buffer.readBytes(licenseNoBytes);
+		// 从业资格证
+		String licenseNo = new String(licenseNoBytes, "GBK").trim();
+		driver.setLicenseNo(licenseNo);
+		short licenseAgencyLength = buffer.readUnsignedByte();
+		byte[] licenseAgencyBytes = new byte[licenseAgencyLength];
+		buffer.readBytes(licenseAgencyBytes);
+		// 发证机构
+		String licenseAgency = new String(licenseAgencyBytes, "GBK").trim();
+		driver.setLicenseAgency(licenseAgency);
+		driverSigninInfo.setDriver(driver);
+		driverSigninInfo.setState(DriverSigninInfo.State.IN);
+		driverSigninInfo.setCreateTime(new Date());
+		driverSigninInfo.setResult(DriverSigninInfo.Result.SUCCESS);
+		return driverSigninInfo;
+	}
+}

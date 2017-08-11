@@ -1,0 +1,91 @@
+package com.tiamaes.bike.storage.service;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.storage.persistence.VehicleOnOffLineInfoMapper;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class VehicleOnOffLineInfoService implements VehicleOnOffLineInfoServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(VehicleOnOffLineInfoService.class);
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, User> userOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, PointVector> pointVectorOperator;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+	
+	@Resource
+	private VehicleOnOffLineInfoMapper vehicleOnOffLineInfoMapper;
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public String addVehicleOnOffLineInfo(VehicleOnOffLineInfo vehicleOnOffLineInfo) throws Exception {
+		Assert.notNull(vehicleOnOffLineInfo, "车辆上下线记录不能为空");
+		Assert.notNull(vehicleOnOffLineInfo.getVehicle(), "车辆信息不能为空");
+		String vehicleId = vehicleOnOffLineInfo.getVehicle().getId();
+		Assert.notNull(vehicleId, "车辆id不能为空");
+		Vehicle vehicle = vehicleService.getVehicleById(vehicleId);
+		vehicleOnOffLineInfo.setVehicle(vehicle);
+		PointVector pointVector = pointVectorOperator.get(RedisKey.VEHICLES_POINTVECTORS, vehicleId);
+		PointVector.Info info;
+		if(pointVector == null){
+			pointVector = new PointVector();
+			info = new PointVector.Info();
+		}else{
+			info = pointVector.getInfo();
+			if(info == null){
+				info = new PointVector.Info();
+			}
+		}
+		String id = null;
+		if (vehicleOnOffLineInfo.getState().equals(VehicleOnOffLineInfo.State.ONLINE)) {
+			info.setState(State.ONLINE);
+			pointVector.setInfo(info);
+			pointVectorOperator.put(RedisKey.VEHICLES_POINTVECTORS, vehicleId, pointVector);
+			id = UUIDGenerator.getUUID();
+			stringOperator.put(RedisKey.ONOFFLINE_ID, vehicleId, id);
+			
+		} else if (vehicleOnOffLineInfo.getState().equals(VehicleOnOffLineInfo.State.OFFLINE)) {
+			info.setState(State.OFFLINE);
+			pointVector.setInfo(info);
+			pointVectorOperator.put(RedisKey.VEHICLES_POINTVECTORS, vehicleId, pointVector);
+			id = stringOperator.get(RedisKey.ONOFFLINE_ID, vehicleId);
+			if (StringUtils.isBlank(id)) {
+				id = UUIDGenerator.getUUID();
+			}
+			stringOperator.delete(RedisKey.ONOFFLINE_ID, vehicleId);
+		}
+		vehicleOnOffLineInfo.setId(id);
+		vehicleOnOffLineInfo.setCreateDate(new Date());
+		vehicleOnOffLineInfoMapper.addVehicleOnOffLineInfo(vehicleOnOffLineInfo);
+		return id;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteVehicleOnOffLineInfo(String id) {
+		vehicleOnOffLineInfoMapper.deleteVehicleOnOffLineInfo(id);
+	}
+}

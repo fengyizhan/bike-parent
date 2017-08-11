@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.reporter.integrated.alarm.persistence.AlarmQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.AlarmRecord" id="alarmRecordMap">
+		<id property="id" column="id"/>
+		<result property="warnCode" column="warnCode" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="warnContent" column="warnContent"/>
+		<result property="directionType" column="directionType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createDate" column="createDate"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="place" column="place"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="vehicleName"/>
+			<result property="simNo" column="simNo"/>
+		</association>
+	</resultMap>
+	
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	
+	<!-- 查询报警记录列表 -->
+	<select id="getListOfAlarmRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="alarmRecordMap">
+		SELECT t.id,
+		       t.vehicleId,
+		       t.vehicleName,
+		       t.simNo,
+		       t.warnCode,
+		       t.warnContent,
+		       t.directionType,
+		       t.createDate,
+		       t.lng,
+		       t.lat,
+		       CONCAT_WS(',', t.lng, t.lat) AS place
+		  FROM tb_bike_warning_info t
+		<where>
+			<if test="model.warnCode != null and model.warnCode.index != null">
+		     AND t.warnCode = #{model.warnCode.index}
+			</if>
+			<if test="model.vehicle != null and model.vehicle.name != null and model.vehicle.name.trim() !=''">
+		     AND t.vehicleName LIKE CONCAT('%',#{model.vehicle.name},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.simNo != null and model.vehicle.simNo.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{model.vehicle.simNo},'%')
+			</if>
+			<if test="model.startTime != null">
+		     AND t.createDate &gt;= #{model.startTime} 
+			</if>
+			<if test="model.endTime != null">
+		     AND #{model.endTime} &gt;= t.createDate
+			</if>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<!-- 指定时间段的指定区域的车辆违规信息数据信息 -->
+	<!-- <select id="getListOfVehicleAlarm" parameterType="map" resultMap="alarmRecordMap">
+		SELECT t.id,
+		       t.carNo,
+		       t.simNo,
+		       t.createTime,
+		       t.warnCode,
+		       t.lng,
+		       t.lat
+		  FROM tb_vehicle_warning_info t
+		<where>
+			 warnCode = 1
+		     AND t.vehicleId IN
+		     <foreach item="item" index="index" collection="vehicleIds" open="(" separator="," close=")">  
+			  #{item}  
+			 </foreach>
+		     AND t.createTime>=#{alarmRecord.startTime}
+			<if test="alarmRecord.endTime != null">
+		     AND #{alarmRecord.endTime}&gt;=t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select> -->
+</mapper>

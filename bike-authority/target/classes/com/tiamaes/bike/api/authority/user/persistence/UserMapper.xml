@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.authority.user.persistence.UserMapper">
+	<resultMap id="userMap" type="com.tiamaes.bike.common.bean.system.User">
+		<id column="username" property="username" javaType="String"/>
+		<result column="password" property="password" javaType="String"/>
+		<result column="nickname" property="nickname" javaType="String"/>
+		<result column="mobile" property="mobile" javaType="String"/>
+		<result column="email" property="email" javaType="String"/>
+		<result column="enabled" property="enabled" javaType="Boolean"/>
+		<result column="createDate" property="createDate"/>
+		<result column="indexPath" property="index" javaType="String"/>
+		<collection property="authorities" ofType="com.tiamaes.security.core.DefaultGrantedAuthority">
+			<constructor>
+				<idArg column="authority" javaType="String"/>
+				<arg column="alias" javaType="String"/>
+			</constructor>
+		</collection>
+	</resultMap>
+	<!-- 根据Id查询用户信息 -->
+	<select id="getUserById" parameterType="String" resultMap="userMap">
+		<![CDATA[
+		SELECT 
+		    T.id, T.username, T.password, T.nickname, T.mobile, T.email, T.createDate, T.enabled,
+		    I.displayName,
+		    R.authority, R.alias, R.roleType
+		FROM TM_USERS T
+		LEFT JOIN TM_USERS_INFO I ON I.id = T.username
+		LEFT JOIN TM_USER_ROLES UR ON UR.userid = T.username
+		LEFT JOIN TM_ROLES R ON R.authority = UR.authority
+		WHERE T.id = #{id}
+		]]>
+	</select>
+	<!-- 根据用户手机号或电子邮箱查询用户信息 -->
+	<select id="loadUserDetailByUsername" parameterType="String" resultMap="userMap">
+	<![CDATA[
+		SELECT 
+		    T.id, T.username, T.password, T.nickname, T.mobile, T.email, T.createDate, T.enabled,
+		    I.displayName,
+		    R.authority, R.alias,R.roleType,
+			RS.path	AS indexPath	    
+		FROM TM_USERS T 
+		INNER JOIN TM_USER_ROLES UR ON UR.userid = T.username
+		INNER JOIN TM_ROLES R ON R.authority = UR.authority
+		
+		LEFT JOIN TM_USERS_INFO I ON I.id = T.username
+		LEFT JOIN TM_ROLE_RESOURCES RR ON RR.authority = UR.authority
+		LEFT JOIN TM_RESOURCES RS ON RR.resourceid = RS.id
+		WHERE T.username = #{username} 
+			  ORDER BY RS.orderNo LIMIT 1
+	]]>
+	</select>
+	<!-- 查询用户列表 -->
+	<select id="getAllUsers" parameterType="com.tiamaes.bike.common.bean.system.User" resultMap="userMap">
+		SELECT 
+		    T.id, T.username,T.password, T.nickname, T.mobile, T.email, T.createDate, T.enabled,
+		    I.displayName,
+		    R.authority, R.alias,R.roleType
+		FROM TM_USERS T 
+		LEFT JOIN TM_USERS_INFO I ON I.id = T.username
+		LEFT JOIN TM_USER_ROLES U ON U.userid = T.username
+		LEFT JOIN TM_ROLES R ON R.authority = U.authority
+		<where>
+			<if test="username != null and username != ''">
+		    T.username = #{username, jdbcType=VARCHAR}
+			</if>
+			<if test="nickname != null and nickname != ''">
+		    AND T.nickname LIKE CONCAT('%',CONCAT(#{nickname,jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="mobile != null and mobile != ''">
+		    AND T.mobile LIKE CONCAT('%',CONCAT(#{mobile, jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="email != null and email != ''">
+		    AND T.email LIKE CONCAT('%',CONCAT(#{email, jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="authorities != null and authorities.size > 0 and authorities[0].authority!=null">
+		    AND U.authority = #{authorities[0].authority, jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY T.CREATEDATE DESC, T.USERNAME
+	</select>
+	<select id="getTotalOfUsers" parameterType="com.tiamaes.bike.common.bean.system.User" resultType="int">
+		SELECT COUNT(1) FROM TM_USERS T 
+		LEFT JOIN TM_USER_ROLES U ON U.userid = T.username
+	    LEFT JOIN TM_ROLES R ON R.authority = U.authority
+		<where>
+			<if test="username != null and username != ''">
+		    T.username = #{username, jdbcType=VARCHAR}
+			</if>
+			<if test="nickname != null and nickname != ''">
+		    AND T.nickname LIKE CONCAT('%',CONCAT(#{nickname,jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="mobile != null and mobile != ''">
+		    AND T.mobile LIKE CONCAT('%',CONCAT(#{mobile, jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="email != null and email != ''">
+		    AND T.email LIKE CONCAT('%',CONCAT(#{email, jdbcType=VARCHAR},'%'))
+			</if>
+			<if test="authorities != null and authorities.size > 0 and authorities[0].authority!=null">
+		    AND U.authority = #{authorities[0].authority, jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<select id="getAllUsersByRole" parameterType="com.tiamaes.bike.common.bean.system.Role" resultMap="userMap">
+		SELECT T.id,
+	       T.username,
+	       T.password,
+	       T.nickname,
+	       T.mobile,
+	       T.email,
+	       T.createDate,
+	       T.enabled,
+	       I.displayName,
+	       R.authority,
+	       R.alias,
+	       R.roleType
+	  FROM TM_USERS T
+	  LEFT JOIN TM_USERS_INFO I
+	    ON I.id = T.username
+	  LEFT JOIN TM_USER_ROLES U
+	    ON U.userid = T.username
+	  LEFT JOIN TM_ROLES R
+	    ON R.authority = U.authority
+	 WHERE T.ID IN (SELECT M.USERID FROM TM_USER_ROLES M WHERE M.AUTHORITY = #{authority})
+	 ORDER BY T.CREATEDATE DESC, T.USERNAME
+	</select>
+	
+	<!-- 保存用户 -->
+	<insert id="addUser" parameterType="com.tiamaes.bike.common.bean.system.User">
+		INSERT INTO TM_USERS (username, password,nickname,mobile, email, createdate,enabled)
+		VALUES(#{username}, #{password}, #{nickname}, #{mobile,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR}, now(), 1)
+	</insert>
+	<!-- 保存用户角色 -->
+	<insert id="addUserRoles" parameterType="com.tiamaes.bike.common.bean.system.User">
+		INSERT INTO TM_USER_ROLES (userid, authority) VALUES
+		<foreach collection="authorities" item="role" separator=",">
+		 (#{username}, #{role.authority})
+		</foreach>
+	</insert>
+	<!-- 保存用户设置 -->
+	<insert id="addUserSettings" parameterType="com.tiamaes.bike.common.bean.system.User">
+		INSERT INTO TM_USERS_INFO (ID, DISPLAYNAME) VALUES (#{username}, #{setting.displayName})
+	</insert>
+	<!-- 更新用户 -->
+	<update id="updateUser" parameterType="com.tiamaes.bike.common.bean.system.User">
+		UPDATE TM_USERS SET nickname = #{nickname}, mobile = #{mobile, jdbcType=VARCHAR}, email = #{email, jdbcType=VARCHAR} WHERE username = #{username}
+	</update>
+	<!-- 更新用户设置 -->
+	<update id="updateUserSettings" parameterType="com.tiamaes.bike.common.bean.system.User">
+		UPDATE TM_USERS_INFO SET DISPLAYNAME = #{setting.displayName} WHERE username = #{username}
+	</update>
+	<!-- 删除用户 -->
+	<delete id="deleteUser" parameterType="com.tiamaes.bike.common.bean.system.User">
+		DELETE FROM TM_USERS WHERE username = #{username}
+	</delete>
+	<!-- 删除用户角色 -->
+	<delete id="deleteUserRoles" parameterType="com.tiamaes.bike.common.bean.system.User">
+		DELETE FROM TM_USER_ROLES WHERE userid = #{username}
+	</delete>
+	<!-- 删除用户设置 -->
+	<delete id="deleteUserSettings" parameterType="com.tiamaes.bike.common.bean.system.User">
+		DELETE FROM TM_USERS_INFO WHERE id = #{username}
+	</delete>
+	<!-- 修改指定用户的密码 -->
+	<update id="updatePassword" parameterType="com.tiamaes.bike.common.bean.system.User">
+		UPDATE TM_USERS SET password = #{password} WHERE username = #{username}
+	</update>
+	<!-- 是否存在用户设置 -->
+	<select id="existsUserInfo" parameterType="com.tiamaes.bike.common.bean.system.User" resultType="boolean">
+		SELECT COUNT(1) FROM DUAL WHERE EXISTS (SELECT 1 FROM TM_USERS_INFO T WHERE T.ID = #{username})
+	</select>
+	<!-- 检查用户名是否存在 -->
+	<select id="hasExists" parameterType="String" resultType="boolean">
+		SELECT COUNT(1) FROM DUAL WHERE EXISTS (SELECT 1 FROM TM_USERS T WHERE T.USERNAME = #{username})
+	</select>
+	<!-- 检查用户中是否存在该角色 -->
+	<select id="hasRole" parameterType="String" resultType="boolean">
+		SELECT COUNT(1) FROM DUAL WHERE EXISTS (SELECT 1 FROM TM_USERS U,TM_USER_ROLES T WHERE U.USERNAME=T.USERID AND T.AUTHORITY = #{authority})
+	</select>
+</mapper>

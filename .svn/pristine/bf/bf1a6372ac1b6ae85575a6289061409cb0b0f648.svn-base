@@ -1,0 +1,186 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.PhotoPackage;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message.Header;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 多媒体数据上传 
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0801Handler extends ProtocolHandler {
+	private static Logger logger = LogManager.getLogger(Protocol0801Handler.class);
+	@Autowired
+	private HandlerServiceInterface handlerService;
+	
+	@Resource
+	private ChannelRepository channelRepository;
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws Exception {
+		Header header = request.getHeader();
+		Attribute<PhotoPackage> attribute = channel.attr(AttributeKey.valueOf("photo"));
+		PhotoPackage photoPackageGet = attribute.get();
+		PhotoPackage photoPackage = decodeBody(request,photoPackageGet);
+		//如果是重复序号包，则不做任何处理
+		if(photoPackage == null){
+			return null;
+		}
+		attribute.set(photoPackage);
+		
+		String simNo = request.getHeader().getSimNo();
+		Attribute<Vehicle> attributeV = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle tempVehicle = attributeV.get();
+		tempVehicle.setSimCode(simNo);
+		
+		return handlerService.handle0801(photoPackage, header, tempVehicle);
+	}
+	
+	/**
+	 * 解析多媒体数据包
+	 * @param request
+	 * @param channel
+	 * @return
+	 * @throws ParseException
+	 */
+	public static PhotoPackage decodeBody(Message request, PhotoPackage photoPackage) throws ParseException{
+		int packetNo = request.getHeader().getPacketNo();
+		logger.debug("Image upload progress :{}/{}", packetNo, request.getHeader().getPacketTotal());
+		byte[] bytebody=request.getBody();
+		
+		//如果不是第一个包，则只有数据包信息
+		if(packetNo > 1){
+			Map<Integer, byte[]> photoStream;
+			if (photoPackage == null) {
+				photoPackage = new PhotoPackage();
+				photoStream = new HashMap<Integer, byte[]>();
+			} else {
+				photoStream = photoPackage.getPhotoStream();
+			}
+			photoStream.put(packetNo, bytebody);
+			photoPackage.setPhotoStream(photoStream);
+			return photoPackage;
+		}
+		
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		// 多媒体数据ID
+		long mediaId = buffer.readUnsignedInt();
+		// 多媒体类型
+		buffer.readUnsignedByte();
+		// 多媒体格式编码
+		int mediaFormatEnc = buffer.readUnsignedByte();
+		//事件项编码
+		int eventEnc = buffer.readUnsignedByte();
+		// 通道id
+		buffer.readUnsignedByte();
+		// 位置信息汇报(0x0200)消息体
+		Message message= new Message();
+		//按照老协议里面的逻辑，所有事件项编码都要解析GPS数据信息，而不是像报文里描述的eventEnc == 0X87 && 
+		//在这里可以补充判断是否读取GPS定位信息，现在博实结的设备都是遵循2013的拍照报文，上传定位信息
+		if (packetNo == 1) {
+			logger.debug("The current for the first order,eventEnc:" + eventEnc);
+			byte[] locationBytes = new byte[28];
+			buffer.readBytes(locationBytes);
+			message.setBody(locationBytes);
+		}
+		//如果不是第一个包，则只有数据包信息
+		if(packetNo > 1){
+			buffer.resetReaderIndex();
+		}
+		// 多媒体数据包
+		byte[] photoBytes = new byte[buffer.readableBytes()];
+		buffer.readBytes(photoBytes);
+		// 获取照片包流和拍摄信息
+		Map<Integer, byte[]> photoStream = new HashMap<Integer, byte[]>();
+		if (photoPackage == null && message.getBody() != null) {
+			photoPackage = getLocation(message);
+		} else if (photoPackage == null) {
+			photoPackage = new PhotoPackage();
+		} else {
+			if(photoPackage.getMediaId() != null && packetNo == 1 && mediaId != photoPackage.getMediaId()){
+				logger.debug("Before pictures haven't upload is complete, have been discarded began to upload new images");
+				if(message.getBody() != null){
+					photoPackage = getLocation(message);
+				}else{
+					photoPackage = new PhotoPackage();
+				}
+			}else{
+				//如果是后续包则只更新数据包
+				photoStream = photoPackage.getPhotoStream();
+				photoStream.put(packetNo, photoBytes);
+				photoPackage.setPhotoStream(photoStream);
+				return photoPackage;
+			}
+		}
+		photoStream.put(packetNo, photoBytes);
+		photoPackage.setPhotoStream(photoStream);
+		// 设置多媒体类型
+		switch (mediaFormatEnc) {
+		case 0:
+			photoPackage.setPhotoType("jpg");
+			break;
+		case 1:
+			photoPackage.setPhotoType("tif");
+			break;
+		case 2:
+			photoPackage.setPhotoType("mp3");
+			break;
+		case 3:
+			photoPackage.setPhotoType("wav");
+			break;
+		case 4:
+			photoPackage.setPhotoType("wmv");
+			break;
+		}
+		photoPackage.setMediaId(mediaId);
+		
+		return photoPackage;
+	}
+	
+	/**
+	 * 解析位置信息
+	 * @param message
+	 * @return
+	 */
+	private static PhotoPackage getLocation(Message message) {
+		PhotoPackage photoPackage = new PhotoPackage();
+		byte[] bytebody = message.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		byte[] tempBytes = new byte[8];
+		buffer.readBytes(tempBytes);
+		// 纬度
+		double lat = ((double) buffer.readUnsignedInt()) / 1000000;
+		// 经度
+		double lng = ((double) buffer.readUnsignedInt()) / 1000000;
+		tempBytes = new byte[12];
+		buffer.readBytes(tempBytes);
+		photoPackage.setLng(lng);
+		photoPackage.setLat(lat);
+		return photoPackage;
+	}
+	
+}

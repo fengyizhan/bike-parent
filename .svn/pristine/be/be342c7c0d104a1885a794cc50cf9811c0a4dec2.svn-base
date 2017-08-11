@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.vehicle.persistence.VehicleMapper">
+	<resultMap id="vehicleMap" type="com.tiamaes.bike.common.bean.information.Vehicle">
+		<id property="id" column="id"/>
+		<result property="name" column="name"/>
+		<result property="registered" column="registered"/>
+		<result property="remark" column="remark"/>
+		<result property="simNo" column="simNo"/>
+		<result property="authentication" column="authentication"/>
+		<result property="softwareVersion" column="softwareVersion"/>
+		<result property="hardwareVersion" column="hardwareVersion"/>
+		<result property="protocolVersion" column="protocolVersion"/>
+		<result property="createDate" column="createDate"/>
+		<result property="state" column="state" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<association property="park" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result column="parkId" property="id"/>
+			<result column="parkName" property="name"/>
+			<association property="region" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="regionId" property="id"/>
+				<result column="regionName" property="name"/>
+			</association>
+		</association>
+		<association property="info" javaType="com.tiamaes.bike.common.bean.system.PointVector$Info">
+			<result column="runState" property="runState" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/> 
+		</association>
+		<association property="type" javaType="com.tiamaes.bike.common.bean.information.Vehicle$Type">
+			<result column="terminalTypeId" property="id"/>
+			<result column="terminalTypeName" property="name"/>
+		</association>
+		<association property="factory" javaType="com.tiamaes.bike.common.bean.information.Vehicle$Factory">
+			<result column="terminalFactoryId" property="id"/>
+			<result column="terminalFactoryName" property="name"/>
+		</association>
+		<association property="vehicleType" javaType="com.tiamaes.bike.common.bean.information.VehicleType">
+			<result column="vehicleTypeId" property="id"/>
+			<result column="vehicleTypeName" property="name"/>
+		</association>
+	</resultMap>
+	
+	<select id="getVehicleById" parameterType="String" resultMap="vehicleMap">
+		SELECT t.id,
+		       t.name,
+		       t.registered,
+		       t.remark,
+		       t.runState,
+		       t.createDate,
+		       t.simNo,
+		       t.state,
+		       t.authentication,
+		       t.softwareVersion,
+		       t.hardwareVersion,
+		       t.protocolVersion,
+		       t1.id                AS terminalFactoryId,
+		       t1.name              AS terminalFactoryName,
+		       t2.id                AS terminalTypeId,
+		       t2.name              AS terminalTypeName,
+		       t.parentId 			AS parkId,
+		       t3.name 				AS parkName,
+		       t4.id 				AS regionId,
+		       t4.name 				AS regionName,
+		       t5.id 				AS vehicleTypeId,
+		       t5.name 				AS vehicleTypeName
+		FROM tb_vehicle t
+		LEFT JOIN tb_factory_dictionary t1 ON t.factoryId = t1.id
+		LEFT JOIN tb_terminalType t2 ON t.typeId = t2.id
+		LEFT JOIN tb_park t3 ON t.parentId = t3.id
+		LEFT JOIN tb_region t4 ON t3.districtcode = t4.id
+		LEFT JOIN tb_vehicleType t5 ON t.vehicleType = t5.id
+			WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfVehicles" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="vehicleMap">
+		SELECT t.id,
+		       t.name,
+		       t.registered,
+		       t.remark,
+		       t.runState,
+		       t.createDate,
+		       t.simNo,
+		       t.state,
+		       t.authentication,
+		       t.softwareVersion,
+		       t.hardwareVersion,
+		       t.protocolVersion,
+		       t1.id                AS terminalFactoryId,
+		       t1.name              AS terminalFactoryName,
+		       t2.id                AS terminalTypeId,
+		       t2.name              AS terminalTypeName,
+		       t.parentId 			AS parkId,
+		       t3.name 				AS parkName,
+		       t4.id 				AS regionId,
+		       t4.name 				AS regionName,
+		       t5.id 				AS vehicleTypeId,
+		       t5.name 				AS vehicleTypeName
+		FROM tb_vehicle t
+		LEFT JOIN tb_factory_dictionary t1 ON t.factoryId = t1.id
+		LEFT JOIN tb_terminalType t2 ON t.typeId = t2.id
+		LEFT JOIN tb_park t3 ON t.parentId = t3.id
+		LEFT JOIN tb_region t4 ON t3.districtcode = t4.id
+		LEFT JOIN tb_vehicleType t5 ON t.vehicleType = t5.id
+		<where>
+			<if test="model.park != null and model.park.id != null">
+		     AND t.parentId = #{model.park.id}
+			</if>
+			<if test="model.name != null and model.name.trim() !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.simNo != null and model.simNo.trim() != ''">
+		     AND te.simNo LIKE CONCAT('%',CONCAT(#{model.simNo},'%'))
+			</if>
+			<if test="model.type != null and model.type.id != null">
+		     AND t.typeId = #{model.type.id}
+			</if>
+			<if test="model.info != null and model.info.runState != null and model.info.runState.index != null">
+		     AND t.runState = #{model.info.runState.index}
+			</if>
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<insert id="addVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		INSERT INTO tb_vehicle
+		  (id,
+		   name,
+		   parentId,
+		   runState,
+		   createDate,
+		   registered,
+		   remark,
+		   simNo,
+		   state,
+		   authentication,
+		   softwareVersion,
+		   hardwareVersion,
+		   protocolVersion,
+		   typeId,
+		   factoryId,
+		   vehicleType)
+		VALUES
+		  (#{id,jdbcType=INTEGER},
+		   #{name,jdbcType=VARCHAR},
+		   #{park.id,jdbcType=INTEGER},
+		   #{info.runState.index,jdbcType=INTEGER},
+		   #{createDate},
+		   #{registered},
+		   #{remark,jdbcType=VARCHAR},
+		   #{simNo,jdbcType=VARCHAR},
+		   #{state.index,jdbcType=INTEGER},
+		   #{authentication,jdbcType=VARCHAR},
+		   #{softwareVersion,jdbcType=VARCHAR},
+		   #{hardwareVersion,jdbcType=VARCHAR},
+		   #{protocolVersion,jdbcType=VARCHAR},
+		   #{type.id},
+		   #{factory.id},
+		   #{vehicle.id,jdbcType=VARCHAR})
+	</insert>
+	
+	<update id="updateVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		UPDATE tb_vehicle
+		   SET name            = #{name,jdbcType=VARCHAR},
+		       parentId        = #{park.id,jdbcType=INTEGER},
+		       runState        = #{info.runState.index,jdbcType=INTEGER},
+		       registered      = #{registered},
+		       remark          = #{remark,jdbcType=VARCHAR},
+		       simNo           = #{simNo,jdbcType=VARCHAR},
+		       state           = #{state.index,jdbcType=INTEGER},
+		       authentication  = #{authentication,jdbcType=VARCHAR},
+		       softwareVersion = #{softwareVersion,jdbcType=VARCHAR},
+		       hardwareVersion = #{hardwareVersion,jdbcType=VARCHAR},
+		       protocolVersion = #{protocolVersion,jdbcType=VARCHAR},
+		       typeId          = #{type.id},
+		       factoryId       = #{factory.id},
+		       vehicleType     = #{vehicleType.id}
+		 WHERE id = #{id}
+	</update>
+	
+	<delete id="deleteVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		DELETE FROM tb_vehicle WHERE id = #{id}
+	</delete>
+	
+	<select id="hasExists" parameterType="String" resultType="boolean">
+		SELECT COUNT(1) FROM tb_vehicle t WHERE t.name = #{name}
+	</select>
+	
+	<select id="getAllVehiclesWithPlateNo" parameterType="String" resultType="com.tiamaes.bike.common.bean.information.Vehicle">
+		SELECT id, name FROM tb_vehicle WHERE name LIKE CONCAT('%', #{plateNo}, '%')
+	</select>
+	
+	<select id="getVehicleBySimNo" parameterType="String" resultMap="vehicleMap">
+		SELECT t.id,
+		       t.name,
+		       t.registered,
+		       t.remark,
+		       t.runState,
+		       t.createDate,
+		       t.simNo,
+		       t.state,
+		       t.authentication,
+		       t.softwareVersion,
+		       t.hardwareVersion,
+		       t.protocolVersion,
+		       t1.id                AS terminalFactoryId,
+		       t1.name              AS terminalFactoryName,
+		       t2.id                AS terminalTypeId,
+		       t2.name              AS terminalTypeName,
+		       t.parentId 			AS parkId,
+		       t3.name 				AS parkName,
+		       t4.id 				AS regionId,
+		       t4.name 				AS regionName,
+		       t5.id 				AS vehicleTypeId,
+		       t5.name 				AS vehicleTypeName
+		FROM tb_vehicle t
+		LEFT JOIN tb_factory_dictionary t1 ON t.factoryId = t1.id
+		LEFT JOIN tb_terminalType t2 ON t.typeId = t2.id
+		LEFT JOIN tb_park t3 ON t.parentId = t3.id
+		LEFT JOIN tb_region t4 ON t3.districtcode = t4.id
+		LEFT JOIN tb_vehicleType t5 ON t.vehicleType = t5.id
+			WHERE t.simNo = #{simNo}  
+	</select>
+	
+	<select id="getRegisteredCount" resultType="int">
+		SELECT COUNT(1) FROM tb_vehicle WHERE registered = 1
+	</select>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tb_vehicle'
+	</select>
+	
+	<select id="getBikePutInTime" parameterType="int" resultType="String">
+		SELECT TO_DAYS(now()) - TO_DAYS(t.createDate)
+		  FROM tb_vehicle t
+		<where>
+			t.id = #{bikeId}
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+	</select>
+</mapper>

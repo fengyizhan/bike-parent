@@ -1,0 +1,124 @@
+<div ng-controller="TerminalController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">终端信息管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">是否绑定</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.binded" theme="bootstrap" title="{{$select.selected?'是':'否'}}">
+										<ui-select-match placeholder="是否绑定">{{$select.selected?'是':'否'}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in [false,true] track by $index">
+											<span ng-bind="item?'是':'否'"></span>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">设备状态</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="设备当前状态">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.terminalStates track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">生产厂家</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.factory" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="生产厂家">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.factories track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">终端号码</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.name" placeholder="请输入终端号" style="min-width: 120px;">
+							</div>
+							<!-- <div class="input-group input-group-sm">
+								<span class="input-group-addon">出厂号码</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.factoryId" placeholder="请输入出厂号" style="min-width: 120px;">
+							</div> -->
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">SIM卡号</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.simNo" placeholder="请输入SIM卡号码" style="min-width: 120px;">
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add()">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增终端</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/terminal/page/" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="80">终端编号</td>
+								<td width="80">SIM卡号</td>
+								<td width="110">软件版本</td>
+								<td width="110">硬件版本</td>
+								<td width="110">终端型号</td>
+								<td>生产厂家</td>
+								<td width="130">设备状态</td>
+								<!-- <td width="130">绑定车辆</td> -->
+								<td width="130">注册时间</td>
+								<td width="100">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.name" title="{{item.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 110px;" ng-bind="item.simNo" title="{{item.simNo}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.softwareVersion" title="{{item.softwareVersion}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.hardwareVersion" title="{{item.hardwareVersion}}"></div></td>
+								<td class="ellipsis"><div style="width: 110px;" ng-bind="item.type.name" title="{{item.type.name}}"></div></td>
+								<td ng-bind="item.factory.name"></td>
+								<td ng-bind="item.state.name"></td>
+								<!-- <td ng-bind="item.vehicle.carNo"></td> -->
+								<td ng-bind="item.createDate | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a ng-if="!item.registered" href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/terminal/dialog.html"></div>
+</div>

@@ -1,0 +1,160 @@
+package com.tiamaes.bike.reporter.information.vehicle.controller;
+
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.time.DateFormatUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.TripRecord;
+import com.tiamaes.bike.reporter.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.reporter.integrated.trips.service.TripsQueryServiceInterface;
+import com.tiamaes.bike.reporter.integrated.vehicle.service.VehicleQueryServiceInterface;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+/**
+ * 首页车辆相关数据统计
+ * @author waibao001
+ *
+ */
+@RestController
+@RequestMapping("/information/vehicle")
+@Api(tags = {"vehicle"}, description = "首页车辆相关数据统计")
+@SuppressWarnings("rawtypes")
+public class VehicleController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(VehicleController.class);
+	@Resource
+	private VehicleQueryServiceInterface vehicleQueryService;
+	@Resource
+	private TripsQueryServiceInterface tripsQueryService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	
+	/**
+	 * 昨日数据一览
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value="/counts",method=RequestMethod.GET)
+	@ApiOperation(value = "获取昨日数据", notes = "首页昨日数据一览")
+	public Map<String, Object> counts(@CurrentUser User user) throws Exception{
+		Map<String, Object> result = new HashMap<String, Object>();
+		Date dNow = new Date();
+		Calendar calendar = Calendar.getInstance(); //得到日历
+		calendar.setTime(dNow);//把当前时间赋给日历
+		calendar.add(Calendar.DAY_OF_MONTH, -1);  //设置为前一天
+		calendar.set(Calendar.HOUR_OF_DAY,0);
+	    calendar.set(Calendar.MINUTE,0);
+	    calendar.set(Calendar.SECOND,0);
+	    calendar.set(Calendar.MILLISECOND,0);
+		Date startTime = calendar.getTime();   //得到前一天的开始时间
+
+		calendar.set(Calendar.HOUR_OF_DAY,23);
+	    calendar.set(Calendar.MINUTE,59);
+	    calendar.set(Calendar.SECOND,59);
+	    calendar.set(Calendar.MILLISECOND,999);
+		Date endTime = calendar.getTime();//得到前一天的结束时间
+		Parameters parameters = new Parameters();
+		parameters.setStartTime(startTime);
+		parameters.setEndTime(endTime);
+		parameters.setUser(user);
+		
+		//获取昨天趟次
+		TripRecord tripRecord = tripsQueryService.getTotalByTime(parameters);
+		int vehicleTrips = 0;
+		double loadcubes = 0;
+		if(tripRecord!=null){
+			vehicleTrips = tripRecord.getTotal();
+			loadcubes = tripRecord.getLoadCube();
+		}
+		//获取昨天车辆上线数
+		int onlineCount = vehicleQueryService.getOnlineCountByTime(parameters);
+		//获取已注册的车辆总数
+		int vehicleCount = vehicleService.getRegisteredCount(parameters);
+		float num=0;
+		if(onlineCount!=0 && vehicleCount!=0){
+			num= (float)onlineCount/vehicleCount;	
+		}
+		DecimalFormat df = new DecimalFormat("0.00");//格式化小数  
+		String onlineRate = df.format(num);//返回的是String类型   
+		result.put("vehicleTrips", vehicleTrips);
+		result.put("loadcubes", loadcubes);
+		result.put("onlineCount", onlineCount);
+		result.put("onlineRate", onlineRate);
+		
+		return result;
+	}
+	
+	/**
+	 * 一周数据一览
+	 * @param user
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value="/countsByWeek",method=RequestMethod.GET)
+	@ApiOperation(value = "获取一周数据", notes = "首页一周数据一览")
+	public Map<String, Object> countsByWeek(@CurrentUser User user) throws Exception{
+		Map<String, Object> result = new HashMap<String, Object>();
+		List<String> dateList = new ArrayList<String>();
+		List<Integer> vehicleTripsList = new ArrayList<Integer>();
+		List<Integer> onlineCountList = new ArrayList<Integer>();
+		
+		for (int i = 6; i >=0; i--) {
+			Date dNow = new Date();
+			Calendar calendar = Calendar.getInstance(); //得到日历
+			calendar.setTime(dNow);//把当前时间赋给日历
+			calendar.add(Calendar.DAY_OF_MONTH, -i);  //设置为前一天
+			calendar.set(Calendar.HOUR_OF_DAY,0);
+		    calendar.set(Calendar.MINUTE,0);
+		    calendar.set(Calendar.SECOND,0);
+		    calendar.set(Calendar.MILLISECOND,0);
+			Date startTime = calendar.getTime();   //得到前一天的开始时间
+
+			calendar.set(Calendar.HOUR_OF_DAY,23);
+		    calendar.set(Calendar.MINUTE,59);
+		    calendar.set(Calendar.SECOND,59);
+		    calendar.set(Calendar.MILLISECOND,999);
+			Date endTime = calendar.getTime();//得到前一天的结束时间
+			Parameters parameters = new Parameters();
+			parameters.setStartTime(startTime);
+			parameters.setEndTime(endTime);
+			parameters.setUser(user);
+			//获取相应趟次
+			int vehicleTrips =0;
+			TripRecord tripRecord= tripsQueryService.getTotalByTime(parameters);
+			if(tripRecord!=null){
+				vehicleTrips =tripRecord.getTotal(); 
+			}
+			//获取昨天车辆上线数
+			int onlineCount = vehicleQueryService.getOnlineCountByTime(parameters);
+			String date = DateFormatUtils.format(startTime, "MM-dd");
+			dateList.add(date);
+			vehicleTripsList.add(vehicleTrips);
+			onlineCountList.add(onlineCount);
+		}
+		result.put("dateList", dateList);
+		result.put("vehicleTripsList", vehicleTripsList);
+		result.put("onlineCountList", onlineCountList);
+		
+		return result;
+	}
+	
+}

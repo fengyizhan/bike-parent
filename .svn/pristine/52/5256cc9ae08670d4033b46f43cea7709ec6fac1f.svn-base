@@ -1,0 +1,94 @@
+package com.tiamaes.bike.connector.handler;
+
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Received;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+
+public class EscapeProtocolDecoder extends ByteToMessageDecoder {
+	private static Logger logger = LogManager.getLogger();
+
+	@Override
+	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		// 将转义字符还原
+		while (in.isReadable()) {
+			short i = in.readUnsignedByte();
+			if (i == 0x7d) {
+				buffer.writeByte(in.readUnsignedByte() == 0x01 ? 0x7d : 0x7e);
+			} else {
+				buffer.writeByte(i);
+			}
+		}
+		buffer.resetReaderIndex();
+		// 校验码校验
+		byte[] messageBytes = new byte[buffer.readableBytes()];
+		
+		buffer.readBytes(messageBytes);
+		buffer.resetReaderIndex();
+		if (checkCode(messageBytes)) {
+			Header header = new Header();
+			header.setId(buffer.readUnsignedShort());
+			int bodyProperties = buffer.readUnsignedShort();
+			header.setChildPackage((bodyProperties & 0x2000) == 0x2000);
+			header.setEnableRSA((bodyProperties & 0x0400) == 0x0400);
+			header.setLength(bodyProperties & 0x03FF);
+			int terminalId = buffer.readInt();
+			header.setTerminalId(terminalId);
+			header.setSerialNo(buffer.readLong());
+			if(header.isChildPackage()){
+				header.setPacketTotal(buffer.readUnsignedShort());
+				header.setPacketNo(buffer.readUnsignedShort());
+			}
+			byte[] bytes = new byte[buffer.readableBytes() - 1];
+			buffer.readBytes(bytes);
+			Received received = new Received(header, bytes);
+			if (logger.isTraceEnabled()) {
+				logger.trace("[{}][{}][{}]", String.format("%04X", header.getId()), terminalId, Hex.encodeHexString(bytes));
+			}
+			out.add(received);
+		}
+	}
+
+	/**
+	 * 校验校验码
+	 * 
+	 * @param messageBytes
+	 * @return
+	 */
+	private static boolean checkCode(byte[] messageBytes) {
+		if (messageBytes.length >= 1) {
+			byte xor = getCheckXor(messageBytes, 0, messageBytes.length - 1);
+			byte realXor = messageBytes[messageBytes.length - 1];
+			return xor == realXor;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * 获取校验和
+	 * 
+	 * @param data
+	 * @param pos
+	 * @param len
+	 * @return
+	 */
+	private static byte getCheckXor(byte[] data, int pos, int len) {
+		byte a = 0;
+		for (int i = pos; i < len; i++) {
+			a ^= data[i];
+		}
+		return a;
+	}
+}

@@ -1,0 +1,60 @@
+Configutation:
+  name: Default
+  status: warn
+  Properties:
+    Property:
+      name: log-path
+      value: "/var/log/bike"
+  Appenders:
+    Console:
+      name: Console-Appender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "[%-5level] %d{ISO8601} %c{1} - %m%n"
+    RollingFile:
+      name: RollingFile-Appender
+      fileName: "${log-path}/connector.log"
+      filePattern: "${log-path}/connector-%d{yyyy-MM-dd}-%i.log"
+      PatternLayout:
+        pattern: "[%-5level] %d{ISO8601} %m%n"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          modulate: true
+          interval: 24
+        SizeBasedTriggeringPolicy:
+          size: 10 MB
+      DefaultRolloverStrategy:
+        max: 100
+  Loggers:
+      Root:
+        level: INFO
+        AppenderRef:
+          - ref: Console-Appender
+          - ref: RollingFile-Appender
+      Logger:
+        - name: com.tiamaes
+          level: DEBUG
+        - name: com.tiamaes.bike.connector
+          level: DEBUG
+        - name: com.tiamaes.bike.connector.handler
+          level: TRACE
+        - name: com.tiamaes.bike.connector.service
+          level: DEBUG
+        - name: com.netflix.discovery
+          level: FATAL
+        - name: org.apache.kafka.clients
+          level: WARN
+        - name: org.apache.kafka.common.utils.AppInfoParser
+          level: WARN
+        - name: org.springframework.kafka.listener.KafkaMessageListenerContainer
+          level: WARN
+        - name: org.springframework.jmx.export.annotation.AnnotationMBeanExporter
+          level: WARN
+        - name: org.springframework.boot.actuate.endpoint.jmx.EndpointMBeanExporter
+          level: WARN
+        - name: org.springframework.boot.actuate.endpoint.mvc.EndpointHandlerMapping
+          level: WARN
+        - name: org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
+          level: WARN
+        - name: org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+          level: WARN

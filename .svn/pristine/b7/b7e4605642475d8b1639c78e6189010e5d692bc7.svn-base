@@ -1,0 +1,157 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<ul class="wizard_steps">
+					<li>
+					  <a id="step-1" class="selected">
+						<span class="step_no">信息<br>完善</span>
+					  </a>
+					</li>
+					<li>
+					  <a id="step-2" class="disabled">
+						<span class="step_no">地图<br>绘制</span>
+					  </a>
+					</li>
+				  </ul>
+				<div class="row" id="msgDiv">
+					<div class="col-sm-12">
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">线路名称</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+									<input type="text" class="form-control input-sm" name="name" ng-model="dialog.data.name" ng-readonly="!dialog.editabled" placeholder="请输入线路名称" ng-maxlength="25" required="true">
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">线路宽度</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.delayValue.$invalid, 'has-success':form.delayValue.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+									name="width" ng-model="dialog.data.width" ng-readonly="!dialog.editabled" 
+									ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}" maxlength="9"
+									placeholder="请输入线路宽度">
+							        <div class="input-group-addon">米</div>
+							    </div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">生效时间</label>
+							<div class="col-sm-4">
+									<div class="input-group input-group-sm">
+										<input type="text" class="form-control" ng-model="dialog.data.startTime"
+											is-open="dialog.start.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+											max-date="dialog.data.endTime" ng-required="true" readonly="readonly" />
+										<span class="input-group-btn">
+											<button type="button" class="btn btn-default" ng-click="dialog.editabled && dialog.start.open($event)">
+												<i class="glyphicon glyphicon-calendar"></i>
+											</button>
+										</span> 
+									</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">失效时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.endTime"
+										is-open="dialog.end.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										min-date="dialog.data.startTime" ng-required="true" readonly="readonly"/>
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-click="dialog.editabled && dialog.end.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">延迟报警</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.delayValue.$invalid, 'has-success':form.delayValue.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+									name="delayValue" ng-model="dialog.data.delayValue" ng-readonly="!dialog.editabled" 
+									ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}" maxlength="9"
+									placeholder="请输入延迟报警阀值(单位：秒)">
+							        <div class="input-group-addon">秒</div>
+							    </div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">限速阀值</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.limitSpeedValue.$invalid, 'has-success':form.limitSpeedValue.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+									name="limitSpeedValue" ng-model="dialog.data.limitSpeedValue" ng-readonly="!dialog.editabled" 
+									ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}" maxlength="9"
+									placeholder="请输入限速阀值">
+							        <div class="input-group-addon">km/h</div>
+							    </div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">报警设置</label>
+							<div class="col-sm-10">
+								<div ng-if="dialog.editabled">
+									<label style="font-weight: normal;" ng-repeat="item in dialog.reportMethods">
+										<input type="checkbox" icheck name="channel" title="item.name" label-width="280" ng-model="item.selected">
+									</label>
+								</div>
+								<ul class="list-group" ng-if="!dialog.editabled">
+									<li style="width:286px;float:left;border:0;padding:7px 0;" class="list-group-item" ng-repeat="item in dialog.reportMethods" ng-if="item.selected" ng-bind="item.name"></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" id="mapDiv" style="display:none">
+					<div class="col-sm-12">
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">起点</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.beginStation.$invalid, 'has-success':form.beginStation.$valid}">
+									<ui-select ng-model="dialog.data.beginStation" theme="bootstrap" title="{{$select.selected.name}}" on-select="dialog.selectBeginStation($item)" ng-disabled="!dialog.editabled">
+										<ui-select-match placeholder="选择起始地点">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in dialog.beginStations track by $index">
+											<span ng-bind="item.name"></span>
+										</ui-select-choices>
+									</ui-select>
+									<input type="hidden" name="beginStation" ng-model="dialog.data.beginStation" required="true">
+								</div>
+								<!-- <p ng-if="!dialog.editabled">
+									<input type="text" ng-model="dialog.data.outset.name"
+									 class="form-control input-sm" readonly="readonly"/>
+								</p> -->
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">终点</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.endStation.$invalid, 'has-success':form.endStation.$valid}">
+									<ui-select ng-model="dialog.data.endStation" theme="bootstrap" title="{{$select.selected.name}}" on-select="dialog.selectEndStation($item)" ng-disabled="!dialog.editabled">
+										<ui-select-match placeholder="选择结束地点">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in dialog.endStations track by $index">
+											<span ng-bind="item.name"></span>
+										</ui-select-choices>
+									</ui-select>
+									<input type="hidden" name="endStation" ng-model="dialog.data.endStation" required="true">
+								</div>
+								<!-- <p ng-if="!dialog.editabled">
+									<input type="text" ng-model="dialog.data.destination.name"
+									 class="form-control input-sm" readonly="readonly"/>
+								</p> -->
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-12" ng-class="{'has-error': form.paths.$invalid, 'has-success':form.paths.$valid}">
+						<div id="1474160887345" style="width:100%;height:324px;border-radius:0;border-width:2px" class="form-control"></div>
+						<input type="hidden" name="paths" ng-model="dialog.data.paths" required="true">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-step btn-flat" id="preBtn" type="button" ng-click="dialog.pre()">上一步</button>
+			<button class="btn btn-step btn-flat" id="nextBtn" type="button" ng-click="dialog.next()">下一步</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

@@ -1,0 +1,116 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.util.Date;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "PileRecord", description = "锁桩报警记录实体")
+public class PileRecord extends Export {
+	
+	private static final long serialVersionUID = -4098933304660998460L;
+
+	public PileRecord() {
+	}
+	
+	public PileRecord(Park park, WarnCode warnCode) {
+		this.setId(UUIDGenerator.getUUID());
+		this.setPark(park);
+		this.setWarnCode(warnCode);
+		this.setWarnContent(this.getWarnCode().getName());
+		this.setCreateDate(new Date());
+	}
+	
+	@ApiModelProperty(value="日志编号")
+	private String id;
+	@ApiModelProperty(value="集中停放区信息")
+	private Park park;
+	@ApiModelProperty(value="报警码")
+	@JsonDeserialize(using = WarnCode.Deserializer.class)
+	private WarnCode warnCode;
+	@ApiModelProperty(value="报警内容")
+	private String warnContent;
+	@ApiModelProperty(value="报警地点")
+	private String place;
+	@ApiModelProperty(value="报警时间")
+	private Date createDate;
+	/**
+	 * 查询条件（开始时间）
+	 */
+	@ApiModelProperty(value="查询条件(开始时间)")
+	private Date startTime;
+	/**
+	 * 查询条件（结束时间）
+	 */
+	@ApiModelProperty(value="查询条件(结束时间)")
+	private Date endTime;
+	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Park getPark() {
+		return park;
+	}
+
+	public void setPark(Park park) {
+		this.park = park;
+	}
+
+	public WarnCode getWarnCode() {
+		return warnCode;
+	}
+
+	public void setWarnCode(WarnCode warnCode) {
+		this.warnCode = warnCode;
+	}
+
+	public String getWarnContent() {
+		return warnContent;
+	}
+
+	public void setWarnContent(String warnContent) {
+		this.warnContent = warnContent;
+	}
+
+	public String getPlace() {
+		return place;
+	}
+
+	public void setPlace(String place) {
+		this.place = place;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+}

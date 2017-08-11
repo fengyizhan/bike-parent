@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.driver.persistence.DriverMapper">
+	<resultMap id="driverMap" type="com.tiamaes.bike.common.bean.system.User">
+		<id property="username" column="username"/>
+		<result property="nickname" column="nickname"/>
+		<result property="identityCard" column="identityCard"/>
+		<result property="state" column="state" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createDate" column="createDate"/>
+	</resultMap>
+	
+	<select id="getDriverByUsername" parameterType="String" resultMap="driverMap">
+		SELECT t.username, t.nickname, t.identityCard, t.state, t.createDate FROM tb_driver t WHERE t.username = #{username}
+	</select>
+	
+	<select id="getListOfDrivers" parameterType="com.tiamaes.bike.common.bean.system.User" resultMap="driverMap">
+		SELECT t.username, t.nickname, t.identityCard, t.state, t.createDate 
+			FROM tb_driver t 
+			<where>
+				<if test="username != null and username != ''">
+					AND t.username LIKE CONCAT('%',#{username},'%')
+				</if>
+				<if test="identityCard != null and identityCard != ''">
+					AND t.identityCard LIKE CONCAT('%',#{identityCard},'%')
+				</if>
+				<if test="state != null and state.index != null">
+					AND t.state = #{state.index}
+				</if>
+			</where>
+	</select>
+	
+	<insert id="addDriver" parameterType="com.tiamaes.bike.common.bean.system.User">
+		INSERT INTO tb_driver
+		(username,
+		 nickname,
+		 identityCard,
+		 state,
+		 createDate)
+		VALUES
+		(#{username},
+		 #{username},
+		 #{identityCard},
+		 #{state.index},
+		 #{createDate})
+	</insert>
+	
+	<update id="updateDriverState" parameterType="String">
+		UPDATE tb_driver
+			SET state = ABS(state - 1)
+			WHERE username = #{username}
+	</update>
+	
+	<update id="updateDriverNickname" parameterType="com.tiamaes.bike.common.bean.system.User">
+		UPDATE tb_driver
+			SET nickname = #{nickname}
+			WHERE username = #{username}
+	</update>
+	
+	<delete id="deleteDriver" parameterType="com.tiamaes.bike.common.bean.system.User">
+		DELETE FROM tb_driver WHERE username = #{username}
+	</delete>
+	
+	<select id="checkIdentityCard" parameterType="String" resultType="int">
+		SELECT COUNT(1) FROM tb_driver WHERE identityCard = #{identityCard}
+	</select>
+</mapper>

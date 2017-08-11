@@ -1,0 +1,73 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.ParkStatusInfo;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.integrated.PileRecord;
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Message8001;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.protocol.message.Message8001.Result;
+import com.tiamaes.bike.connector.protocol.message.Received0201;
+
+import io.netty.channel.Channel;
+
+/**
+ * 停车点状态汇报包0x0201
+ * 
+ * @author Chen
+ *
+ */
+@Component
+public class Protocol0201Handler implements ProtocolHandler<Received0201> {
+	private static Logger logger = LogManager.getLogger(Protocol0201Handler.class);
+	@Autowired
+	@Qualifier("kafkaStringTemplate")
+	private KafkaTemplate<String, String> kafkaStringTemplate;
+	@Autowired
+    @Qualifier("kafkaTemplate")
+    private KafkaTemplate<String, String> kafkaTemplate;
+	@Override
+	public Message execute(Channel channel, Received received) throws Exception {
+		Header header = received.getHeader();
+		int terminalId = header.getTerminalId();
+		Received0201 received0201 = new Received0201(header, received.getBytes());
+		//TODO 停车点状态处理
+		/**
+		 * 将刷卡桩报警信息封装到PileRecord中
+		 */
+		PileRecord pilerecord=new PileRecord();
+//		pilerecord.setId(received0201.getBody().getCardnum());
+		Park park=new Park();
+		park.setId(received0201.getHeader().getTerminalId()+"");
+		pilerecord.setPark(park);
+		ParkStatusInfo parkStateInfo=new ParkStatusInfo();
+		parkStateInfo.setPark(park);
+		parkStateInfo.setVehicles(received0201.getBody().getBikenum());
+		kafkaTemplate.send(MessageBuilder.withPayload(parkStateInfo).setHeader(KafkaHeaders.TOPIC, parkStateInfo.getClass().getName()).build());
+
+		for(int i=0;i<received0201.getBody().getCardflag().size();i++){
+			pilerecord.setWarnCode(received0201.getBody().getCardflag().get(i));
+			kafkaTemplate.send(MessageBuilder.withPayload(pilerecord).setHeader(KafkaHeaders.TOPIC, pilerecord.getClass().getName()).build());
+
+		}
+		Message8001 response = new Message8001(header, Result.SUCCESS);
+		if(logger.isDebugEnabled()){
+			logger.debug("[8001][{}][{}] Location information has been processed.", terminalId);
+		}
+		return response;
+	}
+
+	
+}

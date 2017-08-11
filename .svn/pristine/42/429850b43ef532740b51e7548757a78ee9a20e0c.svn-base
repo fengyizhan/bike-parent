@@ -1,0 +1,132 @@
+package com.tiamaes.bike.common.bean.connector;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo.State;
+
+public class PhotoPackage implements Serializable {
+	
+	private static final long serialVersionUID = 4914344301149321580L;
+
+	/**
+	 * 包中的照片流
+	 */
+	private Map<Integer, byte[]> photoStream;
+	
+	/**
+	 * 发包时间
+	 */
+	private Date createTime;
+	
+	/**
+	 * 经度
+	 */
+	private Double lng;
+	
+	/**
+	 * 纬度
+	 */
+	private Double lat;
+	
+	/**
+	 * 照片格式
+	 */
+	private String photoType;
+	
+	/**
+	 * 拍照状态(0:进场拍照, 1:出场拍照, 2:其他)
+	 */
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State state;
+	
+	/**
+	 * 最大重传包号
+	 */
+	private Integer maxPackageNo;
+	
+	/**
+	 * 当前包号
+	 */
+	private Integer packageNo;
+	
+	/**
+	 * 当前多媒体id
+	 */
+	private Long mediaId;
+	
+	public Map<Integer, byte[]> getPhotoStream() {
+		return photoStream;
+	}
+
+	public void setPhotoStream(Map<Integer, byte[]> photoStream) {
+		this.photoStream = photoStream;
+	}
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public Double getLng() {
+		return lng;
+	}
+
+	public void setLng(Double lng) {
+		this.lng = lng;
+	}
+
+	public Double getLat() {
+		return lat;
+	}
+
+	public void setLat(Double lat) {
+		this.lat = lat;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+
+	public String getPhotoType() {
+		return photoType;
+	}
+
+	public void setPhotoType(String photoType) {
+		this.photoType = photoType;
+	}
+
+	public Integer getMaxPackageNo() {
+		return maxPackageNo;
+	}
+
+	public void setMaxPackageNo(Integer maxPackageNo) {
+		this.maxPackageNo = maxPackageNo;
+	}
+
+	public Integer getPackageNo() {
+		return packageNo;
+	}
+
+	public void setPackageNo(Integer packageNo) {
+		this.packageNo = packageNo;
+	}
+
+	public Long getMediaId() {
+		return mediaId;
+	}
+
+	public void setMediaId(Long mediaId) {
+		this.mediaId = mediaId;
+	}
+	
+}

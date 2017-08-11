@@ -1,0 +1,16 @@
+package com.tiamaes.bike.exporter.integrated.station.service;
+
+import java.io.File;
+
+import com.tiamaes.bike.common.bean.integrated.StationRecord;
+
+public interface StationQueryServiceInterface {
+	
+	/**
+	 * 导出车辆进出场记录数据
+	 * @param stationRecord
+	 * @throws Exception
+	 */
+	File exportExcelOfStationRecords(StationRecord stationRecord) throws Exception;
+
+}

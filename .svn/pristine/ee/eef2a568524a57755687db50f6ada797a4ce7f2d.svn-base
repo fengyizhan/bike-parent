@@ -1,0 +1,14 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+/**
+ * 刷卡借还车消息包
+ * 
+ * @author Chen
+ */
+public class Received0202 extends Received {
+
+	public Received0202(Header header, byte[] bytes) {
+		super(header, bytes);
+	}
+	
+}

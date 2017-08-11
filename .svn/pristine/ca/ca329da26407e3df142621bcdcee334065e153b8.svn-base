@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.department.persistence.DepartmentMapper">
+	<resultMap id="departmentMap" type="com.tiamaes.bike.common.bean.information.Department">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="parentId" property="parentId"/>
+		<result property="createDate" column="createDate"/>
+		<association property="company" javaType="com.tiamaes.bike.common.bean.information.Company">
+			<result column="companyId" property="id"/>
+			<result column="companyName" property="name"/>
+			<result column="companyAddress" property="address"/>
+		</association>
+	</resultMap>
+	<!-- 根据Id查询部门信息 -->
+	<select id="getDepartmentById" parameterType="String" resultMap="departmentMap">
+		<![CDATA[
+		SELECT t.id,
+		       t.name,
+		       t.parentId,
+		       t.createDate,
+		       v.id AS companyId,
+		       v.name AS companyName,
+		       v.address AS companyAddress
+		  FROM tb_department t, tb_company v
+		WHERE t.id = #{id}
+		      AND t.parentId = v.id
+		]]>
+	</select>
+	<!-- 查询部门信息列表 -->
+	<select id="getListOfDepartments" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="departmentMap">
+		SELECT t.id,
+		       t.name,
+		       t.parentId,
+		       t.createDate,
+		       v.id AS companyId,
+		       v.name AS companyName,
+		       v.address AS companyAddress
+		  FROM  tb_company v,tb_department t
+		<where>
+			t.parentId = v.id
+			<if test="model.name != null and model.name != ''">
+		     AND t.name LIKE CONCAT('#',#{model.name},'#')
+			</if>
+			<if test="model.company != null and model.company.id != null">
+		     AND t.parentId = #{model.company.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.id"/>
+			</include>
+		</where>
+		ORDER BY t.createDate DESC
+	</select>
+	<!-- 获取部门总数 -->
+	<select id="getTotalOfDepartments" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) FROM  tb_company v,tb_department t
+		<where>
+			t.parentId = v.id
+			<if test="model.name != null and model.name != ''">
+		     AND t.name LIKE CONCAT('#',#{model.name},'#')
+			</if>
+			<if test="model.company != null and model.company.id != null">
+		     AND t.parentId = #{model.company.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.id"/>
+			</include>
+		</where>
+	</select>
+
+	<!-- 保存部门信息 -->
+	<insert id="addDepartment" parameterType="com.tiamaes.bike.common.bean.information.Department">
+		INSERT INTO tb_department
+		  (id,
+		   name,
+		   parentId,
+		   createDate)
+		VALUES
+		  (#{id,jdbcType=CHAR},
+		   #{name,jdbcType=VARCHAR},
+		   #{company.id,jdbcType=CHAR},
+		   now())
+	</insert>
+	<!-- 更新部门信息 -->
+	<update id="updateDepartment" parameterType="com.tiamaes.bike.common.bean.information.Department">
+		UPDATE tb_department
+		   SET name     = #{name,jdbcType=VARCHAR},
+		       parentId = #{company.id,jdbcType=CHAR}
+		 WHERE id = #{id}
+	</update>
+	<!-- 删除部门信息 -->
+	<delete id="deleteDepartment" parameterType="com.tiamaes.bike.common.bean.information.Department">
+		DELETE FROM tb_department WHERE id = #{id}
+	</delete>
+	<!-- 检查部门信息名是否存在 -->
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_department t
+		<where>
+			t.name = #{name}
+			AND parentId = #{parentId}
+			<if test="id != null and id != ''">
+		     AND t.id != #{id}
+			</if>
+		</where>
+	</select>
+	<!-- 获取所有部门列表，用于下拉菜单生成 -->
+	<select id="getDepartments" resultType="com.tiamaes.bike.common.bean.information.Department">
+		SELECT id, name FROM tb_department
+	</select>
+	<!-- 根据公司id获取部门列表 -->
+	<select id="getDepartmentsByCompanyId" parameterType="String" resultType="com.tiamaes.bike.common.bean.information.Department">
+		SELECT id, name FROM tb_department
+		  WHERE parentId = #{id}
+	</select>
+
+	<!-- 根据公司id获取公司与部门关联数 -->
+	<select id="getTotalUseOfCompany" parameterType="String" resultType="int">
+		SELECT COUNT(1) FROM tb_department
+		  WHERE parentId = #{id}
+	</select>
+</mapper>

@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.authority.core.persistence.AuthorityMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.system.Province" id="dataAuthority">
+		<id column="provinceNo" property="id" javaType="string"/>
+		<result column="provinceName" property="name" javaType="string"/>
+		<result column="provinceLevel" property="level" javaType="Integer"/>
+		<result column="provinceChecked" property="checked" javaType="Boolean"/>
+		<collection property="children" ofType="com.tiamaes.bike.common.bean.system.City" javaType="ArrayList">
+			<id column="cityNo" property="id" javaType="string"/>
+			<result column="cityName" property="name" javaType="string"/>
+			<result column="cityLevel" property="level" javaType="Integer"/>
+			<result column="cityChecked" property="checked" javaType="Boolean"/>
+			<collection property="children" ofType="com.tiamaes.bike.common.bean.system.District" javaType="ArrayList">
+				<id column="districtNo" property="id" javaType="string"/>
+				<result column="districtName" property="name" javaType="string"/>
+				<result column="districtLevel" property="level" javaType="Integer"/>
+				<result column="districtChecked" property="checked" javaType="Boolean"/>
+			</collection>
+		</collection>
+	</resultMap>
+	<resultMap type="com.tiamaes.bike.common.bean.system.PointVector" id="PointVector">
+		<id column="id" property="id"/>
+		<association property="info" javaType="com.tiamaes.bike.common.bean.system.PointVector$Info" >
+			<id property="id" column="id"/>
+			<id property="name" column="name"/>
+			<id property="address" column="address"/>
+			<id property="price" column="price"/>
+			<id property="serviceCharge" column="serviceCharge"/>
+			<id property="startOpenTime" column="startOpenTime"/>
+			<id property="endOpenTime" column="endOpenTime"/>
+			<id property="type" column="type"/>
+			<id property="image" column="image"/>
+		</association>
+		<association property="center" javaType="com.tiamaes.bike.common.bean.system.PointVector$Center">
+			<result property="x" column="x"/>
+			<result property="y" column="y"/>
+		</association>
+	</resultMap>
+	<sql id="userDataAuthorities">
+		AND EXISTS (SELECT 1 FROM TM_USER_DATA_AUTHORITY T INNER JOIN TB_CGP_STATION T2 ON T2.LOCA_NO = T.DATAID  WHERE T.TREELEVEL = 3 AND T2.STATION_NO = ${stationField} AND T.USERID = ${userField})
+	</sql>
+	<select id="queryAllPointVector" parameterType="com.tiamaes.bike.common.bean.system.User" resultMap="PointVector">
+		SELECT T.STATION_NO   AS "id",
+	       T.STATION_NAME AS "name",
+	       T.PRICE AS "price",
+	       T.SERVICE_CHARGE AS "serviceCharge",
+	       T.START_OPENTIME AS "startOpenTime",
+	       T.END_OPENTIME AS "endOpenTime",
+	       T.TYPE  AS "type",
+	       TP.PATH AS image,
+	       T.ADDRS        AS address,
+	       T.POINT_X      AS X,
+	       T.POINT_Y      AS Y
+	  FROM TB_CGP_STATION T
+	 INNER JOIN TM_USER_DATA_AUTHORITY D ON D.DATAID = T.LOCA_NO
+	 LEFT JOIN TB_CGP_PIC TP ON TP.STATION_NO=T.STATION_NO
+	 WHERE D.USERID = #{id}
+	</select>
+	
+	<select id="queryUserDataAuthorities" parameterType="com.tiamaes.bike.common.bean.system.User" resultMap="dataAuthority">
+		SELECT A.LOCA_NO AS provinceNo,
+	       A.LOCA_NAME AS provinceName,
+	       A.LOCA_TYPE AS provinceLevel,
+	       B.LOCA_NO AS cityNo,
+	       B.LOCA_NAME AS cityName,
+	       B.LOCA_TYPE AS cityLevel,
+	       C.LOCA_NO AS districtNo,
+	       C.LOCA_NAME AS districtName,
+	       C.LOCA_TYPE AS districtLevel
+	  FROM (SELECT T1.LOCA_NO,
+	               T1.LOCA_NAME,
+	               T1.LOCA_TYPE,
+	               T1.LOCA_PNO
+	          FROM TB_OTH_LOCATION T1
+	         INNER JOIN TM_USER_DATA_AUTHORITY A1
+	            ON A1.TREELEVEL = 1
+	           AND A1.DATAID = T1.LOCA_NO
+	           AND A1.USERID = #{id}
+	         WHERE T1.IS_VALID = 1
+	           AND T1.LOCA_TYPE = 1) A
+	  LEFT JOIN (SELECT T1.LOCA_NO,
+	                    T1.LOCA_NAME,
+	                    T1.LOCA_TYPE,
+	                    T1.LOCA_PNO
+	               FROM TB_OTH_LOCATION T1
+	              INNER JOIN TM_USER_DATA_AUTHORITY A1
+	                 ON A1.TREELEVEL = 2
+	                AND A1.DATAID = T1.LOCA_NO
+	                AND A1.USERID = #{id}
+	              WHERE T1.IS_VALID = 1
+	                AND T1.LOCA_TYPE = 2) B
+	    ON A.LOCA_NO = B.LOCA_PNO
+	  LEFT JOIN (SELECT T1.LOCA_NO,
+	                    T1.LOCA_NAME,
+	                    T1.LOCA_TYPE,
+	                    T1.LOCA_PNO
+	               FROM TB_OTH_LOCATION T1
+	              INNER JOIN TM_USER_DATA_AUTHORITY A1
+	                 ON A1.TREELEVEL = 3
+	                AND A1.DATAID = T1.LOCA_NO
+	                AND A1.USERID = #{id}
+	              WHERE T1.IS_VALID = 1
+	                AND T1.LOCA_TYPE = 3) C
+	    ON B.LOCA_NO = C.LOCA_PNO
+	    ORDER BY A.LOCA_NO, B.LOCA_NO, C.LOCA_NO
+	</select>
+	
+	<select id="queryUserDataAuthoritiesWithTree" parameterType="com.tiamaes.bike.common.bean.system.User" resultMap="dataAuthority">
+		SELECT T1.LOCA_NO AS provinceNo,
+	       T1.LOCA_NAME AS provinceName,
+	       IF(A1.USERID, 1, 0) AS provinceChecked,
+	       T2.LOCA_NO AS cityNo,
+	       T2.LOCA_NAME AS cityName,
+	       IF(T2.LOCA_NO, IF(A2.USERID, 1, 0), NULL) AS cityChecked,
+	       T3.LOCA_NO AS districtNo,
+	       T3.LOCA_NAME AS districtName,
+	       IF(T3.LOCA_NO, IF(A3.USERID, 1, 0), NULL) AS districtChecked
+		 FROM TB_OTH_LOCATION T1
+	  LEFT JOIN TM_USER_DATA_AUTHORITY A1 ON A1.TREELEVEL = 1 AND A1.DATAID = T1.LOCA_NO AND A1.USERID = #{id}
+	  LEFT JOIN TB_OTH_LOCATION T2 ON T2.IS_VALID = 1 AND T2.LOCA_TYPE = 2 AND T2.LOCA_PNO = T1.LOCA_NO
+	  LEFT JOIN TM_USER_DATA_AUTHORITY A2 ON A2.TREELEVEL = 2 AND A2.DATAID = T2.LOCA_NO AND A2.USERID = #{id}
+	  LEFT JOIN TB_OTH_LOCATION T3 ON T3.IS_VALID = 1 AND T3.LOCA_TYPE = 3 AND T3.LOCA_PNO = T2.LOCA_NO
+	  LEFT JOIN TM_USER_DATA_AUTHORITY A3 ON A3.TREELEVEL = 3 AND A3.DATAID = T3.LOCA_NO AND A3.USERID = #{id}
+	 WHERE T1.IS_VALID = 1 AND T1.LOCA_TYPE = 1
+	 ORDER BY T1.LOCA_NO, T2.LOCA_NO, T3.LOCA_NO
+	</select>
+	
+	<!-- 
+	<select id="getAllChargingStations" parameterType="Map" resultType="com.tiamaes.bike.common.bean.system.Station">
+	 SELECT T.STATION_NO AS id,
+	         T.STATION_NAME AS name,
+	         T.LOCA_NO AS parentId,
+	         NVL2(A.USERID,1,0) AS checked
+	    FROM TB_CGP_STATION T
+	    LEFT JOIN TM_USER_DATA_AUTHORITY A ON A.USERID = #{user.id} AND A.DATAID = T.STATION_NO
+	   WHERE T.LOCA_NO = #{district.id}
+	</select>
+	
+	<select id="getMyChargingStations" parameterType="Map" resultType="com.tiamaes.bike.common.bean.system.Station">
+		SELECT T.STATION_NO AS id,
+	         T.STATION_NAME AS name,
+	         T.LOCA_NO AS parentId
+	    FROM TB_CGP_STATION T
+	    INNER JOIN TM_USER_DATA_AUTHORITY A ON A.USERID = #{operator.id} AND A.DATAID = T.STATION_NO
+	   WHERE T.LOCA_NO = #{district.id}
+	</select>
+	 -->
+
+	<!-- <select id="getAllHigherDistrict" parameterType="com.tiamaes.bike.common.bean.system.Authority"
+		resultType="com.tiamaes.bike.common.bean.system.District">
+		<choose>
+			<when test="level lt 4">
+				SELECT T.LOCA_NO AS id, T.LOCA_NAME AS name, T.LOCA_PNO  AS parentId, T.LOCA_TYPE AS "level"
+				  FROM TB_OTH_LOCATION T
+				 WHERE T.IS_VALID = 1 AND T.LOCA_NO != #{id}
+				 START WITH T.LOCA_NO = #{id} CONNECT BY PRIOR T.LOCA_PNO = T.LOCA_NO
+			</when>
+			<otherwise>
+				SELECT T.LOCA_NO AS id, T.LOCA_NAME AS name,T.LOCA_PNO AS parentId, T.LOCA_TYPE AS "level" FROM TB_OTH_LOCATION T 
+				WHERE T.IS_VALID = 1
+				START WITH T.LOCA_NO = (SELECT S.LOCA_NO FROM TB_CGP_STATION S WHERE S.STATION_NO = #{id})
+				CONNECT BY PRIOR T.LOCA_PNO = T.LOCA_NO
+			</otherwise>
+		</choose>
+	</select> -->
+	<!-- <select id="hasAllCheckedLowerStations" parameterType="Map" resultType="boolean">
+		SELECT ABS(COUNT(1) - 1) FROM DUAL WHERE EXISTS (SELECT T.STATION_NO, T.STATION_NAME, A.USERID
+		  FROM TB_CGP_STATION T
+		  LEFT JOIN TM_USER_DATA_AUTHORITY A
+		    ON A.DATAID = T.STATION_NO AND A.STATE = 1
+		   AND A.USERID = #{user.id}
+		 WHERE T.LOCA_NO = #{district.id}
+		 AND A.USERID IS NULL)
+	</select> -->
+	<!-- <select id="hasAllCheckedLowerDistricts" parameterType="Map" resultType="boolean">
+		SELECT ABS(COUNT(1) - 1) FROM DUAL WHERE EXISTS (SELECT T.LOCA_NO, T.LOCA_NAME, A.USERID
+		  FROM TB_OTH_LOCATION T
+		  LEFT JOIN TM_USER_DATA_AUTHORITY A
+		    ON A.DATAID = T.LOCA_NO AND A.STATE = 1
+		   AND A.USERID = #{user.id}
+		 WHERE T.IS_VALID = 1 AND T.LOCA_PNO = #{district.id}
+		 AND A.USERID IS NULL)
+	</select>
+	<update id="updateAllCheckedState" parameterType="Map">
+	 	UPDATE TM_USER_DATA_AUTHORITY T SET T.STATE = 1 WHERE T.USERID = #{user.id} AND T.DATAID = #{district.id} AND T.TREELEVEL = #{district.level}
+	</update>
+	
+	<insert id="saveUserAuthorities" parameterType="Map">
+		BEGIN
+		<choose>
+			<when test="dataAuthority != null and dataAuthority.level == 0">
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id},T.LOCA_NO,T.LOCA_TYPE,1 FROM TB_OTH_LOCATION T WHERE T.IS_VALID = 1;
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id},S.STATION_NO,4,1 FROM TB_CGP_STATION S WHERE S.LOCA_NO IN ( SELECT T.LOCA_NO FROM TB_OTH_LOCATION T WHERE T.IS_VALID = 1);
+			</when>
+			<when test="dataAuthority != null and dataAuthority.level lt 4">
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id},T.LOCA_NO,T.LOCA_TYPE,1 FROM TB_OTH_LOCATION T WHERE T.IS_VALID = 1
+					START WITH T.LOCA_NO = #{dataAuthority.id} CONNECT BY PRIOR T.LOCA_NO = T.LOCA_PNO;
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id},S.STATION_NO,4,1 FROM TB_CGP_STATION S WHERE S.LOCA_NO IN ( SELECT T.LOCA_NO FROM TB_OTH_LOCATION T
+					START WITH T.LOCA_NO = #{dataAuthority.id} CONNECT BY PRIOR T.LOCA_NO = T.LOCA_PNO);
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id}, T.LOCA_NO, T.LOCA_TYPE, NVL(A.STATE,0)
+				  FROM TB_OTH_LOCATION T
+				  LEFT JOIN TM_USER_DATA_AUTHORITY A ON A.DATAID = T.LOCA_NO AND A.USERID = #{user.id}
+				  WHERE T.IS_VALID = 1 AND T.LOCA_NO != #{dataAuthority.id} AND A.STATE IS NULL 
+				 START WITH T.LOCA_NO = #{dataAuthority.id}
+				CONNECT BY PRIOR T.LOCA_PNO = T.LOCA_NO;
+			</when>
+			<otherwise>
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) VALUES (#{user.id}, #{dataAuthority.id}, 4, 1);
+				INSERT INTO TM_USER_DATA_AUTHORITY (USERID, DATAID, TREELEVEL, STATE) SELECT #{user.id}, T.LOCA_NO, T.LOCA_TYPE, NVL(A.STATE,0)
+				  FROM TB_OTH_LOCATION T
+				  LEFT JOIN TM_USER_DATA_AUTHORITY A ON A.DATAID = T.LOCA_NO AND A.USERID = #{user.id}
+				  WHERE T.IS_VALID = 1 AND A.STATE IS NULL 
+				 START WITH T.LOCA_NO = (SELECT S.LOCA_NO FROM TB_CGP_STATION S WHERE S.STATION_NO = #{dataAuthority.id})
+				CONNECT BY PRIOR T.LOCA_PNO = T.LOCA_NO;
+			</otherwise>
+		</choose>
+		END;
+	</insert>
+	<delete id="deleteUserAuthorities" parameterType="Map">
+		BEGIN
+		<choose>
+			<when test="dataAuthority != null and dataAuthority.level == 0">
+			DELETE FROM TM_USER_DATA_AUTHORITY T WHERE T.USERID = #{user.id};
+			</when>
+			<when test="dataAuthority != null and dataAuthority.level lt 4">
+				DELETE FROM TM_USER_DATA_AUTHORITY T WHERE T.USERID = #{user.id} AND T.DATAID IN (SELECT T.LOCA_NO FROM TB_OTH_LOCATION T
+					START WITH T.LOCA_NO = #{dataAuthority.id} CONNECT BY PRIOR T.LOCA_NO = T.LOCA_PNO);
+				DELETE FROM TM_USER_DATA_AUTHORITY T WHERE T.USERID = #{user.id} AND T.DATAID IN (SELECT S.STATION_NO FROM TB_CGP_STATION S WHERE S.LOCA_NO IN (SELECT T.LOCA_NO FROM TB_OTH_LOCATION T
+					START WITH T.LOCA_NO = #{dataAuthority.id} CONNECT BY PRIOR T.LOCA_NO = T.LOCA_PNO));
+			</when>
+			<otherwise>
+				DELETE FROM TM_USER_DATA_AUTHORITY T WHERE T.USERID = #{user.id} AND T.DATAID = #{dataAuthority.id};
+			</otherwise>
+		</choose>
+		END;
+	</delete>
+	
+	<select id="hasAllUnCheckedLowerStations" parameterType="Map" resultType="boolean">
+		SELECT ABS(COUNT(1) - 1) FROM DUAL WHERE EXISTS (SELECT T.STATION_NO, T.STATION_NAME, A.USERID
+		  FROM TB_CGP_STATION T
+		  LEFT JOIN TM_USER_DATA_AUTHORITY A
+		  	ON A.DATAID = T.STATION_NO AND A.USERID = #{user.id} 
+		 WHERE T.LOCA_NO = #{district.id} AND A.USERID IS NOT NULL)
+	</select> -->
+	<select id="hasAllUnCheckedLowerDistricts" parameterType="Map" resultType="boolean">
+		SELECT ABS(COUNT(1) - 1) FROM DUAL WHERE EXISTS (SELECT T.LOCA_NO, T.LOCA_NAME, A.USERID
+		  FROM TB_OTH_LOCATION T
+		  LEFT JOIN TM_USER_DATA_AUTHORITY A
+		    ON A.DATAID = T.LOCA_NO AND A.USERID = #{user.id}
+		 WHERE T.IS_VALID = 1 AND T.LOCA_PNO = #{district.id}
+		 AND A.USERID IS NOT NULL)
+	</select>
+	<delete id="deleteUnCheckedState" parameterType="Map">
+		DELETE FROM TM_USER_DATA_AUTHORITY T WHERE T.USERID = #{user.id} AND T.DATAID = #{district.id}
+	</delete>
+	<update id="updateAllUnCheckedState" parameterType="Map">
+		UPDATE TM_USER_DATA_AUTHORITY T SET T.STATE = 0 WHERE T.USERID = #{user.id} AND T.DATAID = #{district.id} AND T.TREELEVEL = #{district.level}
+	</update>
+	
+	<select id="getStationsByUser" parameterType="com.tiamaes.bike.common.bean.system.User" resultType="String">
+		SELECT T.STATION_NO FROM TB_CGP_STATION T 
+		<where>
+			<include refid="com.tiamaes.bike.api.authority.core.persistence.AuthorityMapper.userDataAuthorities">
+		   		<property name="userField" value="#{id}"/>
+		   		<property name="stationField" value="T.STATION_NO"/>
+			</include>
+		</where>
+	</select>
+</mapper>

@@ -1,0 +1,15 @@
+package com.tiamaes.bike.reporter.information.project.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+
+public interface ProjectVehicleMapper {
+	
+	/**
+	 * 根据工程id查询该工程下所有的车辆
+	 * @param projectId
+	 * @return
+	 */
+	List<ProjectVehicle> findVehiclesByPId(String projectId);
+}

@@ -1,0 +1,101 @@
+package com.tiamaes.bike.api.information.command.service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.command.persistence.CommandMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.command.Command;
+
+
+@Service
+public class CommandService implements CommandServiceInterface {
+
+	@Autowired
+	@Qualifier("kafkaStringTemplate")
+	private KafkaTemplate<String, String> kafkaStringTemplate;
+	@Resource
+	private CommandMapper commandMapper;
+	@Resource
+	private ObjectMapper objectMapper;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Command sendCommand(Command command) {
+		try {
+			String body = objectMapper.writeValueAsString(command);
+			command.setBody(body);
+			command.setCreateTime(new Date());
+			command.setClazz(command.getClass().getName());
+			//保存到数据库中
+			commandMapper.saveCommand(command);
+			SetOperations<String, String> setOperator = stringRedisTemplate.opsForSet();
+			//如果该车为在线状态
+			if(setOperator.isMember(RedisKey.VEHICLES_ONLINE, command.getSimNo())){
+				//推送到kafka
+				kafkaStringTemplate.send(MessageBuilder.withPayload(body)
+						.setHeader(KafkaHeaders.TOPIC, Command.class.getName())
+						.setHeader(KafkaHeaders.MESSAGE_KEY, command.getSimNo()).build());
+			}
+		} catch (JsonProcessingException e) {
+			throw new IllegalArgumentException("命令转换失败!");
+		}
+		return command;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public List<Command> sendCommands(List<? extends Command> commands) {
+		
+		List<Command> tempCommand = new ArrayList<Command>();
+		try {
+			//封装数据
+			for (Command command : commands) {
+				command.setCreateTime(new Date());
+				String body = objectMapper.writeValueAsString(command);
+				command.setBody(body);
+				command.setClazz(command.getClass().getName());
+				tempCommand.add(command);
+			}
+			//批量保存到数据库中
+			commandMapper.saveCommands(tempCommand);
+			SetOperations<String, String> setOperator = stringRedisTemplate.opsForSet();
+			
+			for (Command command : tempCommand) {
+				//如果该车为在线状态
+				if(setOperator.isMember(RedisKey.VEHICLES_ONLINE, command.getSimNo())){
+					kafkaStringTemplate.send(MessageBuilder.withPayload(command.getBody())
+							.setHeader(KafkaHeaders.TOPIC, Command.class.getName())
+							.setHeader(KafkaHeaders.MESSAGE_KEY, command.getSimNo()).build());
+				}
+			}
+		} catch (JsonProcessingException e) {
+			throw new IllegalArgumentException("命令转换失败!");
+		}
+		return tempCommand;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Command> getListOfCommandBySimNo(String simNo) {
+		return commandMapper.getListOfCommandBySimNo(simNo);
+	}
+}

@@ -1,0 +1,128 @@
+package com.tiamaes.bike.common.bean.message;
+
+import java.util.Calendar;
+import java.util.Date;
+
+import org.apache.commons.codec.binary.Hex;
+
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand.VertexProperty;
+
+/**
+ * 设置多边形区域 
+ * @author waibao001
+ *
+ */
+public class Message8604 extends Message {
+
+	private static final long serialVersionUID = -1384037959775909259L;
+
+	public Message8604(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8604);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+
+	public Message8604(PolygonAddCommand polygonAddCommand) throws Exception {
+		Header headernow = new Header();
+		headernow.setId(0x8604);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(polygonAddCommand.getSimNo());
+		this.setHeader(headernow);
+		this.setResponseBody(polygonAddCommand);
+	}
+
+	/**
+	 * 生成并放入置多边形区域实体
+	 * @param polygon
+	 * @throws Exception
+	 */
+	public void setResponseBody(PolygonAddCommand polygon) throws Exception {
+		StringBuffer bufferStr = new StringBuffer();
+		//区域id
+		bufferStr.append(String.format("%08X", polygon.getRegionId()));
+		//区域属性
+		int attribute = obtainActualAttribute(polygon.getRegionAttr());
+		//区域属性
+		bufferStr.append(String.format("%04X", attribute));
+		
+		if((attribute & 0x01) != 0){
+			//起始时间
+			int[] startTimeArray = timeParse(polygon.getStartTime());
+			for (int i = 0; i < startTimeArray.length; i++) {
+				bufferStr.append(String.format("%02d", startTimeArray[i]));
+			}
+			//结束时间
+			int[] endTimeArray = timeParse(polygon.getEndTime());
+			for (int i = 0; i < endTimeArray.length; i++) {
+				bufferStr.append(String.format("%02d", endTimeArray[i]));
+			}
+		}
+		if(((attribute & 0x02) >> 1) != 0){
+			//最高速度
+			bufferStr.append(String.format("%04X", polygon.getMaxSpeed()));
+			//超速持续时间
+			bufferStr.append(String.format("%02X", polygon.getOverSpeedS()));
+		}
+		//区域总顶点数
+		bufferStr.append(String.format("%04X", polygon.getVertexCount()));
+		if(polygon.getVertexPropertys() != null){
+			for (VertexProperty vertexProperty : polygon.getVertexPropertys()) {
+				//顶点纬度
+				bufferStr.append(String.format("%08X", (int)(vertexProperty.getLat()*1000000)));
+				//顶点经度
+				bufferStr.append(String.format("%08X", (int)(vertexProperty.getLng()*1000000)));
+			}
+		}
+		
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		
+		this.setBody(responseBody);
+	}
+	
+	/**
+	 * <p>根据前台设置的区域属性生成实际报文需要的属性值</p>
+	 * <p>1.区域属性默认值二进制表示为：1000 0000 0000 0000，实际值32768</p>
+	 * <p>2.前台设置的区域属性值二进制表示为5位<br>
+	 * 	(1)限速<br>
+	 * 	(2)进区域报警给驾驶员<br>
+	 * 	(3)进区域报警给平台<br>
+	 * 	(4)出区域报警给驾驶员<br>
+	 * 	(5)出区域报警给平台<br>
+	 * </p>
+	 * @param regionAttribute
+	 * @return
+	 * @author Chen
+	 * @since 1.0.0
+	 * @date 2016-11-25
+	 */
+	private static int obtainActualAttribute(int regionAttribute){
+		return 32768 | (regionAttribute << 1);
+	}
+	
+	public static void main(String[] args) {
+		System.out.println(((3 & 0x02) >> 1));
+	}
+	/**
+	 * 获取时间对象，并返回数组
+	 * @param date
+	 * @return
+	 */
+	private int[] timeParse(Date date){
+		int[] timeArray = new int[6];
+		// 创建 Calendar 对象  
+	    Calendar calendar = Calendar.getInstance(); 
+	    calendar.setTime(date);
+	    timeArray[0] =calendar.get(Calendar.YEAR) - 2000;
+	    timeArray[1] =calendar.get(Calendar.MONTH)+1;
+	    timeArray[2] =calendar.get(Calendar.DAY_OF_MONTH);
+	    timeArray[3] =calendar.get(Calendar.HOUR);
+	    timeArray[4] =calendar.get(Calendar.MINUTE);
+	    timeArray[5] =calendar.get(Calendar.SECOND);
+		return timeArray;
+	}
+}

@@ -1,0 +1,23 @@
+package com.tiamaes.bike.exporter.integrated.driver.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.integrated.DriverCardRecord;
+
+public interface DriverQueryMapper {
+	
+	/**
+	 * 获取司机插拔卡记录数据
+	 * @param onlineRecord
+	 * @return
+	 */
+	List<DriverCardRecord> getListOfDriverCardRecords(DriverCardRecord driverCardRecord);
+	
+	/**
+	 * 获取司机插拔卡记录总记录数
+	 * @param onlineRecord
+	 * @return
+	 */
+	int getTotalOfDriverCardRecords(DriverCardRecord driverCardRecord);
+
+}

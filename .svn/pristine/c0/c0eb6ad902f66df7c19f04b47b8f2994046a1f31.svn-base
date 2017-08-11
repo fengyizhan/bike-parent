@@ -1,0 +1,133 @@
+package com.tiamaes.bike.api.information.vehicle.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Auto;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.mybatis.Pagination;
+
+public interface VehicleServiceInterface {
+
+	List<Auto> getVehiclesByPid(String pid);
+	
+	/**
+	 * 根据车辆编号查询车辆信息
+	 * @param id
+	 * @return
+	 * @throws Exception
+	 */
+	Vehicle getVehicleById(String id);
+	/**
+	 * 根据车牌号查询车辆信息
+	 * @param id
+	 * @return
+	 * @throws Exception
+	 */
+	Vehicle getVehicleByName(String name);
+	/**
+	 * 查询所有车辆
+	 * @return
+	 */
+	List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters);
+	/**
+	 * 查询注册车辆列表
+	 * @param page 
+	 * @return
+	 */
+	List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination);
+	/**
+	 * 查询注册车辆数
+	 * @return
+	 */
+	int getTotalOfVehicles(Parameters<Vehicle> parameters);
+	/**
+	 * 查询可以添加到工程中的车辆列表
+	 * @param page 
+	 * @return
+	 */
+	List<Vehicle> getListOfVehiclesP(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination);
+	/**
+	 * 查询可以添加到工程中的车辆列表
+	 * @param vehicle 
+	 * @return
+	 */
+	List<Vehicle> getListOfVehiclesP(Parameters<Vehicle> parameters);
+	/**
+	 * 查询可以添加到工程中的车辆数
+	 * @return
+	 */
+	int getTotalOfVehiclesP(Parameters<Vehicle> parameters);
+	/**
+	 * 保存车辆
+	 * @param vehicle
+	 */
+	Vehicle addVehicle(Vehicle vehicle);
+	/**
+	 * 更新车辆
+	 * @param vehicle
+	 */
+	Vehicle updateVehicle(Vehicle vehicle);
+	/**
+	 * 删除车辆
+	 * @param vehicle
+	 */
+	void deleteVehicle(Vehicle vehicle);
+	/**
+	 * 检查车牌号是否已经存在
+	 * @param plateNo
+	 * @return
+	 */
+	boolean hasExists(String plateNo);
+	/**
+	 * 通过车牌号模糊查询所有车辆
+	 * @return
+	 */
+	List<Vehicle> getAllVehiclesWithPlateNo(String  plateNo);
+	/**
+	 * 通过simNo精确查找车辆信息
+	 * @param simNo
+	 * @return
+	 */
+	Vehicle getVehicleBySimNo(String simNo);
+	/**
+	 * 查询除本工程的注册车辆列表
+	 * @param page 
+	 * @return
+	 */
+	List<Vehicle> getListOfVehiclesAnother(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination);
+	/**
+	 * 查询除本工程的注册车辆列表
+	 * @param vehicle 
+	 * @return
+	 */
+	List<Vehicle> getListOfVehiclesAnother(Parameters<Vehicle> parameters);
+	/**
+	 * 查询除本工程的注册车辆数
+	 * @return
+	 */
+	int getTotalOfVehiclesAnother(Parameters<Vehicle> parameters);
+	/**
+	 * 根据公司id判断公司与车辆关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfCompany(String id);
+	/**
+	 * 根据部门id判断部门与车辆关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfDepartment(String id);
+	/**
+	 * 根据车辆id集合统计土方数
+	 * @param vehicleIds
+	 * @return
+	 */
+	double getLoadcubesByIds(List<String> vehicleIds);
+	/**
+	 * 统计已注册的车辆数
+	 * @return
+	 */
+	int getRegisteredCount();
+}

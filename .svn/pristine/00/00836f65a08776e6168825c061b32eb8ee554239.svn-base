@@ -1,0 +1,497 @@
+package com.tiamaes.bike.common.bean.connector;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+
+/**
+ * 车辆报警信息
+ * 
+ * @author lsl
+ *
+ */
+public class VehicleWarningInfo implements Serializable {
+
+	private static final long serialVersionUID = -8832283520597476437L;
+
+	public VehicleWarningInfo() {
+	}
+
+	public VehicleWarningInfo(Vehicle vehicle, WarnCode warnCode, Date createTime, double lng, double lat) {
+		this.setId(UUIDGenerator.getUUID());
+		this.setVehicle(vehicle);
+		this.setWarnCode(warnCode);
+		this.setWarnContent(this.getWarnCode().getName());
+		this.setCreateTime(createTime);
+		this.setLng(lng);
+		this.setLat(lat);
+	}
+
+	/**
+	 * 日志编号
+	 */
+	private String id;
+	/**
+	 * 车辆信息(公司编号，公司名称，车队编号，车队名称，车辆编号，车牌号，SIM卡号)
+	 */
+	private Vehicle vehicle;
+	/**
+	 * 报警码
+	 */
+	@JsonDeserialize(using = WarnCode.Deserializer.class)
+	private WarnCode warnCode;
+	/**
+	 * 报警内容
+	 */
+	private String warnContent;
+	/**
+	 * 位置类型(0：无特定位置，1：圆形，2：矩形，3：多边形，4：路段)
+	 */
+	@JsonDeserialize(using = DistrictType.Deserializer.class)
+	private DistrictType districtType;
+	/**
+	 * 区域编号
+	 */
+	private Integer districtId;
+	/**
+	 * 进出区域(0：进，1：出)
+	 */
+	@JsonDeserialize(using = DirectionType.Deserializer.class)
+	private DirectionType directionType;
+	/**
+	 * 路段行驶时间(单位：s)
+	 */
+	private Integer drivingTime;
+	/**
+	 * 行驶时间过长(0：不足，1：过长)
+	 */
+	@JsonDeserialize(using = DrivingTimeState.Deserializer.class)
+	private DrivingTimeState drivingTimeState;
+	/**
+	 * 报警时间
+	 */
+	private Date createTime;
+	/**
+	 * 经度
+	 */
+	private double lng;
+	/**
+	 * 纬度
+	 */
+	private double lat;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public WarnCode getWarnCode() {
+		return warnCode;
+	}
+
+	public void setWarnCode(WarnCode warnCode) {
+		this.warnCode = warnCode;
+	}
+
+	public String getWarnContent() {
+		return warnContent;
+	}
+
+	public void setWarnContent(String warnContent) {
+		this.warnContent = warnContent;
+	}
+
+	public DistrictType getDistrictType() {
+		return districtType;
+	}
+
+	public void setDistrictType(DistrictType districtType) {
+		this.districtType = districtType;
+	}
+
+	public Integer getDistrictId() {
+		return districtId;
+	}
+
+	public void setDistrictId(Integer districtId) {
+		this.districtId = districtId;
+	}
+
+	public DirectionType getDirectionType() {
+		return directionType;
+	}
+
+	public void setDirectionType(DirectionType directionType) {
+		this.directionType = directionType;
+	}
+
+	public Integer getDrivingTime() {
+		return drivingTime;
+	}
+
+	public void setDrivingTime(Integer drivingTime) {
+		this.drivingTime = drivingTime;
+	}
+
+	public DrivingTimeState getDrivingTimeState() {
+		return drivingTimeState;
+	}
+
+	public void setDrivingTimeState(DrivingTimeState drivingTimeState) {
+		this.drivingTimeState = drivingTimeState;
+	}
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public double getLng() {
+		return lng;
+	}
+
+	public void setLng(double lng) {
+		this.lng = lng;
+	}
+
+	public double getLat() {
+		return lat;
+	}
+
+	public void setLat(double lat) {
+		this.lat = lat;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum DistrictType implements com.tiamaes.bike.common.Enum<DistrictType> {
+
+		NOSPECLOCA("无特定位置"), ROUNDNESS("圆形"), RECTANGLE("矩形"), POLYGON("多边形"), RAILWAY("路段");
+
+		private String name;
+
+		DistrictType(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static DistrictType valueOf(@JsonProperty("index") final int index) {
+			DistrictType[] roleTypes = DistrictType.values();
+			if (index >= 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<DistrictType> {
+			@Override
+			public DistrictType deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return DistrictType.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return DistrictType.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return DistrictType.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum DirectionType implements com.tiamaes.bike.common.Enum<DirectionType> {
+
+		IN("进"), OUT("出");
+
+		private String name;
+
+		DirectionType(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static DirectionType valueOf(@JsonProperty("index") final int index) {
+			DirectionType[] roleTypes = DirectionType.values();
+			if (index >= 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<DirectionType> {
+			@Override
+			public DirectionType deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return DirectionType.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return DirectionType.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return DirectionType.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum DrivingTimeState implements com.tiamaes.bike.common.Enum<DrivingTimeState> {
+
+		INSUFFICIENT("不足"), MECISM("过长");
+
+		private String name;
+
+		DrivingTimeState(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static DrivingTimeState valueOf(@JsonProperty("index") final int index) {
+			DrivingTimeState[] roleTypes = DrivingTimeState.values();
+			if (index >= 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<DrivingTimeState> {
+			@Override
+			public DrivingTimeState deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return DrivingTimeState.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return DrivingTimeState.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return DrivingTimeState.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum WarnCode implements com.tiamaes.bike.common.Enum<WarnCode> {
+
+		EMERGENCY("紧急报警"), 
+		SPEED("超速报警"), 
+		FATIGUE("疲劳驾驶"), 
+		EARLY("危险预警"), 
+		GNSSFAULT("GNSS模块发生故障"), 
+		GNSSSNIP("GNSS天线未接或被剪断"), 
+		GNSSSHORTCIRCUIT("GNSS天线短路"), 
+		UNDERVOLTAGE("终端主电源欠压"), 
+		POWERDOWN("终端主电源掉电"), 
+		LCDFAULT("终端LCD或显示器故障"), 
+		TTSFAULT("TTS模块故障"), 
+		CAMERAFAULT("摄像头故障"), 
+		ICCARDFAULT("道路运输证 IC卡模块故障"), 
+		SPEEDEARLY("超速预警"), 
+		FATIGUEEARLY("疲劳驾驶预警"),
+		POWERUP("终端主电源高压"),
+		RESERVE16("保留"),
+		RESERVE17("保留"),
+		DRIVINGTIMEOUT("当天累计驾驶超时"), 
+		TIMEOUTPARKING("超时停车"), 
+		INOUTAREA("进出区域"), 
+		INOUTROUTE("进出路线"), 
+		TRAVELTIMEERR("路段行驶时间不足/过长"), 
+		ROUTEDIVERGE("路线偏离报警"), 
+		VSSFAULT("车辆VSS故障"), 
+		OILERR("车辆油量异常"), 
+		BESTOLEN("车辆被盗(通过车辆防盗器)"), 
+		ILLEGALIGNITION("车辆非法点火"), 
+		ILLEGALDISPLACEMENT("车辆非法位移"), 
+		COLLISION("碰撞报警"), 
+		ROLLOVER("侧翻报警"), 
+		ILLEGALITYDOOR("非法开门报警");
+
+		private String name;
+
+		WarnCode(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static WarnCode valueOf(@JsonProperty("index") final int index) {
+			WarnCode[] roleTypes = WarnCode.values();
+			if (index >= 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+		
+		
+		public boolean warnging(final long warnCode) {
+			return (warnCode >> this.ordinal() & 0x01) == 1;
+		}
+		
+		public static class Deserializer extends JsonDeserializer<WarnCode> {
+			@Override
+			public WarnCode deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return WarnCode.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return WarnCode.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return WarnCode.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+}

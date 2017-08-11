@@ -1,0 +1,113 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.driver.service.DriverServiceInterface;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Driver.LicenseType;
+import com.tiamaes.bike.common.bean.information.Driver.Sex;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class DriverServiceTest {
+	private static Logger logger = LogManager.getLogger(DriverServiceTest.class);
+
+	@Autowired
+	private DriverServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+
+	@Test
+	public void addDriverTest() throws Exception {
+		String id = "bc329cc0c2ea47a4a6e36caec353b406";
+		
+		Driver driver = new Driver();
+		driver.setId(id);
+		driver.setName("张三");
+		driver.setSex(Sex.FEMALE);
+		driver.setAddress("河南省焦作市清丰县");
+		driver.setIdentityCard("410525187509012914");
+		driver.setTelephone("13845621234");
+		driver.setIsMaster(true);
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ffb77f41cbd1429cafeefae5435781e1");
+		driver.setVehicle(vehicle);
+		driver.setLicenseNo("232102197412054633");
+		driver.setLicenseType(LicenseType.A2);
+		driver.setLicenseAgency("河南省焦作市公安局交通警察支队");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date licenseDate = sdf.parse("2008/08/08 10:03:16");
+		driver.setLicenseDate(licenseDate);
+		Date invalidDate = sdf.parse("2028/08/07 10:03:16");
+		driver.setInvalidDate(invalidDate);
+		driver.setSuperviseAgency("河南省焦作市交通局");
+		driver.setSupervisePhone("13948355521");
+		Date birthday = sdf.parse("1978/08/08 20:06:32");
+		driver.setBirthday(birthday);
+		Date examineyear = sdf.parse("2009/08/07 10:03:16");
+		driver.setExamineYear(examineyear);
+		driver.setCreateDate(new Date());
+		
+		service.addDriver(driver);
+		
+		Driver actual = service.getDriverInfoById(id);
+		Assert.assertNotNull(actual);
+		Assert.assertEquals(id, actual.getId());
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(actual));
+	}
+
+	@Test
+	public void updateDriverTest() throws Exception {
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("d196b09f835842d79c993d961d94849f");
+		
+		String id = "bc329cc0c2ea47a4a6e36caec353b406";
+		
+		Driver expected = service.getDriverInfoById(id);
+		expected.setVehicle(vehicle);;
+		Driver actual =service.updateDriver(expected);
+		
+		Assert.assertEquals("d196b09f835842d79c993d961d94849f", actual.getVehicle().getId());
+	}
+	
+	@Test
+	public void getVehicleByIdTest() throws Exception {
+		String id = "bc329cc0c2ea47a4a6e36caec353b406";
+		Driver expected = service.getDriverInfoById(id);
+		Assert.assertEquals(id, expected.getId());
+	}
+	
+	@Test
+	public void deleteDriverTest() throws Exception {
+		String id = "bc329cc0c2ea47a4a6e36caec353b406";
+		Driver actual = service.getDriverInfoById(id);
+		service.deleteDriver(actual);
+		actual = service.getDriverInfoById(id);
+		Assert.assertNull(actual);
+	}
+}

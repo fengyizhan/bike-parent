@@ -1,0 +1,134 @@
+<div ng-controller="DriverCardRecordController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>综合查询</li>
+		<li class="active">司机签到记录</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属公司</span>
+								<div class="input-group-default" style="min-width: 186px;">
+									<ui-select ng-model="searchForm.data.company" theme="bootstrap" title="{{$select.selected.name}}" on-select="selectCompany($item)">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.companys track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属车队</span>
+								<div class="input-group-default" style="min-width: 186px;">
+									<ui-select ng-model="searchForm.data.department" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.departments track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">司机姓名</span>
+								<input type="text" class="form-control" name="driverName" ng-model="searchForm.data.driver.name" placeholder="请输入司机姓名" style="min-width: 186px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">手机号码</span>
+								<input type="text" class="form-control" name="driverName" ng-model="searchForm.data.driver.telephone" placeholder="请输入手机号码" style="min-width: 186px;">
+							</div>
+						</div>
+					</div>
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">车牌号码</span>
+								<input type="text" class="form-control" name="carNo" ng-model="searchForm.data.vehicle.carNo" placeholder="请输入车牌号" style="min-width: 186px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">SIM卡号</span>
+								<input type="text" class="form-control" name="simCode" ng-model="searchForm.data.vehicle.simCode" placeholder="请输入SIM卡号" style="min-width: 186px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">开始时间</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.startTime"
+									is-open="searchForm.startTime.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									max-date="searchForm.data.endTime" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.startTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">结束时间</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.endTime"
+									is-open="searchForm.endTime.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									min-date="searchForm.data.startTime" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.endTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-info btn-sm" ng-click="exportExcel()">
+								<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+								<span>根据查询条件导出Excel</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="reporter/integrated/driver/punchCard/page/" id="pagination" items-per-page="20">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="110">驾驶员姓名</td>
+								<td width="110">手机号</td>
+								<td width="110">所属公司</td>
+								<td width="110">所属车队</td>
+								<td width="130">车牌号</td>
+								<td width="130">SIM卡号</td>
+								<td width="130">插卡时间</td>
+								<td width="130">拔卡时间</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td ng-bind="item.driver.name"></td>
+								<td ng-bind="item.driver.telephone"></td>
+								<td ng-bind="item.vehicle.company.name"></td>
+								<td ng-bind="item.vehicle.department.name"></td>
+								<td ng-bind="item.vehicle.carNo"></td>
+								<td ng-bind="item.vehicle.simCode"></td>
+								<td ng-bind="item.inTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td ng-bind="item.outTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+</div>

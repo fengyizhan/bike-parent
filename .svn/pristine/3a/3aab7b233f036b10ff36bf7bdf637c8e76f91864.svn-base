@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.241.192:3306/wallet?useUnicode=true&characterEncoding=utf8
+    username: wallet
+    password: wallet
+    driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    cluster:
+      nodes: 192.168.57.249:7000,192.168.57.249:7001,192.168.57.249:7002
+      password:
+  kafka:
+    brokers: 192.168.57.249:9092
+    zookeepers: 192.168.57.249:2181
+  data:
+    mongodb:
+      host: 192.168.240.221
+      port: 27018
+      database: webgis
+      username: webgis
+      password: tmkjzgb123
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://192.168.57.249:8761/eureka/
+pay:
+  partner: 2088021342398622
+  seller_id: zzgjdzfw@163.com
+  private_key: zhjsos2zv5xc86cgufs55o39sftwi4vq
+  callback_url: http://192.168.100.18:8080/bike/wallet/information/payrecharge/online/payCallback

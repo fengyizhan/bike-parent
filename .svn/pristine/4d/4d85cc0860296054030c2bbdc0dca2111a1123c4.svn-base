@@ -1,0 +1,40 @@
+package com.tiamaes.bike.connector.service;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.persistence.CommandMapper;
+
+@Service
+@SuppressWarnings("unused")
+public class AuthenticationService implements AuthenticationServiceInterface {
+	private static Logger logger = LogManager.getLogger(AuthenticationService.class);
+	@Autowired
+	private ChannelRepository channelRepository;
+	
+	@Resource(name = "stringRedisTemplate")
+	private RedisTemplate<String, Long> longRedisTemplate;
+	
+	@Resource(name = "stringRedisTemplate")
+	private RedisTemplate<String, String> stringRedisTemplate;
+	
+	@Resource
+	private CommandMapper commandMapper;
+	
+	@Autowired
+	private HandlerServiceInterface<?> handlerService;
+
+	@Override
+	public String getCode() {
+		return "AUTHENTICATION_"+new Date().getTime();
+	}
+
+}

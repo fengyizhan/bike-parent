@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.station.persistence.StationMapper">
+	<resultMap id="stationMap" type="com.tiamaes.bike.common.bean.information.Station">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="principal" property="principal"/>
+		<result column="telephone" property="telephone"/>
+		<result column="startTime" property="startTime"/>
+		<result column="endTime" property="endTime"/>
+		<result column="limitSpeedValue" property="limitSpeedValue"/>
+		<result column="delayValue" property="delayValue"/>
+		<result column="createDate" property="createDate"/>
+		<result column="reportValue" property="reportValue"/>
+		<result column="earthWork" property="earthWork"/>
+		<result column="address" property="address"/>
+		<result column="unit" property="unit"/>
+		<result column="radius" property="radius"/>
+		<result column="districtCode" property="districtCode"/>
+		<result column="type" property="type" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result column="areaType" property="areaType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<association property="paths" column="id" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	</resultMap>
+
+	<!-- 根据Id查询场区信息 -->
+	<select id="getStationById" parameterType="int" resultMap="stationMap">
+		SELECT t.id,
+		       t.name,
+		       t.principal,
+		       t.telephone,
+		       t.startTime,
+		       t.endTime,
+		       t.districtCode,
+		       t.limitSpeedValue,
+		       t.delayValue,
+		       t.createDate,
+		       t.reportValue,
+		       t.earthWork,
+		       t.address,
+		       t.unit,
+		       t.radius,
+		       t.type,
+		       t.areaType
+		  FROM tb_station t
+		WHERE t.id = #{id}
+	</select>
+	<!-- 查询场区信息列表 -->
+	<select id="getListOfStations" parameterType="com.tiamaes.bike.common.bean.information.Station" resultMap="stationMap">
+		SELECT t.id,
+		       t.name,
+		       t.principal,
+		       t.telephone,
+		       t.startTime,
+		       t.endTime,
+		       t.districtCode,
+		       t.limitSpeedValue,
+		       t.delayValue,
+		       t.createDate,
+		       t.reportValue,
+		       t.earthWork,
+		       t.address,
+		       t.unit,
+		       t.radius,
+		       t.type,
+		       t.areaType
+		  FROM tb_station t
+		<where>
+			<if test="type != null and type.index != null">
+			 AND t.type = #{type.index, jdbcType=INTEGER}
+			</if>
+			<if test="id != null">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%')
+			</if>
+		</where>
+		ORDER BY t.createDate DESC
+	</select>
+	<!-- 获取场区总数 -->
+	<select id="getTotalOfStations" parameterType="com.tiamaes.bike.common.bean.information.Station" resultType="int">
+		SELECT COUNT(1) FROM  tb_station t
+		<where>
+			<if test="type != null and type.index != null">
+			 AND t.type = #{type.index, jdbcType=INTEGER}
+			</if>
+			<if test="id != null">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%')
+			</if>
+		</where>
+	</select>
+
+	<!-- 保存场区信息 -->
+	<insert id="addStation" parameterType="com.tiamaes.bike.common.bean.information.Station">
+		INSERT INTO tb_station
+		  (id,
+		   name,
+		   principal,
+		   telephone,
+		   startTime,
+		   endTime,
+		   districtCode,
+		   limitSpeedValue,
+		   delayValue,
+		   reportValue,
+		   earthWork,
+		   address,
+		   unit,
+		   radius,
+		   type,
+		   areaType,
+		   createDate)
+		VALUES
+		  (#{id,jdbcType=INTEGER},
+		   #{name,jdbcType=VARCHAR},
+		   #{principal,jdbcType=VARCHAR},
+		   #{telephone,jdbcType=VARCHAR},
+		   #{startTime},
+		   #{endTime},
+		   #{districtCode,jdbcType=CHAR},
+		   #{limitSpeedValue,jdbcType=INTEGER},
+		   #{delayValue,jdbcType=INTEGER},
+		   #{reportValue,jdbcType=INTEGER},
+		   #{earthWork,jdbcType=INTEGER},
+		   #{address,jdbcType=VARCHAR},
+		   #{unit,jdbcType=VARCHAR},
+		   #{radius,jdbcType=FLOAT},
+		   #{type,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+		   #{areaType.index},
+		   now())
+	</insert>
+	<!-- 更新场区信息 -->
+	<update id="updateStation" parameterType="com.tiamaes.bike.common.bean.information.Station">
+		UPDATE tb_station
+		   SET name            = #{name,jdbcType=VARCHAR},
+		       principal       = #{principal,jdbcType=VARCHAR},
+		       telephone       = #{telephone,jdbcType=VARCHAR},
+		       startTime       = #{startTime},
+		       endTime         = #{endTime},
+		       districtCode    = #{districtCode,jdbcType=CHAR},
+		       limitSpeedValue = #{limitSpeedValue,jdbcType=INTEGER},
+		       reportValue     = #{reportValue,jdbcType=INTEGER},
+		       delayValue      = #{delayValue,jdbcType=INTEGER},
+		       earthWork       = #{earthWork,jdbcType=INTEGER},
+		       address         = #{address,jdbcType=VARCHAR},
+		       unit            = #{unit,jdbcType=VARCHAR},
+		       radius          = #{radius,jdbcType=FLOAT},
+		       type            = #{type,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+		       areaType        = #{areaType.index}
+		 WHERE id = #{id}
+	</update>
+	<!-- 删除场区信息 -->
+	<delete id="deleteStation" parameterType="com.tiamaes.bike.common.bean.information.Station">
+		DELETE FROM tb_station WHERE id = #{id}
+	</delete>
+	<!-- 检查场区名是否存在 -->
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_station T
+		<where>
+			T.name = #{name}
+			<if test="id != null and id != ''">
+		     AND T.id != #{id}
+			</if>
+		</where>
+	</select>
+	<!-- 获取所有场区列表，用于下拉菜单生成 -->
+	<select id="getStations" resultMap="stationMap">
+		SELECT id, name, unit, radius, areaType FROM tb_station
+	</select>
+
+	<!-- 根据分类获取场区列表，用于下拉菜单生成 -->
+	<select id="getStationsByType" parameterType="Integer" resultMap="stationMap">
+		SELECT id, name, unit, radius, areaType FROM tb_station WHERE type = #{type}
+	</select>
+
+	<!-- 获取开始场区 (不包含已经存在工程中的) -->
+	<select id="getBeginStations" resultMap="stationMap">
+		SELECT id, name, unit, radius, areaType
+		  FROM tb_station s
+		 WHERE s.type = 0
+		   AND NOT EXISTS
+		 (SELECT beginStation FROM tb_project p WHERE s.id = p.beginStation)
+	</select>
+
+	<!-- 获取主键 -->
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tb_station'
+	</select>
+</mapper>

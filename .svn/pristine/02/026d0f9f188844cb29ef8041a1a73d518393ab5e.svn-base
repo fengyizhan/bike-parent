@@ -1,0 +1,63 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.commons.codec.DecoderException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.connector.MediaEvent;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8001;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 多媒体事件信息上传
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0800Handler extends ProtocolHandler {
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws JsonProcessingException, DecoderException {
+//		MediaEvent responseInfo = decodeBody(request);
+		String simNo = request.getHeader().getSimNo();
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), 0);
+		return response;
+	}
+	public static MediaEvent decodeBody(Message request){
+		MediaEvent mediaEvent= new MediaEvent();
+		// 如果是终端通用应答，就更新数据库的指令状态为已应答
+		byte[] bytebody=request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		//多媒体数据ID
+		long mediaId = buffer.readUnsignedInt();
+		//多媒体类型
+		int mediaType = buffer.readUnsignedByte();
+		//多媒体格式编码
+		int mediaFormatEnc = buffer.readUnsignedByte();
+		//事件项编码
+		int eventEnc = buffer.readUnsignedByte();
+		//通道Id
+		int passageId = buffer.readUnsignedByte();
+		
+		mediaEvent.setEventEnc(eventEnc);
+		mediaEvent.setMediaFormatEnc(mediaFormatEnc);
+		mediaEvent.setMediaId(mediaId);
+		mediaEvent.setMediaType(mediaType);
+		mediaEvent.setPassageId(passageId);
+		
+		return mediaEvent;
+	}
+}

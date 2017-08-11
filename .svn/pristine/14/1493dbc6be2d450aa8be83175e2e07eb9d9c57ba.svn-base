@@ -1,0 +1,75 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.connector.ShotResponseInfo;
+import com.tiamaes.bike.common.bean.connector.ShotResponseInfo.ResponseState;
+import com.tiamaes.bike.common.bean.message.Message;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 摄像头立即拍摄命令应答0x0805(实际上发的是通用应答, 此应答无用)
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0805Handler extends ProtocolHandler {
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws JsonProcessingException {
+		@SuppressWarnings("unused")
+		ShotResponseInfo responseInfo = decodeBody(request);
+		return null;
+	}
+	
+	
+	public static ShotResponseInfo decodeBody(Message request){
+		String simNo = request.getHeader().getSimNo();
+		// 如果是终端通用应答，就更新数据库的指令状态为已应答
+		byte[] bytebody=request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		
+		//应答消息流水号
+		int messageSerialNo = buffer.readUnsignedShort();
+		//应答结果，0：成功；1：失败；2：通道不支持。 
+		short responseResult = buffer.readUnsignedByte();
+		//多媒体 ID个数
+		int mediaCounts = buffer.readUnsignedShort();
+		//多媒体 ID 列表
+		List<Integer> mediaIds = new ArrayList<Integer>();
+		
+		for (int i = 0; i < mediaCounts; i++) {
+			mediaIds.add((int)buffer.readUnsignedByte());
+		}
+		
+		ShotResponseInfo responseInfo = new ShotResponseInfo();
+		responseInfo.setSimNo(simNo);
+		responseInfo.setMessageSeqNo(messageSerialNo);
+		responseInfo.setResponseTime(new Date());
+		responseInfo.setResponseContent(request.toString());
+		if(responseResult==0){
+			responseInfo.setResponseState(ResponseState.SUCCESS);
+		}else{
+			responseInfo.setResponseState(ResponseState.FAILD);
+		}
+		
+		return responseInfo;
+	}
+
+}

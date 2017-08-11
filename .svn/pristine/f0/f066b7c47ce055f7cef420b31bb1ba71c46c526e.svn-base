@@ -1,0 +1,179 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.station.service.StationServiceInterface;
+import com.tiamaes.bike.common.bean.information.Pathpoint;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Station.Type;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * @author kangty
+ * 场区信息管理接口实现类的单元测试
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class StationServiceTest {
+	
+	private static Logger logger = LogManager.getLogger();
+	
+	private Integer id = 10000;
+	
+	@Autowired
+	private StationServiceInterface service;
+	
+	@Value("${porter.enabled}")
+	private boolean enabledPorter;
+	
+	@Autowired
+	@Qualifier("jsonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void test001AddStation() throws Exception {
+		Station station = new Station();
+		station.setId(id);
+		station.setName("丰庆路场区");
+		station.setPrincipal("张三");
+		station.setTelephone("13245698723");
+		Calendar curr = Calendar.getInstance();
+		station.setStartTime(curr.getTime());
+		curr.set(Calendar.YEAR,curr.get(Calendar.YEAR)+1);
+		station.setEndTime(curr.getTime());
+		station.setLimitSpeedValue(40);
+		station.setDelayValue(10);
+		station.setReportValue(1);
+		station.setEarthWork(400);
+		station.setType(Type.PRODUCER);
+		List<Pathpoint> pathpoints = new ArrayList<Pathpoint>();
+		Pathpoint pp1 = new Pathpoint();
+		pp1.setLng(113.663221);
+		pp1.setLat(34.7568711);
+		pathpoints.add(pp1);
+		Pathpoint pp2 = new Pathpoint();
+		pp2.setLng(112.663221);
+		pp2.setLat(34.7568711);
+		pathpoints.add(pp2);
+		Pathpoint pp3 = new Pathpoint();
+		pp3.setLng(113.663221);
+		pp3.setLat(33.7568711);
+		pathpoints.add(pp3);
+		Pathpoint pp4 = new Pathpoint();
+		pp4.setLng(112.663221);
+		pp4.setLat(33.7568711);
+		pathpoints.add(pp4);
+		station.setPaths(pathpoints);
+		
+		station = service.addStation(station);
+		
+		Station result = service.getStationById(station.getId());
+		this.id = result.getId();
+		
+		Assert.assertNotNull(result);
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void test002GetListOfStation() throws Exception {
+		int number = 1;
+		Station station = new Station();
+		int total = service.getTotalOfStations(station);
+		Pagination<Station> pagination = new Pagination<Station>(number, total);
+		List<Station> stationList = service.getListOfStations(station, pagination);
+		Assert.assertNotNull(stationList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(stationList));
+	}
+	
+	@Test
+	public void test003UpdateStation() throws Exception {
+		Station station = service.getStationById(id);
+		String name = "王五";
+		station.setPrincipal(name);
+		List<Pathpoint> pathpoints = new ArrayList<Pathpoint>();
+		Pathpoint pp1 = new Pathpoint();
+		pp1.setLng(113.663221);
+		pp1.setLat(34.7568711);
+		pathpoints.add(pp1);
+		Pathpoint pp2 = new Pathpoint();
+		pp2.setLng(112.663221);
+		pp2.setLat(34.7568711);
+		pathpoints.add(pp2);
+		Pathpoint pp3 = new Pathpoint();
+		pp3.setLng(113.663221);
+		pp3.setLat(33.7568711);
+		pathpoints.add(pp3);
+		Pathpoint pp4 = new Pathpoint();
+		pp4.setLng(112.663221);
+		pp4.setLat(33.7568711);
+		pathpoints.add(pp4);
+		station.setPaths(pathpoints);
+		service.updateStation(station);
+		
+		Station result = service.getStationById(id);
+		Assert.assertEquals(name, result.getPrincipal());
+	}
+	
+	@Test
+	@Ignore
+	public void test004Checkname() throws Exception {
+//		Optional<Long> optional = Optional.ofNullable(null);
+		Optional<Integer> optional = Optional.of(id);
+		Boolean result = service.checkStationName(optional, "石楠路场区");
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+	}
+	
+	@Test
+	public void test005DeleteStation() throws Exception {
+		Station result = service.getStationById(id);
+		service.deleteStation(result);
+		result = service.getStationById(id);
+		Assert.assertNull(result);
+	}
+	
+	@Test
+	public void test006GetBeginStations() throws Exception {
+		List<Station> beginStationList = service.getStationsByType(0);
+		Assert.assertNotNull(beginStationList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(beginStationList));
+		List<Station> endStationList = service.getStationsByType(1);
+		Assert.assertNotNull(endStationList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(endStationList));
+	}
+	
+	@Test
+	public void getId() throws Exception {
+		logger.debug(jacksonObjectMapper.writeValueAsString(service.getId()));
+	}
+
+}

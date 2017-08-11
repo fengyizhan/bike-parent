@@ -1,0 +1,33 @@
+package com.tiamaes.bike.api.information.command.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.connector.command.Command;
+
+public interface CommandMapper {
+
+	/**
+	 * 保存单个命令
+	 * @param id
+	 * @param simNo
+	 * @param clazz
+	 * @param body
+	 */
+	public void saveCommand(Command command);
+	/**
+	 * 批量保存命令
+	 * @param commands
+	 */
+	public void saveCommands(List<Command> commands);
+	/**
+	 * 根据车载终端的simNo获取指令
+	 * @param simNo
+	 * @return
+	 */
+	public List<Command> getListOfCommandBySimNo(String simNo);
+	/**
+	 * 根据电话号码删除指令
+	 * @param simNo
+	 */
+	public void deleteBySimNo(String simNo);
+}

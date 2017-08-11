@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.authority.role.persistence.RoleMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.system.Role" id="role">
+		<constructor>
+			<idArg column="authority" javaType="String"/>
+			<arg column="alias" javaType="String"/>
+		</constructor>
+		<result column="icon" property="icon"/>
+		<result column="remarks" property="remarks"/>
+		<result column="createtime" property="createtime"/>
+		<result column="type" property="type" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+	</resultMap>
+
+	<select id="getTotalOfRoles" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(1) FROM TM_ROLES T
+		<where>
+			<if test="authority != null and authority != ''">
+			
+			T.AUTHORITY LIKE CONCAT('%',CONCAT(#{authority},'%'))
+			</if>
+			<if test="type != null and type.index != null">
+			AND T.ROLETYPE = #{type.index, jdbcType=INTEGER}
+			</if>
+		</where>
+	</select>
+	<select id="getAllRolesByParams" parameterType="java.util.Map" resultMap="role">	
+		SELECT T.authority,T.alias,T.roleType AS type 
+		<if test="_parameter != null">,T.icon,T.remarks,T.createtime</if> 
+		FROM TM_ROLES T
+		<where>
+			<if test="authority != null and authority != ''">
+			T.AUTHORITY LIKE CONCAT('%',CONCAT(#{authority},'%'))
+			</if>
+			<if test="type != null and type.index != null">
+			AND T.ROLETYPE = #{type.index, jdbcType=INTEGER}
+			</if>
+		</where>
+		ORDER BY T.ROLETYPE, T.ALIAS
+	</select>
+	<insert id="insertRole" parameterType="com.tiamaes.bike.common.bean.system.Role">
+		INSERT INTO TM_ROLES (authority,alias,icon,remarks,roleType,createtime) 
+		VALUES(
+			#{authority},
+			#{alias},
+			#{icon,jdbcType=VARCHAR},
+			#{remarks,jdbcType=VARCHAR},
+			#{type.index, jdbcType=INTEGER},
+			#{createtime})
+	</insert>
+	<select id="getRoleById" parameterType="string" resultMap="role">
+		SELECT authority,alias,icon,remarks,roleType as type,createtime FROM TM_ROLES WHERE authority = #{authority}
+	</select>
+	<delete id="deleteUserRoleById" parameterType="string">
+		DELETE FROM TM_USER_ROLES WHERE authority = #{authority}
+	</delete>
+	<delete id="deleteResourceRoleById" parameterType="string">
+		DELETE FROM TM_ROLE_RESOURCES WHERE authority = #{authority}
+	</delete>
+	<delete id="deleteRoleById" parameterType="string">
+		DELETE FROM TM_ROLES WHERE authority = #{authority}
+	</delete>
+
+	<update id="updateRole" parameterType="com.tiamaes.bike.common.bean.system.Role">
+		UPDATE TM_ROLES SET 
+			alias = #{alias,jdbcType=VARCHAR},
+			remarks = #{remarks,jdbcType=VARCHAR}, 
+			roleType = #{type.index, jdbcType=INTEGER} 
+		WHERE authority = #{authority}
+	</update>
+	<!-- 获取角色列表，用于角色授权 -->
+	<select id="getAllRolesByType" parameterType="String" resultType="com.tiamaes.bike.common.bean.system.Role">
+		SELECT T.authority,T.alias,T.roleType AS type FROM TM_ROLES T WHERE T.roleType = #{type.index} ORDER BY T.ROLETYPE, T.ALIAS
+	</select>
+	<resultMap type="com.tiamaes.bike.common.bean.system.RoleAuthority" id="RoleAuthority">
+		<id column="id1" property="id"/>
+		<result column="name1" property="name"/>
+		<result column="checked1" property="checked"/>
+		<collection property="children" ofType="com.tiamaes.bike.common.bean.system.RoleAuthority">
+			<id column="id2" property="id"/>
+			<result column="name2" property="name"/>
+			<result column="checked2" property="checked"/>
+			<collection property="children" ofType="com.tiamaes.bike.common.bean.system.RoleAuthority">
+				<id column="id3" property="id"/>
+				<result column="name3" property="name"/>
+				<result column="checked3" property="checked"/>
+			</collection>
+		</collection>
+	</resultMap>
+	<!-- 查询角色权限 -->
+	<select id="getAuthorization" parameterType="string" resultMap="RoleAuthority">
+		SELECT T1.id AS id1,
+	       T1.name AS name1,
+	       (CASE WHEN rr1.resourceid IS NOT NULL THEN 1 ELSE NULL END) AS checked1,
+	       T2.id AS id2,
+	       T2.name AS name2,
+	       (CASE WHEN RR2.resourceid IS NOT NULL THEN 1 ELSE NULL END) AS checked2,
+	       T3.id AS id3,
+	       T3.name AS name3,
+	       (CASE WHEN RR3.resourceid IS NOT NULL THEN 1 ELSE NULL END) AS checked3
+	  FROM TM_RESOURCES T1
+	  LEFT JOIN TM_RESOURCES T2 ON T2.rank = 1 AND T2.parentid = T1.id
+	  LEFT JOIN TM_RESOURCES T3 ON T3.rank = 2 AND T3.parentid = T2.id
+	  LEFT JOIN TM_ROLE_RESOURCES RR1 ON RR1.resourceid = T1.id AND RR1.authority = #{authority}
+	  LEFT JOIN TM_ROLE_RESOURCES RR2 ON RR2.resourceid = T2.id AND RR2.authority = #{authority}
+	  LEFT JOIN TM_ROLE_RESOURCES RR3 ON RR3.resourceid = T3.id AND RR3.authority = #{authority}
+	 WHERE T1.RANK = 0
+	 ORDER BY T1.ORDERNO, T2.ORDERNO, T3.ORDERNO
+	</select>
+	<!-- 根据角色查询用户列表 -->
+	<select id="getUsersByRole" parameterType="String" resultMap="com.tiamaes.bike.api.authority.user.persistence.UserMapper.userMap">
+		SELECT T.id,
+		       T.username,
+		       T.password,
+		       T.nickname,
+		       T.mobile,
+		       T.email,
+		       T.createDate,
+		       T.enabled,
+		       I.displayName,
+		       R.authority,
+		       R.alias,
+		       R.roleType AS type
+		  FROM TM_USERS T
+		  LEFT JOIN TM_USERS_INFO I
+		    ON I.id = T.id
+		  LEFT JOIN TM_USER_ROLES U
+		    ON U.userid = T.username
+		  LEFT JOIN TM_ROLES R
+		    ON R.authority = U.authority
+		 WHERE T.ID IN (SELECT M.USERID FROM TM_USER_ROLES M WHERE M.AUTHORITY = #{authority})
+		 ORDER BY T.CREATEDATE DESC, T.USERNAME
+	</select>
+	<!-- 根据角色获取首页路径 -->
+	<select id="getIndexByRole" parameterType="String" resultType="String">
+		SELECT PATH
+		          FROM TM_RESOURCES R
+		         INNER JOIN TM_ROLE_RESOURCES RR
+		            ON RR.resourceid = R.id
+		           AND RR.authority = #{authority}
+		         WHERE R.PATH IS NOT NULL
+		         ORDER BY R.ORDERNO LIMIT 1
+	</select>
+</mapper>

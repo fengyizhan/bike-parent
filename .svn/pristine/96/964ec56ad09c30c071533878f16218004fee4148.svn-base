@@ -1,0 +1,46 @@
+package com.tiamaes.bike.api.information.countdata.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.information.Project;
+
+/**
+ * 总计数据持久层接口
+ * @author kangty
+ */
+public interface CountDataMapper {
+	
+	/**
+	 * 获取车辆总数
+	 * @return
+	 */
+	int getTotalOfBikes();
+	
+	/**
+	 * 获取站点总数
+	 * @return
+	 */
+	int getTotalOfParks();
+	
+	/**
+	 * 获取用户总数
+	 * @return
+	 */
+	int getTotalOfUsers();
+	
+	
+	
+	/**
+	 * 获取工程总数
+	 * @param project
+	 * @return
+	 */
+	int getTotalOfProjects(Project project);
+	
+	/**
+	 * 获取正在进行的工程id
+	 * @param date
+	 * @return
+	 */
+	List<String> getListOfOngoingProjectId(String date);
+}

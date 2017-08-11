@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.connector.persistence.CommandMapper">
+	<delete id="deleteCommand" parameterType="com.tiamaes.bike.common.bean.connector.command.Command">
+		DELETE FROM tb_commands WHERE id = #{id}
+	</delete>
+</mapper>

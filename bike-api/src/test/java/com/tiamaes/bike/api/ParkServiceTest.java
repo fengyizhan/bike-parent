@@ -1,0 +1,122 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.park.service.ParkServiceInterface;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.information.Region;
+import com.tiamaes.bike.common.bean.system.PointVector.Center;
+import com.tiamaes.mybatis.Pagination;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class ParkServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(ParkServiceTest.class);
+	
+	private String id = "10000";
+	
+	@Autowired
+	private ParkServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void test001AddPark() throws Exception {
+		Park park = new Park();
+		park.setId(id);
+		park.setName("112233");
+		park.setAddress("河南省郑州市高新区红松路与莲花街交叉口");
+		park.setPrincipal("康天宇");
+		park.setTelephone("18538317749");
+		Region region = new Region();
+		region.setId("410000");
+		park.setRegion(region);
+		park.setRadius(100.0F);
+		park.setLng(113.59439849853516);
+		park.setLat(34.757808685302734);
+		park.setCreateTime(new Date());
+		service.addPark(park);
+		Park result = service.getParkById(id);
+		Assert.assertNotNull(result);
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void test002GetListOfParks() throws Exception {
+		Park park = new Park();
+		Pagination<Park> pagination = new Pagination<>(1, 20);
+		List<Park> parks = service.getListOfParks(park, pagination);
+		Assert.assertNotNull(parks);
+		logger.debug(jacksonObjectMapper.writeValueAsString(parks));
+	}
+	
+	@Test
+	public void test003UpdatePark() throws Exception {
+		Park park = service.getParkById(id);
+		park.setName("123456");
+		service.updatePark(park);
+		Park result = service.getParkById(id);
+		Assert.assertNotNull(result);
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void test004Checkname() throws Exception {
+//		Optional<Long> optional = Optional.ofNullable(null);
+		Optional<String> optional = Optional.of(id);
+		Boolean result = service.checkParkName(optional, "123456");
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+	}
+	
+	@Test
+	public void test005DeletePark() throws Exception {
+		Park park = service.getParkById(id);
+		service.deletePark(park);
+		park = service.getParkById(id);
+		Assert.assertNull(park);
+	}
+	
+	@Test
+	public void test006GetId() throws Exception {
+		logger.debug(jacksonObjectMapper.writeValueAsString(service.getId()));
+	}
+	
+	@Test
+	public void test007GetAroundParks() throws Exception {
+		Center center = new Center();
+		center.setLng(113.48423);
+		center.setLat(34.823546);
+		center.setRotation(3);
+		logger.debug(jacksonObjectMapper.writeValueAsString(service.getAroundParks(center)));
+	}
+
+}

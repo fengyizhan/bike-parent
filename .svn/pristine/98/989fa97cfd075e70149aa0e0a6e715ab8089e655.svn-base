@@ -1,0 +1,282 @@
+package com.tiamaes.bike.common.bean.pay;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 支付宝充值记录
+ * @author fyz
+ */
+@ApiModel(value = "PayRecharge", description = "支付宝充值记录")
+public class PayRecharge implements Serializable {
+
+	private static final long serialVersionUID = 2582363059115691510L;
+	@ApiModelProperty(value="主键(入库必需)")
+	private Integer id;
+	@ApiModelProperty(value="用户名(入库必需)")
+	private String username;
+	@ApiModelProperty(value="充值金额(入库必需)")
+	private float money;
+	@ApiModelProperty(value="支付方式(入库必需)")
+	@JsonDeserialize(using = Style.Deserializer.class)
+	private Style style;
+	@ApiModelProperty(value="支付用途(入库必需)")
+	@JsonDeserialize(using = MoneyType.Deserializer.class)
+	private MoneyType moneyType;
+	@ApiModelProperty(value="入库时间(入库必需)")
+	private Date createTime;
+	@ApiModelProperty(value="开始时间(查询条件)")
+	private Date startTime;
+	@ApiModelProperty(value="结束时间(查询条件)")
+	private Date endTime;
+	@ApiModelProperty(value="支付结果")
+	private String result;
+	@ApiModelProperty(value="交易单号（第三方支付平台返回）")
+	private String tradeNo;
+	@ApiModelProperty(value="支付平台返回的支付结果码")
+	private String resultCode;
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public float getMoney() {
+		return money;
+	}
+
+	public void setMoney(float money) {
+		this.money = money;
+	}
+
+	public Style getStyle() {
+		return style;
+	}
+
+	public void setStyle(Style style) {
+		this.style = style;
+	}
+	public MoneyType getMoneyType() {
+		return moneyType;
+	}
+
+	public void setMoneyType(MoneyType moneyType) {
+		this.moneyType = moneyType;
+	}
+	
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+	public String getTradeNo() {
+		return tradeNo;
+	}
+
+	public void setTradeNo(String tradeNo) {
+		this.tradeNo = tradeNo;
+	}
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result) {
+		this.result = result;
+	}
+
+	public String getResultCode() {
+		return resultCode;
+	}
+
+	public void setResultCode(String resultCode) {
+		this.resultCode = resultCode;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Style implements com.tiamaes.bike.common.Enum<Style> {
+		ALIPAY("支付宝"), WECHAT("微信");
+		
+		private String name;
+		
+		Style(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+		
+		@JsonCreator
+		public static Style valueOf(@JsonProperty("index") final int index) {
+			Style[] types = Style.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+		
+		public static class Deserializer extends JsonDeserializer<Style> {
+			@Override
+			public Style deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Style.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return Style.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Style.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+		
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum MoneyType implements com.tiamaes.bike.common.Enum<MoneyType> {
+		DEPOSIT("押金"), RECHARGE("充值");
+		
+		private String name;
+		
+		MoneyType(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+		
+		@JsonCreator
+		public static MoneyType valueOf(@JsonProperty("index") final int index) {
+			MoneyType[] types = MoneyType.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+		
+		public static class Deserializer extends JsonDeserializer<MoneyType> {
+			@Override
+			public MoneyType deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return MoneyType.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return MoneyType.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return MoneyType.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+		
+	}
+	
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+	
+	
+
+}

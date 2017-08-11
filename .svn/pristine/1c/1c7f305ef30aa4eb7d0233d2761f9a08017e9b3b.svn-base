@@ -1,0 +1,67 @@
+package com.tiamaes.bike.api.information.department.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.mybatis.Pagination;
+
+public interface CompanyServiceInterface {
+	
+	/**
+	 * 根据Id查询公司详情
+	 * @param id
+	 * @return
+	 */
+	Company getCompanyById(String id);
+	
+	/**
+	 * 查询注册公司列表
+	 * @param company
+	 * @param pagination 
+	 * @return
+	 */
+	List<Company> getListOfCompanys(Parameters<Company> parameters, Pagination<Company> pagination);
+	
+	/**
+	 * 查询注册公司数
+	 * @param company
+	 * @return
+	 */
+	int getTotalOfCompanys(Parameters<Company> parameters);
+	
+	/**
+	 * 新增公司信息
+	 * @param company
+	 * @return
+	 */
+	Company addCompany(Company company);
+	
+	/**
+	 * 更新公司信息
+	 * @param company
+	 * @return
+	 */
+	Company updateCompany(Company company);
+	
+	/**
+	 * 删除公司信息
+	 * @param company
+	 */
+	void deleteCompany(Company company);
+	
+	/**
+	 * 检查公司名是否已经存在
+	 * @param id 
+	 * @param name
+	 * @return
+	 */
+	boolean checkCompanyName(Optional<String> id, String name);
+	
+	/**
+	 * 获取所有公司列表，用于下拉菜单生成
+	 * @return
+	 */
+	List<Company> getCompanys();
+}

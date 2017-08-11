@@ -1,0 +1,121 @@
+<div ng-controller="RegionController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">公司信息管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属国家</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="所属国家">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.terminalStates track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属省</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="所属省">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.terminalStates track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属市</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="所属市">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.terminalStates track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属区</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="所属区">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.terminalStates track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add(0)">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增区域信息</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/region/page/" id="pagination" items-per-page="20">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="120">行政区划编号</td>
+								<td width="60">行政区划名字</td>
+								<td width="90">上级行政区划名字</td>
+								<td width="62">许可证字</td>
+								<td width="130">许可证号</td>
+								<td width="160">经营范围</td>
+								<td>公司地址</td>
+								<td width="130">注册时间</td>
+								<td width="100">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 120px;" ng-bind="item.name" title="{{item.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 60px;" ng-bind="item.contactName" title="{{item.contactName}}"></div></td>
+								<td class="ellipsis"><div style="width: 90px;" ng-bind="item.contactPhone" title="{{item.contactPhone}}"></div></td>
+								<td class="ellipsis"><div style="width: 62px;" ng-bind="item.licenseWord" title="{{item.licenseWord}}"></div></td>
+								<td class="ellipsis"><div style="width: 130px;" ng-bind="item.licenseNo" title="{{item.licenseNo}}"></div></td>
+								<td class="ellipsis"><div style="width: 160px;" ng-bind="item.businessScope" title="{{item.businessScope}}"></div></td>
+								<td ng-bind="item.address"></td>
+								<td ng-bind="item.createDate | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/company/dialog.html"></div>
+</div>

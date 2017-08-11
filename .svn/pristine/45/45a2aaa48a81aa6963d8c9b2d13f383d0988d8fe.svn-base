@@ -1,0 +1,131 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo.State;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.storage.service.VehiclePhotoInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class VehiclePhotoInfoServiceTest {
+	private static Logger logger = LogManager.getLogger(VehiclePhotoInfoServiceTest.class);
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Resource
+	private VehiclePhotoInfoServiceInterface service;
+	
+	@Test
+	public void addInStationVehiclePhotoInfo() throws Exception {
+		VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		vehiclePhotoInfo.setVehicle(vehicle);
+		vehiclePhotoInfo.setUser(user);
+		vehiclePhotoInfo.setState(State.INSTATION);
+		vehiclePhotoInfo.setLng(113.647829);
+		vehiclePhotoInfo.setLat(34.753793);
+		vehiclePhotoInfo.setPath("/upload/1558a13fc8f04597b43629ea12320b35.jpeg");
+		
+		service.addVehiclePhotoInfo(vehiclePhotoInfo);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存设备拍照信息" + objectMapper.writeValueAsString(vehiclePhotoInfo));
+		}
+	}
+	
+	@Test
+	public void addOutStationVehiclePhotoInfo() throws Exception {
+		VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		vehiclePhotoInfo.setVehicle(vehicle);
+		vehiclePhotoInfo.setUser(user);
+		vehiclePhotoInfo.setState(State.OUTSTATION);
+		vehiclePhotoInfo.setLng(113.647829);
+		vehiclePhotoInfo.setLat(34.753793);
+		vehiclePhotoInfo.setPath("/upload/1558a13fc8f04597b43629ea12320b35.jpeg");
+		
+		String id = service.addVehiclePhotoInfo(vehiclePhotoInfo);
+		service.deleteVehiclePhotoInfo(id);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存设备拍照信息" + objectMapper.writeValueAsString(vehiclePhotoInfo));
+		}
+	}
+	
+	@Test
+	@Ignore
+	public void vehiclePhotoInfoKafkaTest() {
+		for (int i = 0; i < 56; i++) {
+			VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+			if (i % 2 == 0) {
+				vehiclePhotoInfo.setState(VehiclePhotoInfo.State.INSTATION);
+			} else {
+				vehiclePhotoInfo.setState(VehiclePhotoInfo.State.OUTSTATION);
+			}
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId("d196b09f835842d79c993d961d94849f");
+//			vehicle.setCarNo("京Q23456");
+//			vehicle.setSimCode("015800020022");
+//			vehicle.setCompany(company);
+//			vehicle.setDepartment(department);
+			User user = new User();
+			user.setIdentityCard("4101064484231");
+//			user.setName("张三");
+//			user.setTelephone("18513974682");
+			vehiclePhotoInfo.setVehicle(vehicle);
+			vehiclePhotoInfo.setUser(user);
+			vehiclePhotoInfo.setLng(113.647829);
+			vehiclePhotoInfo.setLat(34.753793);
+			vehiclePhotoInfo.setPath("");
+			kafkaTemplate.send(MessageBuilder.withPayload(vehiclePhotoInfo).setHeader(KafkaHeaders.TOPIC, vehiclePhotoInfo.getClass().getName()).build());
+		}
+	}
+}

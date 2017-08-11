@@ -1,0 +1,67 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import java.util.Date;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.ArrayUtils;
+import org.junit.Test;
+
+import com.tiamaes.bike.connector.protocol.utils.Xor;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+
+public class Received0003Test {
+	@Test
+	public void test() throws DecoderException {
+		Header header = new Header();
+		header.setId(0x0003);
+		header.setLength(0);
+		header.setChildPackage(false);
+		header.setEnableRSA(false);
+		header.setTerminalId(100000);
+		header.setTerminalType(Header.Type.LOCK);
+		header.setSerialNo(new Date().getTime());
+	
+	    //byte[] bytes1=new byte[36];
+	    String s="000c000d1f1f1e1f1e1a1b1a1b1a1b1a1b1a1b1c1d1c1d1c1d1c1d1c1d1e1f1e1f1e1f1e";
+	    byte[] bytes1=Hex.decodeHex(s.toCharArray());
+		Received0003 received0003 = new Received0003(header, bytes1);
+		byte byte0 = Xor.xorValue(received0003.toBytes());
+		byte[] bytes = ArrayUtils.add(received0003.toBytes(), byte0);
+		System.out.println(Hex.encodeHexString(received0003.toBytes()));
+		System.out.println(received0003.toString());
+		System.out.println(byte0);
+		System.out.println(Hex.encodeHexString(bytes));
+		System.out.println(Xor.check(bytes));
+		
+		
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytes);
+		
+		header = new Header();
+		header.setId(buffer.readUnsignedShort());
+		int bodyProperties = buffer.readUnsignedShort();
+		header.setChildPackage((bodyProperties & 0x2000) == 0x2000);
+		header.setEnableRSA((bodyProperties & 0x0400) == 0x0400);
+		header.setLength(bodyProperties & 0x03FF);
+		int terminalId = buffer.readInt();
+		header.setTerminalId(terminalId);
+		header.setTerminalType(Header.Type.values()[buffer.readUnsignedByte()]);
+		header.setSerialNo(buffer.readLong());
+		if(header.isChildPackage()){
+			header.setPacketTotal(buffer.readUnsignedShort());
+			header.setPacketNo(buffer.readUnsignedShort());
+		}
+		byte[] bytes2 = new byte[buffer.readableBytes() - 1];
+		buffer.readBytes(bytes2);
+		received0003 = new Received0003(header, bytes2);
+		
+		System.out.println(received0003);
+		
+		System.out.println(Integer.toUnsignedString(0x2000, 2));
+		System.out.println(Integer.toUnsignedString(0x2000 >> 13 & 0x01, 2));
+		System.out.println(0x2000 >> 13 & 1);
+	}
+}

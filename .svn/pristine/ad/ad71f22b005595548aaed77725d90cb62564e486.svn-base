@@ -1,0 +1,45 @@
+package com.tiamaes.bike.reporter.integrated.photo.service;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.PhotoRecord;
+import com.tiamaes.bike.reporter.integrated.photo.persistence.PhotoQueryMapper;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class PhotoRecordService implements PhotoRecordServiceInterface {
+	
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(PhotoRecordService.class);
+	
+	@Resource
+	private PhotoQueryMapper photoQueryMapper;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<PhotoRecord> getListOfPhotoRecords(Parameters<PhotoRecord> parameters, Pagination<PhotoRecord> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		List<PhotoRecord> photoRecords = photoQueryMapper.getListOfPhotoRecords(parameters);
+		return photoRecords;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfPhotoRecords(Parameters<PhotoRecord> parameters) {
+		return photoQueryMapper.getTotalOfPhotoRecords(parameters);
+	}
+
+}

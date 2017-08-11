@@ -1,0 +1,33 @@
+<div class="md-content">
+	<div class="index-modal-header">
+		<h6>生成文件列表</h6>
+		<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+	</div>
+	<div class="modal-body">
+		<div id="task-list" class="container-fluid">
+			<div class="file-card" ng-repeat="item in $parent.taskList track by $index">
+				<div class="icon-content">
+					<img src="resources/images/folder.png">
+			    </div>
+			    <div class="detail-content">
+			    	<div class="file-name"><h5 ng-bind="item.fileName"></h5></div>
+			    	<div class="file-time" ng-bind="item.createTime | date:'yyyy-MM-dd HH:mm:ss'"></div>
+			    </div>
+			    <div class="file-progress">
+			    	<span ng-bind="item.progress.name"></span>
+			    </div>
+			    <div class="file-download">
+			    	<a ng-if="item.progress.index == 3" style="cursor:pointer;" target="_blank"
+			    		href="javascript:;" ng-click="dialog.download(item)"></a>
+			    </div>
+			    <button class="close file-delete" type="button" ng-click="dialog.remove(item)">×</button>
+			</div>
+			<div ng-if="$parent.taskList.length < 1">
+		    	暂无任务
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+	</div>
+</div>

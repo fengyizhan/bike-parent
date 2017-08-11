@@ -1,0 +1,27 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import java.util.Date;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.junit.Test;
+
+public class Received0100Test {
+	@Test
+	public void test() throws DecoderException{
+		Header header = new Header();
+		header.setId(0x0003);
+		header.setLength(0);
+		header.setChildPackage(false);
+		header.setEnableRSA(false);
+		header.setTerminalId(100000);
+		header.setTerminalType(Header.Type.LOCK);
+		header.setSerialNo(new Date().getTime());
+		String s="000305030601020304050607080010001000201703031127003032";
+		s.replaceAll(" ", "");
+		byte[] bytes=Hex.decodeHex(s.toCharArray());
+		Received0100 received0100=new Received0100(header,bytes);
+		System.out.println(received0100.getBody().getWarnFlag());
+		System.out.println(received0100.getBody().getRunState());
+	}
+}

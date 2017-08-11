@@ -1,0 +1,120 @@
+package com.tiamaes.bike.common.bean.connector;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.integrated.DirectionType;
+import com.tiamaes.bike.common.bean.integrated.WarnCode;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "VehicleWarningInfo", description = "车辆报警信息实体")
+public class VehicleWarningInfo implements Serializable {
+
+	private static final long serialVersionUID = -8832283520597476437L;
+
+	public VehicleWarningInfo() {
+	}
+
+	public VehicleWarningInfo(Vehicle vehicle, WarnCode warnCode, double lng, double lat) {
+		this.setVehicle(vehicle);
+		this.setWarnCode(warnCode);
+		this.setWarnContent(this.getWarnCode().getName());
+		this.setLng(lng);
+		this.setLat(lat);
+	}
+
+	@ApiModelProperty(value="日志记录id")
+	private String id;
+
+	@ApiModelProperty(value="车辆信息(车辆id, 车辆编号, SIM卡号)")
+	private Vehicle vehicle;
+
+	@ApiModelProperty(value="报警码")
+	@JsonDeserialize(using = WarnCode.Deserializer.class)
+	private WarnCode warnCode;
+
+	@ApiModelProperty(value="报警内容")
+	private String warnContent;
+	
+	@ApiModelProperty(value="进出区域(0：进入停车点；1：离开停车点；2：状态变化)")
+	@JsonDeserialize(using = DirectionType.Deserializer.class)
+	private DirectionType directionType;
+	
+	@ApiModelProperty(value="报警时间")
+	private Date createTime;
+	
+	@ApiModelProperty(value="经度")
+	private double lng;
+	
+	@ApiModelProperty(value="纬度")
+	private double lat;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public WarnCode getWarnCode() {
+		return warnCode;
+	}
+
+	public void setWarnCode(WarnCode warnCode) {
+		this.warnCode = warnCode;
+	}
+
+	public String getWarnContent() {
+		return warnContent;
+	}
+
+	public void setWarnContent(String warnContent) {
+		this.warnContent = warnContent;
+	}
+
+	public DirectionType getDirectionType() {
+		return directionType;
+	}
+
+	public void setDirectionType(DirectionType directionType) {
+		this.directionType = directionType;
+	}
+
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public double getLng() {
+		return lng;
+	}
+
+	public void setLng(double lng) {
+		this.lng = lng;
+	}
+
+	public double getLat() {
+		return lat;
+	}
+
+	public void setLat(double lat) {
+		this.lat = lat;
+	}
+
+}

@@ -1,0 +1,139 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.department.service.DepartmentServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.userdetails.User;
+
+/**
+ * 部门信息管理接口实现类的单元测试
+ * @author kangty
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class DepartmentServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(DepartmentServiceTest.class);
+	
+	@Autowired
+	private DepartmentServiceInterface service;
+	
+	@Autowired
+	private ObjectMapper jacksonObjectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void addDepartment() throws Exception {
+		String id = "f7fa62d680174f3bb3d0166df76313e0";
+		String parentId = "f2287cf80a8d4b108d8ff2e2620d9220";
+		Department department = new Department();
+		Company company = new Company();
+		company.setId(parentId);
+		department.setId(id);
+		department.setName("一车队");
+		department.setCompany(company);
+		
+		service.addDepartment(department);
+		
+		Department result = service.getDepartmentById(id);
+		Assert.assertNotNull(result);
+		Assert.assertEquals(id, result.getId());
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void getListOfDepartment() throws Exception {
+		int number = 1;
+		Parameters<Department> parameters= new Parameters<Department>();
+		Department department = new Department();
+		User user = AuthorityServiceTest.setUser();
+//		user.setId("849aa67d60aa438a83e7024f1ec2d93f");
+		parameters.setUser(user);
+		parameters.setModel(department);
+		int total = service.getTotalOfDepartments(parameters);
+		Pagination<Department> pagination = new Pagination<Department>(number, total);
+		List<Department> departmentList = service.getListOfDepartments(parameters, pagination);
+		Assert.assertNotNull(departmentList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(departmentList));
+	}
+	
+	@Test
+	public void updateDepartment() throws Exception {
+		String id = "f7fa62d680174f3bb3d0166df76313e0";
+		Department department = service.getDepartmentById(id);
+		String name = "二车队";
+		department.setName(name);
+		service.updateDepartment(department);
+		
+		Department result = service.getDepartmentById(id);
+		Assert.assertEquals(name, result.getName());
+	}
+	
+	@Test
+	@Ignore
+	public void checkname() throws Exception {
+		String id = "f7fa62d680174f3bb3d0166df76313e0";
+		String parentId = "f2287cf80a8d4b108d8ff2e2620d9220";
+//		Optional<String> optional = Optional.ofNullable(null);
+		Optional<String> optional = Optional.of(id);
+		Boolean result = service.checkDepartmentName(optional, "一车队", parentId);
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+		
+	}
+	
+	@Test
+	public void deleteDepartment() throws Exception {
+		String id = "f7fa62d680174f3bb3d0166df76313e0";
+		Department department = service.getDepartmentById(id);
+		service.deleteDepartment(department);
+		department = service.getDepartmentById(id);
+		Assert.assertNull(department);
+	}
+	
+	@Test
+	public void getDepartmentsByCompanyId() throws Exception {
+		String id = "f2287cf80a8d4b108d8ff2e2620d9220";
+		List<Department> departments = service.getDepartmentsByCompanyId(id);
+		Assert.assertNotNull(departments);
+		logger.debug(jacksonObjectMapper.writeValueAsString(departments));
+	}
+	
+	@Test
+	public void getTotalUseOfCompany() throws Exception {
+		String parentId = "f2287cf80a8d4b108d8ff2e2620d9220";
+		int total = service.getTotalUseOfCompany(parentId);
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+	public static void main(String[] args) {
+		String id = UUIDGenerator.getUUID();
+		System.out.println("this test should use id: " + id);
+	}
+
+}

@@ -1,0 +1,168 @@
+package com.tiamaes.bike.storage.service;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.ProjectTripInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.storage.persistence.ProjectTripInfoMapper;
+import com.tiamaes.bike.storage.persistence.VehicleStationInfoMapper;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class VehicleStationInfoService implements VehicleStationInfoServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(VehicleStationInfoService.class);
+	
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	@Autowired
+//	private ProjectMapper projectMapper;
+	@Resource
+	private ProjectTripInfoMapper projectTripInfoMapper;
+	@Resource
+	private VehicleStationInfoMapper vehicleStationInfoMapper;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private RedisTemplate<String, Station> stationTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private RedisTemplate<String, Terminal> terminalTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Driver> driverOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private RedisTemplate<String, ProjectTripInfo> projectTripTemplate;
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public String addVehicleStationInfo(VehicleStationInfo vehicleStationInfo) throws Exception {
+		Assert.notNull(vehicleStationInfo, "车辆进出场记录不能为空");
+		Assert.notNull(vehicleStationInfo.getVehicle(), "车辆信息不能为空");
+		String vehicleId = vehicleStationInfo.getVehicle().getId();
+		Vehicle target = vehicleService.getVehicleById(vehicleId);
+		vehicleStationInfo.setVehicle(target);
+		String id = null;
+		int stationId = vehicleStationInfo.getStation().getId();
+		HashOperations<String, String, Station> stationOperator = stationTemplate.opsForHash();
+		Station station = stationOperator.get(RedisKey.STATIONS, String.valueOf(stationId));
+		vehicleStationInfo.setStation(station);
+		// 进场
+		if (VehicleStationInfo.State.IN.equals(vehicleStationInfo.getState())) {
+			// 生成进出场记录id
+			id = UUIDGenerator.getUUID();
+			// 将id存入进出场redis中
+			stringRedisTemplate.opsForHash().put(RedisKey.STATION_INOUTSTATIONS_ID, vehicleId, id);
+			// 将id存入设备拍照redis中
+			stringRedisTemplate.opsForHash().put(RedisKey.VEHICLEPHOTO_ID, vehicleId, id+",in");
+		// 出场
+		} else if (VehicleStationInfo.State.OUT.equals(vehicleStationInfo.getState())) {
+			// 从redis中获取进出场记录id
+			id = (String) stringRedisTemplate.opsForHash().get(RedisKey.STATION_INOUTSTATIONS_ID, vehicleId);
+			// id不存在
+			if (StringUtils.isBlank(id)) {
+				id = UUIDGenerator.getUUID();
+			}
+			// 将id存入设备拍照redis中
+			stringRedisTemplate.opsForHash().put(RedisKey.VEHICLEPHOTO_ID, vehicleId, id+",out");
+			// 删除id
+			stringRedisTemplate.opsForHash().delete(RedisKey.STATION_INOUTSTATIONS_ID, vehicleId);
+		}
+		Driver driver = driverOperator.get(RedisKey.VEHICLES_DRIVERS_VEHICLEID, vehicleId);
+		vehicleStationInfo.setDriver(driver);
+		vehicleStationInfo.setId(id);
+		// 保存进出场信息
+		vehicleStationInfoMapper.addVehicleStationInfo(vehicleStationInfo);
+		return id;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteVehicleStationInfo(String id) {
+		vehicleStationInfoMapper.deleteVehicleStationInfo(id);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteProjectTripInfo(String id) {
+		projectTripInfoMapper.deleteProjectTripInfo(id);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public String addProjectTripInfo(VehicleStationInfo vehicleStationInfo) throws Exception {
+		Assert.notNull(vehicleStationInfo, "车辆进出场记录不能为空");
+		Assert.notNull(vehicleStationInfo.getVehicle(), "车辆信息不能为空");
+		String vehicleId = vehicleStationInfo.getVehicle().getId();
+		Vehicle target = vehicleService.getVehicleById(vehicleId);
+		vehicleStationInfo.setVehicle(target);
+		int stationId = vehicleStationInfo.getStation().getId();
+		HashOperations<String, String, Station> stationOperator = stationTemplate.opsForHash();
+		Station station = stationOperator.get(RedisKey.STATIONS, String.valueOf(stationId));
+		vehicleStationInfo.setStation(station);
+		// 出工地
+//		String tripId = UUIDGenerator.getUUID();
+//		ProjectTripInfo projectTripInfo = null;
+//		if (VehicleStationInfo.State.OUT.equals(vehicleStationInfo.getState()) 
+//				&& Station.Type.PRODUCER.equals(station.getType())) {
+//			Vehicle vehicle = vehicleStationInfo.getVehicle();
+//			Driver driver = driverOperator.get(RedisKey.VEHICLES_DRIVERS_VEHICLEID, vehicleId);
+//			/* 获取趟次出发信息并存入redis中 */
+//			projectTripInfo = new ProjectTripInfo();
+//			projectTripInfo.setId(tripId);
+//			projectTripInfo.setVehicle(vehicle);
+//			projectTripInfo.setDriver(driver);
+////			projectTripInfo.setLoadCube(vehicle.getProperty().getLoadCube());
+//			projectTripInfo.setDriver(vehicleStationInfo.getDriver());
+//			projectTripInfo.setBeginStation(vehicleStationInfo.getStation());
+//			projectTripInfo.setBeginTime(vehicleStationInfo.getCreateTime());
+//			projectTripTemplate.opsForHash().put(RedisKey.PROJECTTRIPS, vehicleId, projectTripInfo);
+//		// 进消纳场
+//		} else if (VehicleStationInfo.State.IN.equals(vehicleStationInfo.getState()) 
+//				&& Station.Type.CONSUMER.equals(station.getType())) {
+//			/* 从redis中获取趟次出发信息, 设置趟次到达信息, 入库 */
+//			HashOperations<String, String, ProjectTripInfo> operator = projectTripTemplate.opsForHash();
+//			projectTripInfo = operator.get(RedisKey.PROJECTTRIPS, vehicleId);
+//			if (projectTripInfo == null) {
+//				return null;
+//			}
+//			projectTripInfo.setEndStation(vehicleStationInfo.getStation());
+//			projectTripInfo.setEndTime(vehicleStationInfo.getCreateTime());
+//			//根据beginStation和endStation查询出工程id
+//			String projectId = projectMapper.getByStation(projectTripInfo.getBeginStation().getId(), projectTripInfo.getEndStation().getId());
+//			projectTripInfo.setProjectId(projectId);
+//			
+//			projectTripInfoMapper.addProjectTripInfo(projectTripInfo);
+//			operator.delete(RedisKey.PROJECTTRIPS, vehicleId);
+//			
+//			/* 车辆当天趟次自增1 */
+//			String dayTripCount = (String) stringRedisTemplate.opsForHash().get(RedisKey.VEHICLES_TRIPS, vehicleId);
+//			if (StringUtils.isBlank(dayTripCount)) {
+//				dayTripCount = "0";
+//			}
+//			stringRedisTemplate.opsForHash().put(RedisKey.VEHICLES_TRIPS, vehicleId, String.valueOf(Integer.valueOf(dayTripCount)+1));
+//		}
+//		if (projectTripInfo == null) {
+//			return null;
+//		} else {
+//			return projectTripInfo.getId();
+//		}
+		return null;
+	}
+}

@@ -1,0 +1,45 @@
+package com.tiamaes.bike;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+
+//@WebIntegrationTest
+//@RunWith(SpringJUnit4ClassRunner.class)
+//@SpringApplicationConfiguration(Application.class)
+public class DemoTest {
+	private static Logger logger = LogManager.getLogger(DemoTest.class);
+	
+
+	
+	@Before
+	public void before() {
+	}
+	
+	@Test
+	public void test() throws Exception {
+		String args = "豫A12345";
+		logger.info(args);
+		
+		//将字符串转换成16进制的数字
+		String string16 = Hex.encodeHexString(args.getBytes());
+		logger.info(string16);
+		
+		byte[] bytes = string16.getBytes();
+		logger.info(new String(bytes));
+		
+		
+		//将16进制的数字转换成字符串
+		args = new String(Hex.decodeHex(string16.toCharArray()), "UTF-8");
+		logger.info(args);
+		
+		logger.info(StringUtils.leftPad("13783698404", 12, "0"));
+		
+		logger.info(Hex.encodeHexString(Hex.decodeHex("013783698404".toCharArray())));
+	}
+
+}
+

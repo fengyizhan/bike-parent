@@ -1,0 +1,106 @@
+<div ng-controller="PileRecordController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>综合查询</li>
+		<li class="active">锁桩报警记录</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">停放区</span>
+								<div class="input-group-default" style="min-width: 186px;">
+									<ui-select ng-model="searchForm.data.park" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.parks track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">报警类型</span>
+								<div class="input-group-default" style="min-width: 186px;">
+									<ui-select ng-model="searchForm.data.warnCode" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.warnCodes track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">开始时间</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.startTime"
+									is-open="searchForm.startTime.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									max-date="searchForm.data.endTime" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.startTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">结束时间</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.endTime"
+									is-open="searchForm.endTime.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									min-date="searchForm.data.startTime" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.endTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs"
+								ng-click="searchForm.submit()" style="margin-left: 10px;">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-info btn-sm" ng-click="exportExcel()">
+								<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+								<span>根据查询条件导出Excel</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="reporter/integrated/pile/page/" id="pagination" items-per-page="20">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="130">停放区编号</td>
+								<td width="130">报警类型</td>
+								<td width="130">报警时间</td>
+								<td width="130">报警地点</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td ng-bind="item.park.name"></td>
+								<td ng-bind="item.warnCode.name"></td>
+								<td ng-bind="item.createDate | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td ng-bind="item.place"></td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+</div>

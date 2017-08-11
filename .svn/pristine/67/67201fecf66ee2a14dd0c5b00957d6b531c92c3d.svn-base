@@ -1,0 +1,29 @@
+package com.tiamaes.bike.api.information.command.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.connector.command.Command;
+
+public interface CommandServiceInterface {
+	
+	/**
+	 * 发送单个指令
+	 * @param command
+	 * @return Command
+	 */
+	public Command sendCommand(Command command) ;
+	
+	/**
+	 * 发送多个指令
+	 * @param commands
+	 * @return List<Command>
+	 */
+	public List<Command> sendCommands(List<? extends Command> commands) ;
+	
+	/**
+	 * 根据车载终端的simNo获取指令
+	 * @param simNo
+	 * @return
+	 */
+	public List<Command> getListOfCommandBySimNo(String simNo);
+}

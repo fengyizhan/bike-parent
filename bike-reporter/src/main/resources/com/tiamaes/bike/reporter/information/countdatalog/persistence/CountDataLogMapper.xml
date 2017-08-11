@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.reporter.information.countdatalog.persistence.CountDataLogMapper">
+	
+	<select id="getTotalOfOrders" resultType="int">
+		SELECT COUNT(1) FROM tb_bike_borrow t 
+	</select>
+	
+	<select id="getTotalOfMoneys" resultType="double">
+		SELECT SUM(cost) FROM tb_bike_borrow t 
+	</select>
+	
+	<select id="getTotalOfTime" resultType="double">
+		SELECT SUM(TIMESTAMPDIFF(MINUTE, t.startTime, t.endTime)) FROM tb_bike_borrow t 
+	</select>
+	
+</mapper>

@@ -1,0 +1,144 @@
+package com.tiamaes.bike.wallet.information.recharge.controller;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.wallet.Recharge;
+import com.tiamaes.bike.common.bean.wallet.Style;
+import com.tiamaes.bike.wallet.information.recharge.service.RechargeServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/recharge")
+@Api(tags = {"recharge"}, description = "用户充值信息管理")
+public class RechargeController {
+	
+	private static Logger logger = LogManager.getLogger(RechargeController.class);
+	@Resource
+	private RechargeServiceInterface rechargeService;
+	
+	/**
+	 * 用户充值方式下拉列表
+	 * @return
+	 */
+	@ApiOperation(value = "用户充值方式列表初始化", notes = "用户充值方式下拉列表初始化")
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<>();
+		result.put("styles", Style.values());
+		return result;
+	}
+	
+	/**
+	 * 根据用户名获取用户充值信息
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户充值信息", notes = "根据用户名获取用户充值信息")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Recharge> get(@RequestBody Recharge recharge, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(recharge.getUsername());
+		}
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Recharge> pagination = new Pagination<>(number, pageSize);
+		List<Recharge> recharges = rechargeService.getListOfRechargesByUsername(recharge, pagination);
+		return new PageInfo<Recharge>(recharges);
+	}
+	
+	/**
+	 * 根据参数获取用户充值列表信息
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户充值信息", notes = "根据用户名获取用户充值信息")
+	@RequestMapping(value = {"query/page/{number:\\d+}","query/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Recharge> getListOfRecharge(@RequestBody Recharge recharge, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(recharge);
+		}
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Recharge> pagination = new Pagination<>(number, pageSize);
+		List<Recharge> recharges = rechargeService.getListOfRecharges(recharge, pagination);
+		return new PageInfo<Recharge>(recharges);
+	}
+	
+	/**
+	 * 新增用户充值信息
+	 * @param recharge
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "新增用户充值信息", notes = "新增用户充值信息",response = Recharge.class)
+	@ApiImplicitParam(name = "recharge", value = "用户充值实体", required = true, dataType = "Recharge")
+	@RequestMapping(method = RequestMethod.PUT)
+	public @ResponseBody Recharge add(@RequestBody Recharge recharge, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(recharge.toString());
+		}
+		recharge.setId(rechargeService.getId());
+		recharge.setCreateTime(new Date());
+		recharge = rechargeService.addRecharge(recharge);
+		return recharge;
+	}
+	
+	/**
+	 * 更新用户充值信息
+	 * @param recharge
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新用户充值信息", notes = "更新用户充值信息",response = Recharge.class)
+	@ApiImplicitParam(name = "recharge", value = "用户充值实体", required = true, dataType = "Recharge")
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	public @ResponseBody Recharge update(@RequestBody Recharge recharge, @PathVariable("id")Integer id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(recharge.toString());
+		}
+		recharge.setId(id);
+		recharge = rechargeService.updateRecharge(recharge);
+		return recharge;
+	}
+	
+	/**
+	 * 根据用户名获取用户充值信息
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户充值信息", notes = "根据用户名获取用户充值信息")
+	@RequestMapping(value = {"/userlist/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Recharge> userlist(@PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		Assert.notNull(operator,"用户登陆信息不正确！");
+		Recharge recharge=new Recharge();
+		recharge.setUsername(operator.getUsername());
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Recharge> pagination = new Pagination<>(number, pageSize);
+		List<Recharge> recharges = rechargeService.getListOfRechargesByUsername(recharge, pagination);
+		return new PageInfo<Recharge>(recharges);
+	}
+}

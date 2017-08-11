@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.reporter.integrated.pile.persistence.PileQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.PileRecord" id="pileRecordMap">
+		<id property="id" column="id"/>
+		<result property="warnCode" column="warnCode" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="warnContent" column="warnContent"/>
+		<result property="createDate" column="createDate"/>
+		<result property="place" column="place"/>
+		<association property="park" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result property="id" column="parkId"/>
+			<result property="name" column="parkName"/>
+			<result property="lng" column="lng"/>
+			<result property="lat" column="lat"/>
+		</association>
+	</resultMap>
+	
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	
+	<!-- 查询报警记录列表 -->
+	<select id="getListOfPileRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="pileRecordMap">
+		SELECT t.id,
+		       t.parkId,
+		       t.parkName,
+		       t.warnCode,
+		       t.warnContent,
+		       t.createDate,
+		       t.lng,
+		       t.lat,
+		       CONCAT_WS(',', t.lng, t.lat) AS place
+		  FROM tb_pile_warning_info t
+		<where>
+			<if test="model.park != null and model.park.id != null">
+		     AND t.parkId = #{model.park.id}
+			</if>
+			<if test="model.warnCode != null and model.warnCode.index != null">
+		     AND t.warnCode = #{model.warnCode.index}
+			</if>
+			<if test="model.startTime != null">
+		     AND t.createDate &gt;= #{model.startTime} 
+			</if>
+			<if test="model.endTime != null">
+		     AND #{model.endTime} &gt;= t.createDate
+			</if>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<!-- 指定时间段的指定区域的车辆违规信息数据信息 -->
+	<!-- <select id="getListOfVehiclePile" parameterType="map" resultMap="pileRecordMap">
+		SELECT t.id,
+		       t.carNo,
+		       t.simNo,
+		       t.createTime,
+		       t.warnCode,
+		       t.lng,
+		       t.lat
+		  FROM tb_vehicle_warning_info t
+		<where>
+			 warnCode = 1
+		     AND t.vehicleId IN
+		     <foreach item="item" index="index" collection="vehicleIds" open="(" separator="," close=")">  
+			  #{item}  
+			 </foreach>
+		     AND t.createTime>=#{pileRecord.startTime}
+			<if test="pileRecord.endTime != null">
+		     AND #{pileRecord.endTime}&gt;=t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select> -->
+</mapper>

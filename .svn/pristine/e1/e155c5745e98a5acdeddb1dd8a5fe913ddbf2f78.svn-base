@@ -1,0 +1,22 @@
+package com.tiamaes.bike.storage.persistence;
+
+import com.tiamaes.bike.common.bean.connector.ProjectTripInfo;
+
+/**
+ * 项目工程趟次记录mapper
+ * @author kangty
+ */
+public interface ProjectTripInfoMapper {
+
+	/**
+	 * 增加项目工程趟次
+	 * @param projectTripInfo
+	 */
+	void addProjectTripInfo(ProjectTripInfo projectTripInfo);
+
+	/**
+	 * 根据id删除项目工程趟次
+	 * @param id
+	 */
+	void deleteProjectTripInfo(String id);
+}

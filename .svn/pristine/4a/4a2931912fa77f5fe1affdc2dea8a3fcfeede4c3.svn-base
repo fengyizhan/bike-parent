@@ -1,0 +1,26 @@
+package com.tiamaes.bike.reporter.information.vehicle.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+
+/**
+ * @author Chen
+ *
+ */
+@SuppressWarnings("rawtypes") 
+public interface VehicleMapper {
+	
+	/**
+	 * 统计已注册的车辆数
+	 * @return
+	 */
+	int getRegisteredCount(Parameters parameters);
+	
+	/**
+	 * 根据行政区划获取所属车辆id
+	 * @param region
+	 * @return
+	 */
+	List<String> getListOfVehicleIds(String region);
+}

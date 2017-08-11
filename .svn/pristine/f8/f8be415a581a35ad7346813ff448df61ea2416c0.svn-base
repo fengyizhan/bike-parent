@@ -1,0 +1,408 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 场区，可分为生产区及消费区
+ * <p>在当前项目中，生产区代表建筑工地，消费区代表消纳场</p>
+ * 
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Station", description = "场区，可分为生产区及消费区")
+public class Station implements Serializable {
+	private static final long serialVersionUID = 423712134844831567L;
+	@ApiModelProperty(value="场区编号")
+	private Integer id;
+	@ApiModelProperty(value="场区名称(新增时必填, 查询时可不填)")
+	private String name;
+	/**
+	 * 责任人
+	 */
+	@ApiModelProperty(value="责任人(新增时必填, 查询时可不填)")
+	private String principal;
+	/**
+	 * 联系电话
+	 */
+	@ApiModelProperty(value="联系电话(新增时必填, 查询时可不填)")
+	private String telephone;
+	/**
+	 * 开始时间
+	 */
+	@ApiModelProperty(value="开始时间")
+	private Date startTime;
+	/**
+	 * 结束时间
+	 */
+	@ApiModelProperty(value="结束时间")
+	private Date endTime;
+	/**
+	 * 限速值
+	 */
+	@ApiModelProperty(value="限速值")
+	private int limitSpeedValue;
+	/**
+	 * 延迟报警值(单位：秒)
+	 */
+	@ApiModelProperty(value="延迟报警值(单位：秒)")
+	private int delayValue;
+	/**
+	 * 场区类型
+	 */
+	@ApiModelProperty(value="场区类型")
+	@JsonDeserialize(using = Type.Deserializer.class)
+	private Type type;
+	/**
+	 * 场区地理坐标集
+	 */
+	@ApiModelProperty(value="场区地理坐标集")
+	private List<Pathpoint> paths;
+	
+	private Date createDate;
+	
+	/**
+	 * 总土方数(单位：万m³)
+	 */
+	@ApiModelProperty(value="总土方数(单位：万m³)")
+	private int earthWork;
+	
+	/**
+	 * 报警值(单位：秒)
+	 */
+	@ApiModelProperty(value="报警值(单位：秒)")
+	private int reportValue;
+	
+	/**
+	 * 地址
+	 */
+	@ApiModelProperty(value="地址(新增时必填, 查询时可不填)")
+	private String address;
+	
+	/**
+	 * 行政区划代码
+	 */
+	@ApiModelProperty(value="行政区划代码(新增时必填, 查询时可不填)")
+	private String districtCode;
+	
+	/**
+	 * 施工单位
+	 */
+	@ApiModelProperty(value="施工单位(新增时必填, 查询时可不填)")
+	private String unit;
+	
+	/**
+	 * 圆形场区的半径
+	 */
+	@ApiModelProperty(value="圆形场区的半径")
+	private double radius;
+	
+	/**
+	 * 区域类型
+	 */
+	@ApiModelProperty(value="区域类型")
+	@JsonDeserialize(using = AreaType.Deserializer.class)
+	private AreaType areaType;
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getPrincipal() {
+		return principal;
+	}
+
+	public void setPrincipal(String principal) {
+		this.principal = principal;
+	}
+
+	public String getTelephone() {
+		return telephone;
+	}
+
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	public int getLimitSpeedValue() {
+		return limitSpeedValue;
+	}
+
+	public void setLimitSpeedValue(int limitSpeedValue) {
+		this.limitSpeedValue = limitSpeedValue;
+	}
+
+	public int getDelayValue() {
+		return delayValue;
+	}
+
+	public void setDelayValue(int delayValue) {
+		this.delayValue = delayValue;
+	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public List<Pathpoint> getPaths() {
+		return paths;
+	}
+
+	public void setPaths(List<Pathpoint> paths) {
+		this.paths = paths;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public int getReportValue() {
+		return reportValue;
+	}
+
+	public void setReportValue(int reportValue) {
+		this.reportValue = reportValue;
+	}
+
+	public int getEarthWork() {
+		return earthWork;
+	}
+
+	public void setEarthWork(int earthWork) {
+		this.earthWork = earthWork;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	
+	public String getDistrictCode() {
+		return districtCode;
+	}
+
+	public void setDistrictCode(String districtCode) {
+		this.districtCode = districtCode;
+	}
+
+	public String getUnit() {
+		return unit;
+	}
+
+	public void setUnit(String unit) {
+		this.unit = unit;
+	}
+
+	public double getRadius() {
+		return radius;
+	}
+
+	public void setRadius(double radius) {
+		this.radius = radius;
+	}
+
+	public AreaType getAreaType() {
+		return areaType;
+	}
+
+	public void setAreaType(AreaType areaType) {
+		this.areaType = areaType;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Type implements com.tiamaes.bike.common.Enum<Type> {
+
+		PRODUCER("建筑工地"), CONSUMER("消纳场");
+
+		private String name;
+
+		private Type(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static Type valueOf(@JsonProperty("index") final int index) {
+			Type[] types = Type.values();
+			if (index > 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<Type> {
+			@Override
+			public Type deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Type.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return Type.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Type.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+	
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum AreaType implements com.tiamaes.bike.common.Enum<AreaType> {
+
+		POLYGON("多边形"), CIRCLE("圆");
+
+		private String name;
+
+		private AreaType(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static AreaType valueOf(@JsonProperty("index") final int index) {
+			AreaType[] types = AreaType.values();
+			if (index > 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<AreaType> {
+			@Override
+			public AreaType deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return AreaType.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return AreaType.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return AreaType.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+}

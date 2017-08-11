@@ -1,0 +1,12 @@
+package com.tiamaes.bike.connector.persistence;
+
+import com.tiamaes.bike.common.bean.information.Terminal;
+
+public interface TerminalMapper {
+	
+	/**
+	 * 更新终端
+	 * @param terminal
+	 */
+	void updateTerminal(Terminal terminal);
+}

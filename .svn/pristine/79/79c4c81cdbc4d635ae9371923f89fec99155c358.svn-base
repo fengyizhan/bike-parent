@@ -1,0 +1,53 @@
+package com.tiamaes.bike.common.bean.message;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+
+/**
+ * 人工确认报警消息
+ * @author waibao001
+ *
+ */
+public class Message8203 extends Message {
+
+	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * 报警消息流水号
+	 */
+	private short warnMsgSerialNo;
+	/**
+	 * 人工确认报警类型
+	 */
+	private int warnType;
+	
+	public Message8203(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8203);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+
+	public void setResponseBody(Header header, int warnType) throws DecoderException {
+		StringBuffer bufferStr = new StringBuffer();
+		bufferStr.append(String.format("%04X", 0));
+		bufferStr.append(String.format("%08X", warnType));
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		this.setBody(responseBody);
+	}
+	
+	public short getWarnMsgSerialNo() {
+		return warnMsgSerialNo;
+	}
+	public void setWarnMsgSerialNo(short warnMsgSerialNo) {
+		this.warnMsgSerialNo = warnMsgSerialNo;
+	}
+	public int getWarnType() {
+		return warnType;
+	}
+	public void setWarnType(int warnType) {
+		this.warnType = warnType;
+	}
+}

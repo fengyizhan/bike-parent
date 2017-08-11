@@ -1,0 +1,132 @@
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('TerminalController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/			
+			var Terminal = $resource("api/information/terminal/:id", { "id" : "@id" }, {
+				init: { method: 'GET',url: 'api/information/terminal/init'},
+				//getTerminalTypes: { method: 'GET', isArray: true, url : 'information/dictionary/terminal/types'},
+				getTerminalTypesByFactory: { method: 'GET', isArray: true, url : 'api/information/dictionary/terminal/types/:factoryId'},
+				validateName: {method: 'GET', url: 'api/information/terminal/checkname/:name/:id'},
+				get: { method: 'GET'},
+				save: { method: 'PUT'},
+				remove: { method: 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			var selected = {name : "全部"};
+			$scope.searchForm = {
+				bindStates:[selected],
+				terminalStates:[selected],
+				factories:[selected],
+				data:{
+					"state":selected,
+					"factory":selected
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "终端信息详情";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				$scope.dialog.editabled = true;
+				$scope.dialog.itemEditabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.title = "新增终端信息";
+				$scope.dialog.data = {
+					/*"installTime" : (function(){
+						let now = new Date();
+						return now;
+					})(),*/
+					//设备状态：正常
+					"state":$scope.dialog.terminalStates[0],
+					//软件版本默认0
+					"softwareVersion":0,
+					//硬件版本默认0
+					"hardwareVersion":0
+				};
+				$scope.dialog.show();
+			}
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.itemEditabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "修改终端信息";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该终端信息?',callback:function(){
+                    Terminal.remove({"id":target.id},function(response){
+                    	$scope.pagination.remove(target);
+                    });
+				}}).show();
+			};
+			
+			/**============================================页面元素初始化部分============================================**/
+			
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				Terminal.init(function(response){
+					//设备状态
+					$scope.searchForm.terminalStates = $scope.searchForm.terminalStates.concat(response.terminalStates);
+					dialog.terminalStates = response.terminalStates;
+					//生产厂家
+					$scope.searchForm.factories = $scope.searchForm.factories.concat(response.factories);
+					dialog.factories = response.factories;
+				});
+				
+				//生产厂家--》终端类型级联查询(对话框)
+				dialog.selectFactory = function(item){
+					if(!item.id){
+						dialog.factories.selected = undefined;
+						dialog.terminalTypes.selected = [selected];
+						return;
+					}
+					Terminal.getTerminalTypesByFactory({"factoryId":item.id},function(response){
+						dialog.data.type = [selected];
+						dialog.terminalTypes = response;
+					});
+				};
+				//设备类型
+				//dialog.terminalTypes = Terminal.getTerminalTypes();
+				
+				dialog.createDate = {
+					"open": function($event) {
+						dialog.createDate.opened = true;
+					}
+				};
+				dialog.validateName = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Terminal.validateName({"id": dialog.data.id, "name": name}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				dialog.submit = function(event){
+					event.preventDefault();
+					Terminal.save($scope.dialog.data,function(response){
+						if($scope.dialog.increased){
+							$scope.pagination.unshift(response);
+						}else{
+							$scope.pagination.refresh(response);
+						}
+                    });
+					$scope.dialog.close();
+				};
+			});
+		}]);
+	});
+})(window.angular);

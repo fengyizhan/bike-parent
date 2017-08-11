@@ -1,0 +1,37 @@
+<div class="md-content">
+	<div class="modal-header">
+		<h3>车牌号：<span ng-bind="dialog.target.name"></span></h3>
+		<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+	</div>
+	<div class="modal-body" style="padding: 0;background:#000;">
+		<div class="container-fluid" style="padding: 0;">
+			<div class="row" style="margin: 0;">
+				<!-- <div class="col-md-4" style="padding: 0;" ng-repeat="item in dialog.channels.slice(0,3) track by $index">
+					<div class="embed-responsive embed-responsive-4by3" ng-if="item !== undefined">
+						<iframe class="embed-responsive-item" ng-src="{{item}}"></iframe>
+					</div>
+				</div> -->
+				<div class="col-md-4" style="padding: 0;">
+					<div id="hlsjslive1" class="is-closeable hlsjslive"></div>
+				</div>
+				<!-- <div class="col-md-4" style="padding: 0;">
+					<div class="embed-responsive embed-responsive-4by3">
+						<video id="my_video_1" class="video-js vjs-default-skin" controls vjs-video>
+		    				<source src="" type="application/x-mpegURL">
+		  				</video>
+					</div>
+				</div> -->
+			</div>
+			<div class="row" style="margin: 0;">
+				<!-- <div class="col-md-4" style="padding: 0;" ng-repeat="item in dialog.channels.slice(3) track by $index">
+					<div class="embed-responsive embed-responsive-4by3" ng-if="item !== undefined">
+						<iframe class="embed-responsive-item" ng-src="{{item}}"></iframe>
+					</div>
+				</div> -->
+				<div class="col-md-4" style="padding: 0;">
+					<div id="hlsjslive4" class="is-closeable hlsjslive"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

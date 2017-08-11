@@ -1,0 +1,131 @@
+package com.tiamaes.bike.wallet.information.consume.controller;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.Result;
+import com.tiamaes.bike.common.bean.wallet.Consume;
+import com.tiamaes.bike.common.bean.wallet.WalletUser;
+import com.tiamaes.bike.wallet.information.consume.service.ConsumeServiceInterface;
+import com.tiamaes.bike.wallet.information.walletUser.service.WalletUserServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/consume")
+@Api(tags = {"consume"}, description = "用户消费信息管理")
+public class ConsumeController {
+	
+	private static Logger logger = LogManager.getLogger(ConsumeController.class);
+	@Resource
+	private ConsumeServiceInterface consumeService;
+	@Resource
+	private WalletUserServiceInterface walletUserService;
+	/**
+	 * 根据用户名获取用户消费信息
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户消费信息", notes = "根据用户名获取用户消费信息")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Consume> get(@RequestBody Consume consume, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(consume.getUsername());
+		}
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Consume> pagination = new Pagination<>(number, pageSize);
+		List<Consume> consumes = consumeService.getListOfConsumesByUsername(consume, pagination);
+		return new PageInfo<Consume>(consumes);
+	}
+	
+	/**
+	 * 新增用户消费信息
+	 * @param consume
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "新增用户消费信息", notes = "新增用户消费信息",response = Consume.class)
+	@ApiImplicitParam(name = "consume", value = "用户消费实体", required = true, dataType = "Consume")
+	@RequestMapping(method = RequestMethod.PUT)
+	public @ResponseBody Consume add(@RequestBody Consume consume, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(consume.toString());
+		}
+		consume.setId(consumeService.getId());
+		consume.setCreateTime(new Date());
+		consume = consumeService.addConsume(consume);
+		return consume;
+	}
+	
+	/**
+	 * 更新用户消费信息
+	 * @param consume
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新用户消费信息", notes = "更新用户消费信息",response = Consume.class)
+	@ApiImplicitParam(name = "consume", value = "用户消费实体", required = true, dataType = "Consume")
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	public @ResponseBody Consume update(@RequestBody Consume consume, @PathVariable("id")Integer id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(consume.toString());
+		}
+		consume.setId(id);
+		consume = consumeService.updateConsume(consume);
+		return consume;
+	}
+	
+	/**
+	 * APP用户锁车结账时新增用户消费信息
+	 * @param consume
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "APP用户锁车结账时新增用户消费信息", notes = "APP用户锁车结账时新增用户消费信息",response = Consume.class)
+	@ApiImplicitParam(name = "consume", value = "用户消费实体", required = true, dataType = "Consume")
+	@RequestMapping(value = "/userConsume",method = RequestMethod.POST)
+	public @ResponseBody Result addConsume(@RequestBody Consume consume, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(consume.toString());
+		}
+		String username=consume.getUsername();
+		Assert.notNull(username,"用户信息不正确！");
+		Result result=new Result();
+		result.setSuccess(true);
+		Map dataMap=result.getData();
+		try {
+			consume.setId(consumeService.getId());
+			consume.setCreateTime(new Date());
+			walletUserService.updateWalletUserByPayConsume(consume);
+			dataMap.put("result",consume);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setSuccess(false);
+			result.setMessage("消费扣款异常！");
+		}
+		return result;
+	}
+	
+}

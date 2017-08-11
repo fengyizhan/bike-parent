@@ -1,0 +1,138 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * App用户附加信息
+ * @author kangtianyu
+ */
+@ApiModel(value = "Driver", description = "App用户附加信息")
+public class Driver implements Serializable {
+	private static final long serialVersionUID = -3432865544246927095L;
+	@ApiModelProperty(value="主键(入库必需)")
+	private String username;
+	@ApiModelProperty(value="身份证号")
+	private String identityCard;
+	@ApiModelProperty(value="黑白名单标识")
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State state;
+	@ApiModelProperty(value="注册时间")
+	private Date createDate;
+	
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getIdentityCard() {
+		return identityCard;
+	}
+	
+	public void setIdentityCard(String identityCard) {
+		this.identityCard = identityCard;
+	}
+	
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+	
+	public Date getCreateDate() {
+		return createDate;
+	}
+	
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+	
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum State implements com.tiamaes.bike.common.Enum<State> {
+
+		WHITE("白名单"), BLACK("黑名单");
+
+		private String name;
+
+		State(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static State valueOf(@JsonProperty("index") final int index) {
+			State[] types = State.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<State> {
+			@Override
+			public State deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return State.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return State.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return State.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+}

@@ -1,0 +1,97 @@
+package com.tiamaes.bike.wallet;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.wallet.Recharge;
+import com.tiamaes.bike.common.bean.wallet.Style;
+import com.tiamaes.bike.wallet.information.recharge.service.RechargeServiceInterface;
+import com.tiamaes.mybatis.Pagination;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class RechargeServiceTest {
+	private static Logger logger = LogManager.getLogger(RechargeServiceTest.class);
+	
+	private String username = "18538317749";
+	
+	private Integer id = 10000;
+
+	@Autowired
+	private RechargeServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+
+	@Test
+	public void test001AddRechargeTest() throws Exception {
+		Recharge recharge = new Recharge();
+		recharge.setId(id);
+		recharge.setUsername(username);
+		recharge.setMoney(300.0F);
+		recharge.setStyle(Style.ALIPAY);
+		recharge.setCreateTime(new Date());
+		service.addRecharge(recharge);
+		Recharge result = service.getRechargeById(id);
+		Assert.assertNotNull(result);
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void test002GetListOfRechargesByUsername() throws Exception {
+		Recharge recharge = new Recharge();
+		recharge.setUsername(username);
+		Pagination<Recharge> pagination = new Pagination<>(1, 10);
+		List<Recharge> recharges = service.getListOfRechargesByUsername(recharge, pagination);
+		Assert.assertNotNull(recharges);
+		logger.debug(jacksonObjectMapper.writeValueAsString(recharges));
+	}
+	
+	@Test
+	public void test003GetListOfRecharges() throws Exception {
+		Recharge recharge = new Recharge();
+		Pagination<Recharge> pagination = new Pagination<>(1, 20);
+		List<Recharge> recharges = service.getListOfRecharges(recharge, pagination);
+		Assert.assertNotNull(recharges);
+		logger.debug(jacksonObjectMapper.writeValueAsString(recharges));
+	}
+	
+	@Test
+	public void test004UpdateRechargeTest() throws Exception {
+		Recharge recharge = new Recharge();
+		recharge.setUsername(username);
+		recharge.setId(id);
+		recharge.setUsername(username);
+		recharge.setMoney(500.0F);
+		recharge.setStyle(Style.ALIPAY);
+		service.updateRecharge(recharge);
+		Recharge result = service.getRechargeById(id);
+		Assert.assertNotNull(result);
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+}

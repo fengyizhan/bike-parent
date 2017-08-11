@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.vehicle.persistence.VehicleMapper">
+	<resultMap id="vehicleMap" type="com.tiamaes.bike.common.bean.information.Vehicle">
+		<id property="id" column="id"/>
+		<result property="name" column="name"/>
+		<result property="vinCode" column="vin"/>
+		<result property="registered" column="registered"/>
+		<result property="remark" column="remark"/>
+		<result property="carNo" column="carNo"/>
+		<result column="plateColor" property="plateColor" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<association property="department" javaType="com.tiamaes.bike.common.bean.information.Department">
+			<result column="departmentId" property="id"/>
+			<result column="departmentName" property="name"/>
+		</association>
+		<association property="company" javaType="com.tiamaes.bike.common.bean.information.Company">
+				<id column="companyId" property="id"/>
+				<result column="companyName" property="name"/>
+			</association>
+		<association property="terminal" javaType="com.tiamaes.bike.common.bean.information.Terminal">
+			<result column="terminalId" property="id"/>
+			<result column="terminalNo" property="name"/>
+			<result column="simNo" property="simNo"/>
+			<result column="authentication" property="authentication"/>
+			<result column="terminalRegistered" property="registered"/>
+			<result column="terminalState" property="state" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+			<association property="type" javaType="com.tiamaes.bike.common.bean.information.Terminal$Type">
+				<result column="terminalTypeName" property="name"/>
+			</association>
+		</association>
+		<association property="property" javaType="com.tiamaes.bike.common.bean.information.Vehicle$Property">
+			<result property="motorId" column="motorId"/>
+			<result property="operPermit" column="operPermit"/>
+			<result property="endDate" column="endDate"/>
+			<result property="startDate" column="startDate"/>
+			<result property="createDate" column="createDate"/>
+			<result property="loadCube" column="loadCube"/>
+			<result column="useType" property="useType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+			<result column="runStatus" property="runStatus" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/> 
+			<association property="industryType" javaType="com.tiamaes.bike.common.bean.information.IndustryType">
+				<result column="industryTypeId" property="id"/>
+				<result column="industryTypeName" property="name"/>
+			</association>
+			<association property="vehicleType" javaType="com.tiamaes.bike.common.bean.information.VehicleType">
+				<result column="vehicleTypeId" property="id"/>
+				<result column="vehicleTypeName" property="name"/>
+			</association>
+			<association property="province" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="provinceId" property="id"/>
+				<result column="provinceName" property="name"/>
+			</association>
+			<association property="city" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="cityId" property="id"/>
+				<result column="cityName" property="name"/>
+			</association>
+			<association property="region" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="regionId" property="id"/>
+				<result column="regionName" property="name"/>
+			</association>
+		</association>
+		<association property="project" javaType="com.tiamaes.bike.common.bean.information.Project">
+			<result column="projectId" property="id"/>
+			<result column="projectName" property="name"/>
+		</association>
+	</resultMap>
+	
+	<!-- 根据Id查询车辆信息 -->
+	<select id="getVehicleById" parameterType="String" resultMap="vehicleMap">
+		<![CDATA[
+		SELECT t.id,
+			   t.name,
+			   t.name			AS carNo, 
+			   t.plateColor,
+			   t.useType,
+			   t.region,
+			   t.startDate,
+			   t.endDate,
+			   t.operPermit,
+			   t.motorId,
+			   t.runStatus,
+			   t.createDate,
+			   t.registered,
+			   t.remark,
+			   t.loadCube,
+			   d.id 			AS departmentId,
+			   d.name 			AS departmentName,
+			   c.id             AS companyId,
+			   c.name			AS companyName,
+			   te.id      		AS terminalId,
+			   te.name  		AS terminalNo,
+			   te.state			AS terminalState,
+			   tt.name			AS terminalTypeName,
+			   te.simNo 		AS simNo,
+			   i.id 			AS industryTypeId,
+			   i.name       	AS industryTypeName,
+			   v.id 			AS vehicleTypeId,
+			   v.name 			AS vehicleTypeName,
+			   r.id				AS regionId,
+			   r.name			AS regionName,
+			   r1.id			AS cityId,
+			   r1.name			AS cityName,
+			   r2.id			AS provinceId,
+			   r2.name			AS provinceName
+		  FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+		WHERE t.id = #{id}
+		]]>
+	</select>
+	<!-- 查询车辆信息列表 -->
+	<select id="getListOfVehicles" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="vehicleMap">
+		SELECT t.id,
+			   t.name,
+			   t.name			AS carNo, 
+			   t.plateColor,
+			   t.useType,
+			   t.region,
+			   t.startDate,
+			   t.endDate,
+			   t.operPermit,
+			   t.motorId,
+			   t.vin,
+			   t.runStatus,
+			   t.createDate,
+			   t.registered,
+			   t.remark,
+			   t.loadCube,
+			   d.id 			AS departmentId,
+			   d.name 			AS departmentName,
+			   c.id             AS companyId,
+			   c.name			AS companyName,
+			   te.id      		AS terminalId,
+			   te.name  		AS terminalNo,
+			   te.state			AS terminalState,
+			   tt.name			AS terminalTypeName,
+			   te.simNo 		AS simNo,
+			   i.id 			AS industryTypeId,
+			   i.name       	AS industryTypeName,
+			   v.id 			AS vehicleTypeId,
+			   v.name 			AS vehicleTypeName,
+			   r.id				AS regionId,
+			   r.name			AS regionName,
+			   r1.id			AS cityId,
+			   r1.name			AS cityName,
+			   r2.id			AS provinceId,
+			   r2.name			AS provinceName,
+			   p.id             AS projectId,
+			   IFNULL(p.name,'暂无') AS projectName
+		  FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name.trim() !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null and model.terminal.name.trim() != ''">
+		     AND te.name LIKE CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null and model.terminal.simNo.trim() != ''">
+		     AND te.simNo LIKE CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model.property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	<select id="getTotalOfVehicles" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) 
+			     FROM Tb_Vehicle t 
+					  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name.trim() !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null and model.terminal.name.trim() != ''">
+		     AND te.name LIKE CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null and model.terminal.simNo.trim() != ''">
+		     AND te.simNo LIKE CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model.property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+	</select>
+	
+	<!-- 保存车辆信息 -->
+	<insert id="addVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		INSERT INTO Tb_Vehicle (id,name,plateColor,parentId,createDate,runStatus,
+								useType,industryType,vehicleType,startDate,endDate,operPermit,
+								motorId,region,remark,loadCube)
+						 VALUES(#{id,jdbcType=CHAR},
+						 		#{name,jdbcType=VARCHAR},
+						 		#{plateColor,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						 		#{department.id,jdbcType=CHAR},
+						 		NOW(),
+						 		#{property.runStatus,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						 		#{property.useType,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						 		#{property.industryType.id,jdbcType=CHAR},
+						 		#{property.vehicleType.id,jdbcType=CHAR},
+						 		#{property.startDate,jdbcType=DATE},
+						 		#{property.endDate,jdbcType=DATE},
+						 		#{property.operPermit,jdbcType=VARCHAR},
+						 		#{property.motorId,jdbcType=VARCHAR},
+						 		#{property.region.id,jdbcType=VARCHAR},
+						 		#{remark,jdbcType=VARCHAR},
+						 		#{property.loadCube,jdbcType=INTEGER}
+						 		)
+	</insert>
+	
+	<!-- 更新车辆信息 -->
+	<update id="updateVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		UPDATE Tb_Vehicle 
+					SET name=#{name,jdbcType=VARCHAR},
+						plateColor=#{plateColor,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+			 			parentId=#{department.id,jdbcType=CHAR},
+			 			runStatus=#{property.runStatus,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						useType=#{property.useType,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						industryType=#{property.industryType.id,jdbcType=CHAR},
+						vehicleType=#{property.vehicleType.id,jdbcType=CHAR},
+						startDate=#{property.startDate,jdbcType=DATE},
+						endDate=#{property.endDate,jdbcType=DATE},
+						operPermit=#{property.operPermit,jdbcType=VARCHAR},
+						motorId=#{property.motorId,jdbcType=VARCHAR},
+						region=#{property.region.id,jdbcType=VARCHAR},
+						remark=#{remark,jdbcType=VARCHAR},
+						loadCube=#{property.loadCube,jdbcType=INTEGER}
+				    WHERE id = #{id}
+	</update>
+	
+	<!-- 删除车辆信息 -->
+	<delete id="deleteVehicle" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		DELETE FROM Tb_Vehicle WHERE id = #{id}
+	</delete>
+	
+	<!-- 检查车牌是否存在 -->
+	<select id="hasExists" parameterType="String" resultType="boolean">
+		<![CDATA[ SELECT COUNT(1) FROM Tb_Vehicle T WHERE T.name = #{name} ]]> 
+	</select>
+	<!-- 通过车牌号模糊查询所有车辆 -->
+	<select id="getAllVehiclesWithPlateNo" parameterType="String" resultType="com.tiamaes.bike.common.bean.information.Vehicle">
+		SELECT id,name FROM Tb_Vehicle WHERE name LIKE CONCAT('%',CONCAT(#{plateNo},'%'))
+	</select>
+	
+	<!-- 查询终端信息列表 -->
+	<select id="getVehicleBySimNo" parameterType="String" resultMap="vehicleMap">
+		SELECT t.id,
+			   t.name,
+			   t.name			AS carNo, 
+			   t.plateColor,
+			   t.useType,
+			   t.region,
+			   t.startDate,
+			   t.endDate,
+			   t.operPermit,
+			   t.motorId,
+			   t.runStatus,
+			   t.createDate,
+			   t.registered,
+			   t.remark,
+			   t.loadCube,
+			   d.id 			AS departmentId,
+			   d.name 			AS departmentName,
+			   c.id             AS companyId,
+			   c.name			AS companyName,
+			   te.id      		AS terminalId,
+			   te.name  		AS terminalNo,
+			   te.state			AS terminalState,
+			   te.authentication,
+			   te.registered    AS terminalRegistered,
+			   tt.name			AS terminalTypeName,
+			   te.simNo 		AS simNo,
+			   i.id 			AS industryTypeId,
+			   i.name       	AS industryTypeName,
+			   v.id 			AS vehicleTypeId,
+			   v.name 			AS vehicleTypeName,
+			   r.id				AS regionId,
+			   r.name			AS regionName,
+			   r1.id			AS cityId,
+			   r1.name			AS cityName,
+			   r2.id			AS provinceId,
+			   r2.name			AS provinceName
+		  FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId  
+		 WHERE te.simNo = #{simNo}  
+	</select>
+	
+	<!-- 查询除本项目的车辆信息列表 -->
+	<select id="getListOfVehiclesAnother" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="vehicleMap">
+		SELECT * FROM (SELECT t.id,
+			   t.name,
+			   t.name			AS carNo, 
+			   t.plateColor,
+			   t.useType,
+			   t.region,
+			   t.startDate,
+			   t.endDate,
+			   t.operPermit,
+			   t.motorId,
+			   t.runStatus,
+			   t.createDate,
+			   t.registered,
+			   t.remark,
+			   t.loadCube,
+			   d.id 			AS departmentId,
+			   d.name 			AS departmentName,
+			   c.id             AS companyId,
+			   c.name			AS companyName,
+			   te.id      		AS terminalId,
+			   te.name  		AS terminalNo,
+			   te.state			AS terminalState,
+			   tt.name			AS terminalTypeName,
+			   te.simNo 		AS simNo,
+			   i.id 			AS industryTypeId,
+			   i.name       	AS industryTypeName,
+			   v.id 			AS vehicleTypeId,
+			   v.name 			AS vehicleTypeName,
+			   r.id				AS regionId,
+			   r.name			AS regionName,
+			   r1.id			AS cityId,
+			   r1.name			AS cityName,
+			   r2.id			AS provinceId,
+			   r2.name			AS provinceName,
+			   IFNULL(p.id,'暂无')  AS projectId,
+			   IFNULL(p.name,'暂无') AS projectName
+		  FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+				t.registered = 1
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null">
+		     AND te.name LIKE CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null">
+		     AND te.simNo LIKE CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model.property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+		ORDER BY t.createDate DESC ) sub
+		WHERE sub.projectId != #{model.param.id}
+	</select>
+	<!-- 查询除本项目的车辆信息总数 -->
+	<select id="getTotalOfVehiclesAnother" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) FROM (SELECT t.id, IFNULL(p.id,'暂无')  AS projectId
+			     FROM Tb_Vehicle t 
+					  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+				t.registered = 1
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null">
+		     AND te.name LIKE CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null">
+		     AND te.simNo LIKE CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model.property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+		) sub
+		WHERE sub.projectId != #{model.param.id}
+	</select>
+	
+	<!-- 查询工程添加车辆信息列表 -->
+	<select id="getListOfVehiclesP" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="vehicleMap">
+		SELECT t.id,
+			   t.name,
+			   t.name			AS carNo, 
+			   t.plateColor,
+			   t.useType,
+			   t.region,
+			   t.startDate,
+			   t.endDate,
+			   t.operPermit,
+			   t.motorId,
+			   t.vin,
+			   t.runStatus,
+			   t.createDate,
+			   t.registered,
+			   t.remark,
+			   t.loadCube,
+			   d.id 			AS departmentId,
+			   d.name 			AS departmentName,
+			   c.id             AS companyId,
+			   c.name			AS companyName,
+			   te.id      		AS terminalId,
+			   te.name  		AS terminalNo,
+			   te.state			AS terminalState,
+			   tt.name			AS terminalTypeName,
+			   te.simNo 		AS simNo,
+			   i.id 			AS industryTypeId,
+			   i.name       	AS industryTypeName,
+			   v.id 			AS vehicleTypeId,
+			   v.name 			AS vehicleTypeName,
+			   r.id				AS regionId,
+			   r.name			AS regionName,
+			   r1.id			AS cityId,
+			   r1.name			AS cityName,
+			   r2.id			AS provinceId,
+			   r2.name			AS provinceName,
+			   p.id             AS projectId,
+			   IFNULL(p.name,'暂无') AS projectName
+		  FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+				t.registered = 1
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name.trim() !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null and model.terminal.name.trim() != ''">
+		     AND te.name LIKE  CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null and model.terminal.simNo.trim() != ''">
+		     AND te.simNo LIKE  CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model. property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	<select id="getTotalOfVehiclesP" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) 
+			     FROM Tb_Vehicle t 
+			  LEFT JOIN Tb_Department d ON t.parentId=d.id 
+			  LEFT JOIN Tb_Company c ON d.parentId = c.id
+			  LEFT JOIN Tb_Terminal te ON t.terminalId=te.id 
+			  LEFT JOIN Tb_TerminalType tt ON te.typeId=tt.id 
+			  LEFT JOIN Tb_IndustryType i ON t.industryType=i.id 
+			  LEFT JOIN Tb_VehicleType v ON t.vehicleType=v.id 
+			  LEFT JOIN Tb_Region r ON t.region=r.id 
+			  LEFT JOIN Tb_Region r1 ON r1.id=r.parentId 
+			  LEFT JOIN Tb_Region r2 ON r2.id=r1.parentId 
+			  LEFT JOIN Tb_Project_Vehicle pv ON t.id=pv.vehicleId
+			  LEFT JOIN Tb_Project p ON pv.projectId=p.id
+		<where>
+				t.registered = 1
+			<if test="model.company != null and model.company.id!=null ">
+		     AND t.parentId IN (SELECT id FROM Tb_Department WHERE parentId = #{model.company.id} )
+			</if>
+			<if test="model.department!=null and model.department.id != null">
+		     AND t.parentId = #{model.department.id}
+			</if>
+			<if test="model.name!=null and model.name.trim() !=''">
+		     AND t.name LIKE CONCAT('%',CONCAT(#{model.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.name != null and model.terminal.name.trim() != ''">
+		     AND te.name LIKE  CONCAT('%',CONCAT(#{model.terminal.name},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.simNo != null and model.terminal.simNo.trim() != ''">
+		     AND te.simNo LIKE  CONCAT('%',CONCAT(#{model.terminal.simNo},'%'))
+			</if>
+			<if test="model.terminal != null and model.terminal.type != null and model.terminal.type.id != null">
+		     AND te.typeId = #{model.terminal.type.id}
+			</if>
+			<if test="model.property != null and model.property.runStatus != null and model. property.runStatus.index != null">
+		     AND t.runStatus = #{model.property.runStatus.index}
+			</if>
+			<if test="model.project != null and model.project.id!=null ">
+		     AND p.id = #{model.project.id}
+			</if>
+			<include refid="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper.userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include>
+		</where>
+	</select>
+	
+	<!-- 根据部门id获取部门与车辆关联数 -->
+	<select id="getTotalUseOfDepartment" parameterType="String" resultType="int">
+		SELECT COUNT(1) FROM tb_vehicle
+		  WHERE parentId = #{id}
+	</select>
+	<!-- 根据车辆id统计总土方数 -->
+	<select id="getLoadcubesByIds" resultType="double">
+		SELECT t.loadCube FROM tb_vehicle t WHERE t.id=#{item}
+	</select>
+	<!-- 统计车辆总数 -->
+	<select id="getRegisteredCount" resultType="int">
+		SELECT COUNT(1) FROM tb_vehicle WHERE registered = 1
+	</select>
+</mapper>

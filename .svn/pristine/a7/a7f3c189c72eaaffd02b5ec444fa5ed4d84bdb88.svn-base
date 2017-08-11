@@ -1,0 +1,544 @@
+package com.tiamaes.bike.api.information.project.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.command.service.CommandServiceInterface;
+import com.tiamaes.bike.api.information.project.persistence.ProjectMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectRouteMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectVehicleMapper;
+import com.tiamaes.bike.api.information.route.persistence.RouteMapper;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.command.CircularDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonDelCommand;
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.information.ProjectRoute;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Route;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class ProjectService implements ProjectServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(ProjectService.class);
+	
+	@Resource
+	private RouteMapper routeMapper;
+	@Resource
+	private ProjectMapper projectMapper;
+	@Resource
+	private ProjectRouteMapper projectRouteMapper;
+	@Resource
+	private ProjectVehicleMapper projectVehicleMapper;
+	@Resource
+	private CommandServiceInterface commandService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Project> operator;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Project getProjectById(String id) {
+		Assert.notNull(id, "工程编号不能为空!");
+		Project result = operator.get(RedisKey.PROJECTS, id);
+		if (result == null) {
+			result = projectMapper.getProjectById(id);
+			if (result != null) {
+				operator.putIfAbsent(RedisKey.PROJECTS, id, result);
+			}
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Project> getListOfProjects(Project project, Pagination<Project> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return projectMapper.getListOfProjects(project);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfProjects(Project project) {
+		return projectMapper.getTotalOfProjects(project);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Project addProject(Project project) {
+		Assert.notNull(project);
+		Assert.notNull(project.getName(), "工程名称不能为空");
+		Assert.isTrue(!projectMapper.hasExists(null, project.getName()), "工程名称已经存在");
+		Assert.notNull(project.getAddress(), "工程地址不能为空");
+		Assert.notNull(project.getUnit(), "工程承建单位不能为空");
+		projectMapper.addProject(project);
+		projectRouteMapper.addProjectRoutes(project.getId(), project.getProjectRoutes());
+		Project result = projectMapper.getProjectById(project.getId());
+		if (result != null) {
+			operator.putIfAbsent(RedisKey.PROJECTS, project.getId(), project);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Project updateProject(Project project) {
+		Assert.notNull(project);
+		Assert.notNull(project.getName(), "工程名称不能为空");
+		Assert.isTrue(!projectMapper.hasExists(project.getId(), project.getName()), "工程名称已经存在");
+		Assert.notNull(project.getAddress(), "工程地址不能为空");
+		Assert.notNull(project.getUnit(), "工程承建单位不能为空");
+		projectMapper.updateProject(project);
+		projectRouteMapper.deleteProjectRoutes(project.getId());
+		projectRouteMapper.addProjectRoutes(project.getId(), project.getProjectRoutes());
+		Project result = projectMapper.getProjectById(project.getId());
+		
+		Project oldResult = operator.get(RedisKey.PROJECTS, project.getId());
+		//判断该工程的场区或消纳场或线路是否修改，如果修改需要将该工程下所有车辆先删除，然后在重新发送设置多边形指令
+		if(!oldResult.getBeginStation().getName().equals(project.getBeginStation().getName())
+				||!oldResult.getEndStation().getName().equals(project.getEndStation().getName())
+						||!equalList(oldResult.getProjectRoutes(), project.getProjectRoutes())){
+			//原有的工程车辆
+			List<ProjectVehicle> projectVehicleList =  projectVehicleMapper.findVehiclesByPId(project.getId());
+			List<String> ids = new ArrayList<String>();
+			ids.add(project.getId());
+			//删除车辆的多边形和线路
+			setDelete(projectVehicleList, ids);
+			//设置多边形区域和线路
+			setCommand(projectVehicleList);
+		}
+		
+		if (result != null) {
+			operator.put(RedisKey.PROJECTS, project.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteProject(Project project) {
+		Assert.notNull(project, "工程不能为空");
+		projectMapper.deleteProject(project);
+		projectRouteMapper.deleteProjectRoutes(project.getId());
+		Project result = projectMapper.getProjectById(project.getId());
+		if (result == null) {
+			operator.delete(RedisKey.PROJECTS, project.getId());
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkProjectName(Optional<String> id, String name) {
+		return projectMapper.hasExists(id.isPresent() ? id.get() : null, name);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Project> getProjects() {
+		return projectMapper.getProjects();
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Project> getProjects(String projectId) {
+		return projectMapper.getProjects(projectId);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void addProjectVehicle(List<ProjectVehicle> projectVehicles) {
+		setCommand(projectVehicles);
+		projectVehicleMapper.addProjectVehicles(projectVehicles);
+	}
+
+	/**
+	 * 封装发送命令
+	 * @param projectVehicles
+	 */
+	private void setCommand(List<ProjectVehicle> projectVehicles) {
+		//在前端选中的车辆
+		if(projectVehicles!=null && projectVehicles.size()>0){
+			//根据车辆查询所属的工程id集合
+			List<String> projectIds = new ArrayList<String>();
+			projectIds.add(projectVehicles.get(0).getProjectId());
+			
+			if(projectIds!=null && projectIds.size()>0){
+				//获取工程，工程中包含厂区的实体
+				Project project = projectMapper.getProjectById(projectIds.get(0));
+				//获取该工程下的所有线路实体
+				List<Route> routes = routeMapper.getRoutsByPId(projectIds.get(0));
+				
+				/*for (ProjectVehicle projectVehicle : projectVehicles) {
+					//设置多边形区域的命令
+					List<PolygonAddCommand> polygonAddCommands = new ArrayList<PolygonAddCommand>();
+					//设置圆形区域的命令
+					List<CircularAddCommand> circularAddCommands = new ArrayList<CircularAddCommand>();
+					//设置线路的命令
+					List<LineAddCommand> lineAddCommands = new ArrayList<LineAddCommand>();
+					
+					Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+					//装配设置多边形区域命令
+					polygonAddCommands = setPolygonCommand(polygonAddCommands,circularAddCommands, project,vehicle.getTerminal().getSimNo());
+					//装配设置线路命令
+					lineAddCommands = setLineCommand(lineAddCommands, routes,vehicle.getTerminal().getSimNo());
+					
+					if(polygonAddCommands!=null && polygonAddCommands.size()>0){
+						commandService.sendCommands(polygonAddCommands);
+					}
+					if(circularAddCommands!=null && circularAddCommands.size()>0){
+						commandService.sendCommands(circularAddCommands);
+					}
+					
+					commandService.sendCommands(lineAddCommands);
+				}*/
+			}
+		}
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteProjectVehicle(String projectId, List<ProjectVehicle> projectVehicles) {
+		
+		//在前端选中的车辆
+		if(projectVehicles!=null && projectVehicles.size()>0){
+			//根据车辆查询所属的工程id集合
+			List<String> projectIds = projectVehicleMapper.findByVehicles(projectVehicles);
+			
+			if(projectIds!=null && projectIds.size()>0){
+				setDelete(projectVehicles, projectIds);
+			}
+		}
+		//操作数据库
+		projectVehicleMapper.deleteProjectVehicles(projectId, projectVehicles);
+	}
+
+	/**
+	 * 封装删除多边形区域和线路命令
+	 * @param projectVehicles
+	 * @param projectIds
+	 */
+	private void setDelete(List<ProjectVehicle> projectVehicles, List<String> projectIds) {
+		//根据工程获取所有厂区
+		List<Station> stations = projectMapper.getStationByPIds(projectIds);
+		//根据工程获取所有线路id
+		List<Integer> lineIds = projectMapper.getLinesByPIds(projectIds);
+		//循环车辆
+		for (ProjectVehicle projectVehicle : projectVehicles) {
+			//多边形区域id
+			List<Integer> polygonIds = new ArrayList<Integer>();
+			//圆形区域id
+			List<Integer> circularIds = new ArrayList<Integer>();
+			
+			Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+			
+			//删除多边形区域
+			if(polygonIds!=null && polygonIds.size()>0){
+				//删除多边形区域的命令
+				PolygonDelCommand  polygonDelCommand = new PolygonDelCommand();
+				polygonDelCommand.setId(UUIDGenerator.getUUID());
+				//多边形区域的id集合
+				polygonDelCommand.setPolygonIds(polygonIds);
+//				polygonDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+				
+				commandService.sendCommand(polygonDelCommand);
+			}
+			//删除圆形区域
+			if(circularIds!=null && circularIds.size()>0){
+				//删除圆形区域的命令
+				CircularDelCommand circularDelCommand = new CircularDelCommand();
+				circularDelCommand.setId(UUIDGenerator.getUUID());
+				circularDelCommand.setCircularIds(circularIds);
+//				circularDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+				
+				commandService.sendCommand(circularDelCommand);
+			}
+			//删除线路
+			if(lineIds!=null && lineIds.size()>0){
+				//删除线路的命令
+				LineDelCommand lineDelCommand = new LineDelCommand();
+				lineDelCommand.setId(UUIDGenerator.getUUID());
+				//线路的id集合
+				lineDelCommand.setLineIds(lineIds);
+//				lineDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+				
+				commandService.sendCommand(lineDelCommand);
+			}
+		}
+	}
+	
+	/**
+	 * 装配设置多边形命令
+	 * @param polygonAddCommands
+	 * @param project
+	 */
+	/*private List<PolygonAddCommand> setPolygonCommand(List<PolygonAddCommand> polygonAddCommands,
+			List<CircularAddCommand> circularAddCommands,Project project,String simNo) {
+		//工程厂区
+		if(project!=null && project.getBeginStation()!=null){
+			
+			Station beginStation = project.getBeginStation();
+			//判断beginStation的areatype为圆形进行以下操作
+			if(AreaType.CIRCLE.equals(beginStation.getAreaType())){
+				CircularAddCommand circularAddCommand = new CircularAddCommand();
+				//设置属性
+				circularAddCommand.setSetAttr(1);
+				//区域总数
+				circularAddCommand.setCircularCounts(1);
+				//id
+				circularAddCommand.setId(UUIDGenerator.getUUID());
+				//simNo
+				circularAddCommand.setSimNo(simNo);
+				//区域id
+				circularAddCommand.setRegionId(beginStation.getId());
+				//区域属性
+				circularAddCommand.setRegionAttr(beginStation.getReportValue());
+				//中心点
+				if(beginStation.getPaths()!=null && beginStation.getPaths().size()>0){
+					for (Pathpoint path : beginStation.getPaths()) {
+						//中心点纬度
+						circularAddCommand.setLat(path.getLat());
+						//中心点经度
+						circularAddCommand.setLng(path.getLng());
+					}
+				}
+				//半径
+				circularAddCommand.setRadius(beginStation.getRadius());
+				// 起始时间
+				circularAddCommand.setStartTime(beginStation.getStartTime());
+				//结束时间
+				circularAddCommand.setEndTime(beginStation.getEndTime());
+				//最高速度
+				int limitSpeedValue = beginStation.getLimitSpeedValue();
+				circularAddCommand.setMaxSpeed((short)limitSpeedValue);
+				
+				circularAddCommands.add(circularAddCommand);
+			}else if(AreaType.POLYGON.equals(beginStation.getAreaType())){
+				PolygonAddCommand polygonAddCommand = new PolygonAddCommand();
+				//id
+				polygonAddCommand.setId(UUIDGenerator.getUUID());
+				//simNo
+				polygonAddCommand.setSimNo(simNo);
+				//区域id
+				polygonAddCommand.setRegionId(beginStation.getId());
+				//区域属性
+				polygonAddCommand.setRegionAttr(beginStation.getReportValue());
+				// 起始时间
+				polygonAddCommand.setStartTime(beginStation.getStartTime());
+				//结束时间
+				polygonAddCommand.setEndTime(beginStation.getEndTime());
+				//最高速度
+				int limitSpeedValue = beginStation.getLimitSpeedValue();
+				polygonAddCommand.setMaxSpeed((short)limitSpeedValue);
+				//拐点
+				if(beginStation.getPaths()!=null && beginStation.getPaths().size()>0){
+					//区域总顶点数
+					polygonAddCommand.setVertexCount(beginStation.getPaths().size());
+					List<VertexProperty> vertexPropertys = new ArrayList<VertexProperty>();
+					for (Pathpoint path : beginStation.getPaths()) {
+						VertexProperty vertexProperty = new VertexProperty();
+						vertexProperty.setLat(path.getLat());
+						vertexProperty.setLng(path.getLng());
+						vertexPropertys.add(vertexProperty);
+					}
+					//顶点项
+					polygonAddCommand.setVertexPropertys(vertexPropertys);
+				}
+				polygonAddCommands.add(polygonAddCommand);
+			}
+		}
+		//消纳厂区
+		if(project!=null && project.getEndStation()!=null){
+			
+			Station endStation = project.getEndStation();
+			//判断endStation的areatype为圆形进行以下操作
+			if(AreaType.CIRCLE.equals(endStation.getAreaType())){
+				CircularAddCommand circularAddCommand = new CircularAddCommand();
+				//设置属性
+				circularAddCommand.setSetAttr(1);
+				//区域总数
+				circularAddCommand.setCircularCounts(1);
+				//id
+				circularAddCommand.setId(UUIDGenerator.getUUID());
+				//simNo
+				circularAddCommand.setSimNo(simNo);
+				//区域id
+				circularAddCommand.setRegionId(endStation.getId());
+				//区域属性
+				circularAddCommand.setRegionAttr(endStation.getReportValue());
+				//中心点
+				if(endStation.getPaths()!=null && endStation.getPaths().size()>0){
+					for (Pathpoint path : endStation.getPaths()) {
+						//中心点纬度
+						circularAddCommand.setLat(path.getLat());
+						//中心点经度
+						circularAddCommand.setLng(path.getLng());
+					}
+				}
+				//半径
+				circularAddCommand.setRadius(endStation.getRadius());
+				//起始时间
+				circularAddCommand.setStartTime(endStation.getStartTime());
+				//结束时间
+				circularAddCommand.setEndTime(endStation.getEndTime());
+				//最高速度
+				int limitSpeedValue = endStation.getLimitSpeedValue();
+				circularAddCommand.setMaxSpeed((short)limitSpeedValue);
+				
+				circularAddCommands.add(circularAddCommand);
+			}else if(AreaType.POLYGON.equals(endStation.getAreaType())){
+				PolygonAddCommand polygonAddCommand = new PolygonAddCommand();
+				//id
+				polygonAddCommand.setId(UUIDGenerator.getUUID());
+				//simNo
+				polygonAddCommand.setSimNo(simNo);
+				//区域id
+				polygonAddCommand.setRegionId(endStation.getId());
+				//区域属性
+				polygonAddCommand.setRegionAttr(endStation.getReportValue());
+				// 起始时间
+				polygonAddCommand.setStartTime(endStation.getStartTime());
+				//结束时间
+				polygonAddCommand.setEndTime(endStation.getEndTime());
+				//最高速度
+				int limitSpeedValue = endStation.getLimitSpeedValue();
+				polygonAddCommand.setMaxSpeed((short)limitSpeedValue);
+				//拐点
+				if(endStation.getPaths()!=null && endStation.getPaths().size()>0){
+					//区域总顶点数
+					polygonAddCommand.setVertexCount(endStation.getPaths().size());
+					List<VertexProperty> vertexPropertys = new ArrayList<VertexProperty>();
+					for (Pathpoint path : endStation.getPaths()) {
+						VertexProperty vertexProperty = new VertexProperty();
+						vertexProperty.setLat(path.getLat());
+						vertexProperty.setLng(path.getLng());
+						vertexPropertys.add(vertexProperty);
+					}
+					//顶点项
+					polygonAddCommand.setVertexPropertys(vertexPropertys);
+				}
+				polygonAddCommands.add(polygonAddCommand);
+			}
+		}
+		return polygonAddCommands;
+	}*/
+	
+	/**
+	 * 装配设置线路命令
+	 * @param lineAddCommands
+	 * @param routes
+	 */
+	/*private List<LineAddCommand> setLineCommand(List<LineAddCommand> lineAddCommands, List<Route> routes,String simNo) {
+		//线路
+		if(routes!=null && routes.size()>0){
+			for (Route route : routes) {
+				LineAddCommand lineAddCommand = new LineAddCommand();
+				//id
+				lineAddCommand.setId(UUIDGenerator.getUUID());
+				//simNo
+				lineAddCommand.setSimNo(simNo);
+				//线路id
+				lineAddCommand.setLineId(route.getId());
+				//线路属性
+				lineAddCommand.setLineAttr(route.getReportValue());
+				//起始时间
+				lineAddCommand.setStartTime(route.getStartTime());
+				//结束时间
+				lineAddCommand.setEndTime(route.getEndTime());
+				//路线总拐点数
+				int pointCount = route.getPaths().size();
+				lineAddCommand.setPointCount((short)pointCount);
+				List<TurnPoint> turnPoints = new ArrayList<TurnPoint>();
+				//拐点项
+				if (route.getPaths() != null && route.getPaths().size() > 0) {
+					for (Pathpoint pathpoint : route.getPaths()) {
+						TurnPoint turnPoint = new TurnPoint();
+						//拐点id
+						turnPoint.setPointId(pathpoint.getId());
+						//路段ID
+						turnPoint.setSectionId(route.getId());
+						//拐点纬度
+						turnPoint.setLat(pathpoint.getLat());
+						//拐点经度
+						turnPoint.setLng(pathpoint.getLng());
+						//路段宽度
+						turnPoint.setSectionWidth(route.getWidth());
+						turnPoint.setLongThreshold((short)3600);
+						turnPoint.setShortThreshold((short)0);
+						//最高速度
+						turnPoint.setMaxSpeed((short)route.getLimitSpeedValue());
+						//路段超速持续时间，默认20秒
+						turnPoint.setOverSpeedS(20);
+						turnPoints.add(turnPoint);
+					}
+				}
+				lineAddCommand.setTurnPoints(turnPoints);
+				lineAddCommands.add(lineAddCommand);
+			}
+		}
+		return lineAddCommands;
+	}*/
+	
+	/**
+	 * 判断两个线路list是否相等
+	 * @param list1
+	 * @param list2
+	 * @return
+	 */
+	public static boolean equalList(List<ProjectRoute> list1, List<ProjectRoute> list2) {
+		if(list1==null || list2==null){
+			if(list1==list2) 
+				return true;
+			else 
+				return false;
+		}else{
+			if(list1.size() != list2.size()){
+				return false;
+			}else{
+				for (ProjectRoute route:list1) {
+					for (int i = 0; i < list2.size(); i++){
+						if(route.getRouteId().compareTo(list2.get(i).getRouteId())==0){
+							break;
+						}else{
+							if(i==list2.size()-1){
+								return false;
+							}
+						}
+					}
+				}
+				return true;
+			}
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfStation(Integer id) {
+		return projectMapper.getTotalUseOfStation(id);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfRoute(Integer id) {
+		return projectRouteMapper.getTotalUseOfRoute(id);
+	}
+}

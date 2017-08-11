@@ -1,0 +1,11 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import com.tiamaes.bike.common.bean.message.Message;
+
+import io.netty.channel.Channel;
+
+public abstract class ProtocolHandler {
+
+	public abstract Message execute(Channel channel, Message request) throws Exception;
+
+}

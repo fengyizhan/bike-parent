@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.connector.persistence.TerminalMapper">
+	<resultMap id="terminalMap" type="com.tiamaes.bike.common.bean.information.Terminal">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="simNo" property="simNo"/>
+		<result column="remark" property="remark"/>
+		<!-- 
+		<result column="region" property="region"/>
+		<result column="binded" property="binded"/> 
+		-->
+		<result column="createDate" property="createDate"/>
+		<result column="authentication" property="authentication"/>
+		<result column="softwareVersion" property="softwareVersion"/>
+		<result column="hardwareVersion" property="hardwareVersion"/>
+		<result column="protocolVersion" property="protocolVersion"/>
+		<result column="state" property="state" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result column="registered" property="registered"/>
+		<!-- <association property="auto" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+			<result column="carNo" property="carNo"/>
+			<result column="plateColor" property="plateColor" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		</association> -->
+		<association property="factory" column="factoryId" javaType="com.tiamaes.bike.common.bean.information.Terminal$Factory">
+			<id property="id" column="factoryId"/>
+			<result property="name" column="factoryName"/>
+		</association>
+		<association property="type" column="typeId" javaType="com.tiamaes.bike.common.bean.information.Terminal$Type">
+			<id property="id" column="typeId"/>
+			<result property="name" column="terminalTypeName"/>
+		</association>
+	</resultMap>
+	
+	<!-- 更新终端信息 -->
+	<update id="updateTerminal" parameterType="com.tiamaes.bike.common.bean.information.Terminal">
+		UPDATE TB_Terminal SET 
+			authentication=#{authentication,jdbcType=VARCHAR},
+			registered=#{registered},
+			simno=#{simNo,jdbcType=CHAR},
+			<if test="registered==1">
+				createdate=NOW() 
+			</if>
+			<if test="registered==0">
+				createdate=null
+			</if>
+		 WHERE id = #{id}
+	</update>
+
+</mapper>

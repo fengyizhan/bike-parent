@@ -1,0 +1,23 @@
+package com.tiamaes.bike.exporter.integrated.station.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.integrated.StationRecord;
+
+public interface StationQueryMapper {
+	
+	/**
+	 * 获取车辆进出场记录分页数据
+	 * @param stationRecord
+	 * @return
+	 */
+	List<StationRecord> getListOfStationRecords(StationRecord stationRecord);
+	
+	/**
+	 * 获取车辆进出场记录总记录数
+	 * @param stationRecord
+	 * @return
+	 */
+	int getTotalOfStationRecords(StationRecord stationRecord);
+
+}

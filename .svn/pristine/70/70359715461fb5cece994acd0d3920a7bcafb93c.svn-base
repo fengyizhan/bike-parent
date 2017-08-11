@@ -1,0 +1,80 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.IOException;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+
+public enum DirectionType implements com.tiamaes.bike.common.Enum<DirectionType> {
+
+	IN("进"), OUT("出");
+
+	private String name;
+
+	DirectionType(String name) {
+		this.name = name;
+	}
+
+	@Override
+	@JsonProperty("value")
+	public String getValue() {
+		return name();
+	}
+
+	@Override
+	@JsonProperty("name")
+	public String getName() {
+		return this.name;
+	}
+
+	@Override
+	@JsonProperty("index")
+	public int getIndex() {
+		return this.ordinal();
+	}
+
+	@JsonCreator
+	public static DirectionType valueOf(@JsonProperty("index") final int index) {
+		DirectionType[] roleTypes = DirectionType.values();
+		if (index >= 0 && index < roleTypes.length) {
+			return roleTypes[index];
+		}
+		return null;
+	}
+
+	public static class Deserializer extends JsonDeserializer<DirectionType> {
+		@Override
+		public DirectionType deserialize(JsonParser jp, DeserializationContext ctxt)
+				throws IOException, JsonProcessingException {
+			JsonToken currentToken = jp.getCurrentToken();
+			switch (currentToken) {
+			case VALUE_NUMBER_INT:
+				return DirectionType.valueOf(jp.getIntValue());
+			case VALUE_STRING:
+				String text = jp.getText();
+				if (StringUtils.isNotBlank(text)) {
+					return DirectionType.valueOf(text.trim().toUpperCase());
+				}
+			case START_OBJECT:
+				JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+				if (jsonNode != null && jsonNode.isValueNode()) {
+					text = jsonNode.asText();
+					if (StringUtils.isNotBlank(text)) {
+						return DirectionType.valueOf(text.trim().toUpperCase());
+					}
+				}
+			default:
+				break;
+			}
+			return null;
+		}
+	}
+}

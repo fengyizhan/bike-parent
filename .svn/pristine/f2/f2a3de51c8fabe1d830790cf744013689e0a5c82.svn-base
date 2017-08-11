@@ -1,0 +1,214 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo.State;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.storage.service.VehicleStationInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class VehicleStationInfoServiceTest {
+	private static Logger logger = LogManager.getLogger(VehicleStationInfoServiceTest.class);
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Resource
+	private VehicleStationInfoServiceInterface service;
+	
+	@Test
+	public void addVehicleInProducerInfo() throws Exception {
+		VehicleStationInfo vehicleStationInfo = new VehicleStationInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		Station station = new Station();
+		station.setId(1);
+		station.setName("大学北路建筑工地");
+//		station.setType(Type.PRODUCER);
+		vehicleStationInfo.setVehicle(vehicle);
+		vehicleStationInfo.setUser(user);
+		vehicleStationInfo.setStation(station);
+		vehicleStationInfo.setState(State.IN);
+		
+		service.addVehicleStationInfo(vehicleStationInfo);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存车辆进出场信息" + objectMapper.writeValueAsString(vehicleStationInfo));
+		}
+	}
+	
+	@Test
+	public void addVehicleOutProducerInfo() throws Exception {
+		VehicleStationInfo vehicleStationInfo = new VehicleStationInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("9205fa0fc7404f50b329e35ffe392738");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		Station station = new Station();
+		station.setId(1);
+		station.setName("大学北路建筑工地");
+//		station.setType(Type.PRODUCER);
+		vehicleStationInfo.setVehicle(vehicle);
+		vehicleStationInfo.setUser(user);
+		vehicleStationInfo.setStation(station);
+		vehicleStationInfo.setState(State.OUT);
+		
+		String id = service.addVehicleStationInfo(vehicleStationInfo);
+		service.deleteVehicleStationInfo(id);
+		service.addProjectTripInfo(vehicleStationInfo);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存车辆进出场信息" + objectMapper.writeValueAsString(vehicleStationInfo));
+		}
+	}
+	
+	@Test
+	public void addVehicleInConsumerInfo() throws Exception {
+		VehicleStationInfo vehicleStationInfo = new VehicleStationInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("9205fa0fc7404f50b329e35ffe392738");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		Station station = new Station();
+		station.setId(2);
+		station.setName("中原东路消纳场");
+//		station.setType(Type.CONSUMER);
+		vehicleStationInfo.setVehicle(vehicle);
+		vehicleStationInfo.setUser(user);
+		vehicleStationInfo.setStation(station);
+		vehicleStationInfo.setState(State.IN);
+		
+		service.addVehicleStationInfo(vehicleStationInfo);
+		String tripId = service.addProjectTripInfo(vehicleStationInfo);
+		service.deleteProjectTripInfo(tripId);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存车辆进出场信息" + objectMapper.writeValueAsString(vehicleStationInfo));
+		}
+	}
+	
+	@Test
+	public void addVehicleOutConsumerInfo() throws Exception {
+		VehicleStationInfo vehicleStationInfo = new VehicleStationInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("9205fa0fc7404f50b329e35ffe392738");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		User user = new User();
+		user.setIdentityCard("410427198805063214");
+//		user.setName("李详");
+//		user.setTelephone("15623560123");
+		Station station = new Station();
+		station.setId(2);
+		station.setName("中原东路消纳场");
+//		station.setType(Type.CONSUMER);
+		vehicleStationInfo.setVehicle(vehicle);
+		vehicleStationInfo.setUser(user);
+		vehicleStationInfo.setStation(station);
+		vehicleStationInfo.setState(State.OUT);
+		
+		String id = service.addVehicleStationInfo(vehicleStationInfo);
+		service.deleteVehicleStationInfo(id);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存车辆进出场信息" + objectMapper.writeValueAsString(vehicleStationInfo));
+		}
+	}
+	
+	@Test
+	@Ignore
+	public void vehicleStationInfoKafkaTest() {
+		for (int i = 0; i < 56; i++) {
+			VehicleStationInfo vehicleStationInfo = new VehicleStationInfo();
+			Station station = new Station();
+			if (i % 4 == 0) {
+				vehicleStationInfo.setState(State.IN);
+				station.setId(1);
+				station.setName("大学路场区");
+//				station.setType(Type.PRODUCER);
+			} else if (i % 4 == 1) {
+				vehicleStationInfo.setState(State.OUT);
+				station.setId(1);
+				station.setName("大学路场区");
+//				station.setType(Type.PRODUCER);
+			} else if (i % 4 == 2) {
+				vehicleStationInfo.setState(State.IN);
+				station.setId(2);
+				station.setName("中原路消纳场");
+//				station.setType(Type.CONSUMER);
+			} else if (i % 4 == 3) {
+				vehicleStationInfo.setState(State.OUT);
+				station.setId(2);
+				station.setName("中原路消纳场");
+//				station.setType(Type.CONSUMER);
+			}
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId("d196b09f835842d79c993d961d94849f");
+//			vehicle.setCarNo("京Q23456");
+//			vehicle.setSimCode("015800020022");
+//			vehicle.setCompany(company);
+//			vehicle.setDepartment(department);
+			User user = new User();
+			user.setIdentityCard("4101064484231");
+//			user.setName("张三");
+//			user.setTelephone("18513974682");
+			vehicleStationInfo.setVehicle(vehicle);
+			vehicleStationInfo.setUser(user);
+			vehicleStationInfo.setStation(station);
+			kafkaTemplate.send(MessageBuilder.withPayload(vehicleStationInfo).setHeader(KafkaHeaders.TOPIC, vehicleStationInfo.getClass().getName()).build());
+		}
+	}
+
+}

@@ -1,0 +1,83 @@
+<div ng-controller="RouteController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">线路管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">线路编号</span>
+								<input type="text" class="form-control" name="id" ng-model="searchForm.data.id" ng-change="changeToNum(searchForm.data.id)" placeholder="请输入线路编号(数字)" maxlength="9" style="min-width: 120px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">线路名称</span>
+								<input type="text" class="form-control" ng-model="searchForm.data.name" placeholder="请输入线路名称" maxlength="15" style="min-width: 120px;">
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add()">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增线路</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/route/page/" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="110">线路编号</td>
+								<td>线路名称</td>
+								<td width="80">线路宽度</td>
+								<td width="80">限速(km/h)</td>
+								<td width="80">延时报警(s)</td>
+								<td width="130">生效时间</td>
+								<td width="130">失效时间</td>
+								<td width="160">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td ng-bind="item.id"></td>
+								<td ng-bind="item.name"></td>
+								<td ng-bind="item.width"></td>
+								<td ng-bind="item.limitSpeedValue"></td>
+								<td ng-bind="item.delayValue"></td>
+								<td ng-bind="item.startTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td ng-bind="item.endTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/rate/dialog.html" style="width:1000px;height:inherit;"></div>
+</div>

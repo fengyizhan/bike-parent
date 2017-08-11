@@ -1,0 +1,149 @@
+package com.tiamaes.bike.api.information.vehicle.service;
+
+import java.util.List;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.vehicle.persistence.VehicleMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class VehicleService implements VehicleServiceInterface {
+
+	@Resource
+	private VehicleMapper vehicleMapper;
+	@Resource(name = "vehicleTemplate")
+	private RedisTemplate<String, Vehicle> vehicleTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Vehicle> operator;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleById(String id) {
+		Assert.notNull(id, "车辆编号不能为空!");
+		Vehicle vehicle = operator.get(RedisKey.VEHICLES, id);
+		if (vehicle == null) {
+			vehicle = vehicleMapper.getVehicleById(id);
+			if (vehicle != null) {
+				operator.put(RedisKey.VEHICLES, String.valueOf(vehicle.getId()), vehicle);
+				
+			}
+		}
+		return vehicle;
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return vehicleMapper.getListOfVehicles(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getListOfVehicles(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Vehicle addVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle);
+		vehicle.setAuthentication(UUID.randomUUID().toString());
+		Assert.isTrue(!vehicleMapper.hasExists(vehicle.getName()), "车辆编号已经存在");
+		vehicleMapper.addVehicle(vehicle);
+		Vehicle result = vehicleMapper.getVehicleById(vehicle.getId());
+		if(result != null){
+			operator.putIfAbsent(RedisKey.VEHICLES, vehicle.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Vehicle updateVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle);
+		Assert.notNull(vehicle.getName(), "车辆编号不能为空");
+		vehicleMapper.updateVehicle(vehicle);
+		Vehicle result = vehicleMapper.getVehicleById(vehicle.getId());
+		if (result != null) {
+			operator.put(RedisKey.VEHICLES, vehicle.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle, "车辆信息不能为空!");
+		vehicleMapper.deleteVehicle(vehicle);
+		Vehicle result = vehicleMapper.getVehicleById(vehicle.getId());
+		if (result == null) {
+			operator.delete(RedisKey.VEHICLES, vehicle.getId());
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean hasExists(String carNo) {
+		return vehicleMapper.hasExists(carNo);
+	}
+	
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getAllVehiclesWithPlateNo(String plateNo){
+		return vehicleMapper.getAllVehiclesWithPlateNo(plateNo);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleBySimNo(String simNo) {
+		Assert.notNull(simNo, "车辆simNo不能为空!");
+		String id = stringOperator.get(RedisKey.VEHICLES_SIMNO, simNo);
+		if (StringUtils.isBlank(id)){
+			return null;
+		}
+		Vehicle vehicle = operator.get(RedisKey.VEHICLES, id);
+		if (vehicle == null) {
+			vehicle = vehicleMapper.getVehicleById(id);
+			if (vehicle != null) {
+				operator.putIfAbsent(RedisKey.VEHICLES, String.valueOf(vehicle.getId()), vehicle);
+			}
+		}
+		return vehicle;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getRegisteredCount() {
+		return vehicleMapper.getRegisteredCount();
+	}
+
+	@Override
+	public Integer getId() {
+		return vehicleMapper.getId();
+	}
+
+	@Override
+	public String getBikePutInTime(int bikeId) {
+		return vehicleMapper.getBikePutInTime(bikeId);
+	}
+}

@@ -1,0 +1,25 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">报警地点</label>
+						<div class="col-sm-10">
+							<input type="text" style="width:100%;" class="form-control input-sm" 
+								name="address" ng-model="dialog.data.address"
+								ng-readonly="true">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+		</div>
+	</form>
+</div>

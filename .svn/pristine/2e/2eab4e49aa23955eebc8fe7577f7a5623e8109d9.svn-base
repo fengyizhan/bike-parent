@@ -1,0 +1,173 @@
+package com.tiamaes.bike.api.information.park.controller;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.park.service.ParkServiceInterface;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.system.PointVector.Center;
+import com.tiamaes.logger.Operation;
+import com.tiamaes.logger.TiamaesLogger;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/park")
+@Api(tags = {"park"}, description = "集中停放区信息管理")
+public class ParkController {
+	
+	private static Logger logger = LogManager.getLogger(ParkController.class);
+	@Resource
+	private ParkServiceInterface parkService;
+	
+	/**
+	 * 全部集中停放区列表信息
+	 * @return
+	 */
+	@ApiOperation(value = "全部集中停放区", notes = "全部集中停放区列表信息")
+	@RequestMapping(value = "/getAllParks", method = RequestMethod.GET)
+	public @ResponseBody List<Park> getAllParks(@CurrentUser User operator) {
+		return parkService.getAllParks();
+	}
+	
+	
+	/**
+	 * 页面展示集中停放区列表信息
+	 * @param park
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "集中停放区列表", notes = "分页获取全部集中停放区信息")
+	@ApiImplicitParam(name = "park", value = "集中停放区实体", required = true, dataType = "Park")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Park> page(@RequestBody Park park, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Park> pagination = new Pagination<Park>(number, pageSize);
+		List<Park> list = parkService.getListOfParks(park, pagination);
+		return new PageInfo<Park>(list);
+	}
+	
+	/**
+	 * 验证集中停放区名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@ApiOperation(value = "验证集中停放区", notes = " 验证集中停放区名字是否存在")
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET)
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("state", parkService.checkParkName(id, name));
+		return result;
+	}
+	
+	/**
+	 * 根据id获取集中停放区信息
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "集中停放区信息", notes = "根据id获取集中停放区信息")
+	@RequestMapping(value = "/{id}", method = { RequestMethod.GET}, produces = {"application/json" })
+	public @ResponseBody Park get(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Park park = parkService.getParkById(id);
+		return park;
+	}
+	
+	/**
+	 * 新增集中停放区信息
+	 * @param park
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "新增集中停放区", notes = "新增集中停放区信息",response = Park.class)
+	@ApiImplicitParam(name = "park", value = "集中停放区实体", required = true, dataType = "Park")
+	@TiamaesLogger(operation = Operation.ADD)
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	public @ResponseBody Park add(@RequestBody Park park, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(park.toString());
+		}
+		int parkId = parkService.getId();
+		park.setId(String.valueOf(parkId));
+		park.setCreateTime(new Date());
+		park = parkService.addPark(park);
+		return park;
+	}
+	
+	/**
+	 * 更新集中停放区信息
+	 * @param park
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新集中停放区", notes = "更新集中停放区信息",response = Park.class)
+	@ApiImplicitParam(name = "park", value = "集中停放区实体", required = true, dataType = "Park")
+	@TiamaesLogger(operation = Operation.UPDATE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	public @ResponseBody Park update(@RequestBody Park park, @PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(park.toString());
+		}
+		park.setId(id);
+		park = parkService.updatePark(park);
+		return park;
+	}
+	
+	/**
+	 * 删除集中停放区信息
+	 * @param id
+	 * @param operator
+	 */
+	@ApiOperation(value = "删除集中停放区", notes = "删除集中停放区信息",response = Park.class)
+	@TiamaesLogger(operation = Operation.DELETE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	public @ResponseBody Park delete(@PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Park park = parkService.getParkById(id);
+		parkService.deletePark(park);
+		return park;
+	}
+	
+	/**
+	 * 获取坐标附近车辆或停放区信息
+	 * @param center
+	 * @return
+	 */
+	@RequestMapping(value = "/aroundInfo", method = RequestMethod.POST)
+	@ApiOperation(value = "附近停放区信息", notes = "获取坐标附近停放区信息")
+	public @ResponseBody List<Park> getDataOfCountData(@RequestBody Center center) {
+		List<Park> parks = parkService.getAroundParks(center);
+		return parks;
+	}
+	
+	
+}

@@ -1,0 +1,125 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.department.service.CompanyServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.userdetails.User;
+
+/**
+ * 公司信息管理接口实现类的单元测试
+ * @author kangty
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class CompanyServiceTest {
+	private static Logger logger = LogManager.getLogger(CompanyServiceTest.class);
+	
+	@Autowired
+	private CompanyServiceInterface service;
+	
+	@Autowired
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void addCompany() throws Exception {
+		String id = "fb8bd909f5a14c31b9d0dac68f8eb32c";
+		Company company = new Company();
+		company.setId(id);
+		company.setName("公交十一公司");
+		company.setContactName("李四");
+		company.setContactPhone("18531313131");
+		company.setLicenseWord("豫");
+		company.setLicenseNo("1000000182102391");
+		company.setAddress("河南省郑州市高新区莲花街1号");
+		company.setBusinessScope("主管高新区内通行");
+		company.setRemark("分管高新区");
+		
+		service.addCompany(company);
+		
+		Company result = service.getCompanyById(id);
+		
+		Assert.assertNotNull(result);
+		Assert.assertEquals(id, result.getId());
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void getListOfCompany() throws Exception {
+		int number = 1;
+		Parameters<Company> parameters= new Parameters<Company>();
+		Company company = new Company();
+		User user = AuthorityServiceTest.setUser();
+//		user.setId("849aa67d60aa438a83e7024f1ec2d93f");
+		parameters.setModel(company);
+		parameters.setUser(user);
+		int total = service.getTotalOfCompanys(parameters);
+		Pagination<Company> pagination = new Pagination<Company>(number, total);
+		List<Company> companyList = service.getListOfCompanys(parameters, pagination);
+		Assert.assertNotNull(companyList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(companyList));
+	}
+	
+	@Test
+	public void updateCompany() throws Exception {
+		String id = "fb8bd909f5a14c31b9d0dac68f8eb32c";
+		Company company = service.getCompanyById(id);
+		String name = "王五";
+		company.setContactName(name);
+		service.updateCompany(company);
+		
+		Company result = service.getCompanyById(id);
+		Assert.assertEquals(name, result.getContactName());
+	}
+	
+	@Test
+	@Ignore
+	public void checkname() throws Exception {
+		String id = "fb8bd909f5a14c31b9d0dac68f8eb32c";
+//		Optional<String> optional = Optional.ofNullable(null);
+		Optional<String> optional = Optional.of(id);
+		Boolean result = service.checkCompanyName(optional, "公交十一公司");
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+	}
+	
+	@Test
+	public void deleteCompany() throws Exception {
+		String id = "fb8bd909f5a14c31b9d0dac68f8eb32c";
+		Company result = service.getCompanyById(id);
+		service.deleteCompany(result);
+		result = service.getCompanyById(id);
+		Assert.assertNull(result);
+	}
+	
+	public static void main(String[] args) {
+		String id = UUIDGenerator.getUUID();
+		System.out.println("this test should use id: " + id);
+	}
+
+}

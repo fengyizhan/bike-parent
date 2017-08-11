@@ -1,0 +1,24 @@
+package com.tiamaes.bike.alipay;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.alipay.config.AlipayConfig;
+import com.tiamaes.bike.config.SystemConfig.PayProperties;
+
+/**
+ * 支付宝支付工具类
+ */
+@Component("payUtil")
+public class Pay {
+	@Autowired
+	private PayProperties payProperties;
+	public Pay()
+	{
+		System.out.println("================ 初始化支付宝账户信息 =================");
+		AlipayConfig.partner=payProperties.getPartner();
+		AlipayConfig.private_key=payProperties.getPrivate_key();
+		AlipayConfig.seller_id=payProperties.getSeller_id();
+		AlipayConfig.callback_url=payProperties.getCallback_url();
+	}
+}

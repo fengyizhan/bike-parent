@@ -1,0 +1,33 @@
+package com.tiamaes.bike.reporter.integrated.vehicle.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.OnlineRecord;
+import com.tiamaes.mybatis.Pagination;
+
+@SuppressWarnings("rawtypes")
+public interface VehicleQueryServiceInterface {
+	
+	/**
+	 * 获取车辆上下线记录分页数据
+	 * @param onlineRecord
+	 * @param pagination
+	 * @return
+	 */
+	List<OnlineRecord> getListOfOnlineRecords(Parameters<OnlineRecord> parameters, Pagination<OnlineRecord> pagination);
+	
+	/**
+	 * 获取车辆上下线记录总记录数
+	 * @param onlineRecord
+	 * @return
+	 */
+	int getTotalOfOnlineRecords(Parameters<OnlineRecord> parameters);
+	/**
+	 * 根据时间段查询车辆上线数量
+	 * @param startTime
+	 * @param endTime
+	 * @return
+	 */
+	int getOnlineCountByTime(Parameters parameters);
+}

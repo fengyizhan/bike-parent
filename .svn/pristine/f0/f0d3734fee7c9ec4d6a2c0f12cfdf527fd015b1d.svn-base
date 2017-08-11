@@ -1,0 +1,166 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo.State;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+
+/**
+ * 进出场记录 (在实时查询中使用)
+ * @author kangty
+ *
+ */
+public class InoutRecord implements Serializable {
+	
+	private static final long serialVersionUID = -455538309761976454L;
+	
+	/**
+	 * 日志编号
+	 */
+	private String id;
+	
+	/**
+	 * 车辆信息(公司编号，公司名称，车队编号，车队名称，车辆编号，车牌号，SIM卡号)
+	 */
+	private Vehicle vehicle;
+	
+	/**
+	 * 司机信息(司机身份证号，司机姓名，司机联系电话)
+	 */
+	private Driver driver;
+	
+	/**
+	 * 场站信息(场站编号，场站名称)
+	 */
+	private Station beginStation;
+	
+	/**
+	 * 进场时间
+	 */
+	private Date beginCreateTime;
+	
+	/**
+	 * 进场状态(0:进)
+	 */
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State beginState;
+	
+	/**
+	 * 进场拍照
+	 */
+	private VehiclePhotoInfo beginVehiclePhotoInfo;
+	
+	/**
+	 * 场站信息(场站编号，场站名称)
+	 */
+	private Station endStation;
+	
+	/**
+	 * 出场时间
+	 */
+	private Date endCreateTime;
+	
+	/**
+	 * 出场状态(1:出)
+	 */
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State endState;
+	
+	/**
+	 * 出场拍照
+	 */
+	private VehiclePhotoInfo endVehiclePhotoInfo;
+	
+	public String getId() {
+		return id;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+	
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+	
+	public Driver getDriver() {
+		return driver;
+	}
+	
+	public void setDriver(Driver driver) {
+		this.driver = driver;
+	}
+	
+	public Station getBeginStation() {
+		return beginStation;
+	}
+	
+	public void setBeginStation(Station beginStation) {
+		this.beginStation = beginStation;
+	}
+	
+	public Date getBeginCreateTime() {
+		return beginCreateTime;
+	}
+	
+	public void setBeginCreateTime(Date beginCreateTime) {
+		this.beginCreateTime = beginCreateTime;
+	}
+	
+	public State getBeginState() {
+		return beginState;
+	}
+	
+	public void setBeginState(State beginState) {
+		this.beginState = beginState;
+	}
+	
+	public VehiclePhotoInfo getBeginVehiclePhotoInfo() {
+		return beginVehiclePhotoInfo;
+	}
+	
+	public void setBeginVehiclePhotoInfo(VehiclePhotoInfo beginVehiclePhotoInfo) {
+		this.beginVehiclePhotoInfo = beginVehiclePhotoInfo;
+	}
+	
+	public Station getEndStation() {
+		return endStation;
+	}
+	
+	public void setEndStation(Station endStation) {
+		this.endStation = endStation;
+	}
+	
+	public Date getEndCreateTime() {
+		return endCreateTime;
+	}
+	
+	public void setEndCreateTime(Date endCreateTime) {
+		this.endCreateTime = endCreateTime;
+	}
+	
+	public State getEndState() {
+		return endState;
+	}
+	
+	public void setEndState(State endState) {
+		this.endState = endState;
+	}
+	
+	public VehiclePhotoInfo getEndVehiclePhotoInfo() {
+		return endVehiclePhotoInfo;
+	}
+	
+	public void setEndVehiclePhotoInfo(VehiclePhotoInfo endVehiclePhotoInfo) {
+		this.endVehiclePhotoInfo = endVehiclePhotoInfo;
+	}
+}

@@ -1,0 +1,57 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.tiamaes.bike.Application;
+import com.tiamaes.bike.common.bean.connector.RequestInfo;
+import com.tiamaes.bike.storage.service.RequestInfoServiceInterface;
+
+import junit.framework.Assert;
+
+@SuppressWarnings("deprecation")
+@WebIntegrationTest
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringApplicationConfiguration(Application.class)
+public class RequestInfoServiceTest {
+
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(RequestInfoServiceTest.class);
+	
+	@Resource
+	private RequestInfoServiceInterface requestInfoService;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Test
+	public void saveRequestInfo() throws Exception{
+		
+		RequestInfo requestInfo = new RequestInfo();
+		String id = "e06dc5e7a736418cac134f49e604dba0";
+		requestInfo.setId(id);
+		requestInfo.setMessageId(11000);
+		requestInfo.setMessageSeqNo(112200);
+		requestInfo.setRequestContent("请求内容");
+		requestInfo.setRequestTime(new Date());
+		requestInfo.setSimNo("015800020022");
+		
+		boolean result = requestInfoService.saveRequestInfo(requestInfo);
+		
+		Assert.assertEquals(true, result);
+	}
+}

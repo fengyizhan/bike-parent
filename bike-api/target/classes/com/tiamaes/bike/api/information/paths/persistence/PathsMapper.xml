@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.paths.persistence.PathsMapper">
+	<resultMap id="pathPointMap" type="com.tiamaes.bike.common.bean.information.Pathpoint">
+		<id column="id" property="id"/>
+		<result column="targetid" property="targetid"/>
+		<result column="lng" property="lng"/>
+		<result column="lat" property="lat"/>
+	</resultMap>
+	<!-- 根据场区或线路Id查询坐标集信息 -->
+	<select id="getPathsByTargetId" parameterType="int" resultMap="pathPointMap">
+		SELECT t.id,
+			   t.targetid,
+		       t.lng,
+		       t.lat
+		  FROM tb_paths t
+		WHERE t.targetid = #{targetid}
+	</select>
+
+	<!-- 批量保存坐标集信息 -->
+	<insert id="addPaths" useGeneratedKeys="true" keyProperty="id">
+	    INSERT INTO tb_paths
+	      (targetid, lng, lat)
+	    VALUES
+			<foreach collection="list" item="item" separator=",">
+				(#{item.targetid}, #{item.lng}, #{item.lat})
+			</foreach>
+	</insert>
+	<!-- 删除坐标集信息 -->
+	<delete id="deletePaths" parameterType="int">
+		DELETE FROM tb_paths WHERE targetid = #{targetid}
+	</delete>
+
+	<update id="updatePathpoint" parameterType="com.tiamaes.bike.common.bean.information.Pathpoint">
+		UPDATE tb_paths
+		  SET lng = #{lng},
+		      lat = #{lat}
+		  WHERE id = #{id} AND targetid = #{targetid}
+	</update>
+</mapper>

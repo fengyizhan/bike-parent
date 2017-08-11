@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.route.persistence.RouteMapper">
+	<resultMap id="routeMap" type="com.tiamaes.bike.common.bean.information.Route">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="startTime" property="startTime"/>
+		<result column="endTime" property="endTime"/>
+		<result column="limitSpeedValue" property="limitSpeedValue"/>
+		<result column="delayValue" property="delayValue"/>
+		<result column="createDate" property="createDate"/>
+		<result column="width" property="width"/>
+		<result column="reportValue" property="reportValue"/>
+		<association property="beginStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="beginStation"/>
+	        <result property="name" column="beginStationName"/>
+	        <result property="address" column="beginStationAddress"/>
+	        <result property="radius" column="beginStationRadius"/>
+	        <result property="areaType" column="beginStationAreaType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+	        <association property="paths" column="beginStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+    	<association property="endStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="endStation"/>
+	        <result property="name" column="endStationName"/>
+	        <result property="radius" column="endStationRadius"/>
+	        <result property="areaType" column="endStationAreaType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+	        <association property="paths" column="endStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+		<association property="paths" column="id" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	</resultMap>
+
+	<!-- 根据Id查询路线信息 -->
+	<select id="getRouteById" parameterType="int" resultMap="routeMap">
+		SELECT t.id,
+		       t.name,
+		       t.startTime,
+		       t.endTime,
+		       t.limitSpeedValue,
+		       t.delayValue,
+		       t.createDate,
+		       t.reportValue,
+		       t.width,
+		       t.beginStation,
+		       t.endStation,
+		       v1.name            AS beginStationName,
+		       v1.address         AS beginStationAddress,
+		       v1.radius          AS beginStationRadius,
+		       v1.areaType        AS beginStationAreaType,
+		       v2.name            AS endStationName,
+		       v2.radius          AS endStationRadius,
+		       v2.areaType        AS endStationAreaType
+		  FROM tb_route t
+		  LEFT JOIN tb_station v1 ON t.beginStation = v1.id
+		  LEFT JOIN tb_station v2 ON t.endStation = v2.id
+		WHERE t.id = #{id}
+	</select>
+	<!-- 查询路线信息列表 -->
+	<select id="getListOfRoutes" parameterType="com.tiamaes.bike.common.bean.information.Route" resultMap="routeMap">
+		SELECT t.id,
+		       t.name,
+		       t.startTime,
+		       t.endTime,
+		       t.limitSpeedValue,
+		       t.delayValue,
+		       t.createDate,
+		       t.reportValue,
+		       t.width,
+		       t.beginStation,
+		       t.endStation,
+		       v1.name            AS beginStationName,
+		       v1.address         AS beginStationAddress,
+		       v1.radius          AS beginStationRadius,
+		       v1.areaType        AS beginStationAreaType,
+		       v2.name            AS endStationName,
+		       v2.radius          AS endStationRadius,
+		       v2.areaType        AS endStationAreaType
+		  FROM tb_route t
+		  LEFT JOIN tb_station v1 ON t.beginStation = v1.id
+		  LEFT JOIN tb_station v2 ON t.endStation = v2.id
+		<where>
+			<if test="id != null">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%')
+			</if>
+		</where>
+		ORDER BY t.createDate DESC
+	</select>
+	<!-- 获取路线总数 -->
+	<select id="getTotalOfRoutes" parameterType="com.tiamaes.bike.common.bean.information.Route" resultType="int">
+		SELECT COUNT(1) FROM  tb_route t
+		<where>
+			<if test="id != null">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%')
+			</if>
+		</where>
+	</select>
+
+	<!-- 保存路线信息 -->
+	<insert id="addRoute" parameterType="com.tiamaes.bike.common.bean.information.Route">
+		INSERT INTO tb_route
+		  (id,
+		   name,
+		   startTime,
+		   endTime,
+		   limitSpeedValue,
+		   delayValue,
+		   reportValue,
+		   width,
+		   beginStation,
+		   endStation,
+		   createDate)
+		VALUES
+		  (#{id,jdbcType=INTEGER},
+		   #{name,jdbcType=VARCHAR},
+		   #{startTime},
+		   #{endTime},
+		   #{limitSpeedValue,jdbcType=INTEGER},
+		   #{delayValue,jdbcType=INTEGER},
+		   #{reportValue,jdbcType=INTEGER},
+		   #{width,jdbcType=INTEGER},
+		   #{beginStation.id,jdbcType=CHAR},
+		   #{endStation.id,jdbcType=CHAR},
+		   now())
+	</insert>
+	<!-- 更新路线信息 -->
+	<update id="updateRoute" parameterType="com.tiamaes.bike.common.bean.information.Route">
+		UPDATE tb_route
+		   SET name            = #{name,jdbcType=VARCHAR},
+		       startTime       = #{startTime},
+		       endTime         = #{endTime},
+		       limitSpeedValue = #{limitSpeedValue,jdbcType=INTEGER},
+		       reportValue     = #{reportValue,jdbcType=INTEGER},
+		       delayValue      = #{delayValue,jdbcType=INTEGER},
+		       width           = #{width,jdbcType=INTEGER},
+		       beginStation    = #{beginStation.id,jdbcType=CHAR},
+		       endStation      = #{endStation.id,jdbcType=CHAR}
+		 WHERE id = #{id}
+	</update>
+	<!-- 删除路线信息 -->
+	<delete id="deleteRoute" parameterType="com.tiamaes.bike.common.bean.information.Route">
+		DELETE FROM tb_route WHERE id = #{id}
+	</delete>
+	<!-- 检查路线名是否存在 -->
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_route T
+		<where>
+			T.name = #{name}
+			<if test="id != null">
+		     AND T.id != #{id}
+			</if>
+		</where>
+	</select>
+	<!-- 获取所有路线列表，用于下拉菜单生成 -->
+	<select id="getRoutes" resultType="com.tiamaes.bike.common.bean.information.Route">
+		SELECT id, name FROM tb_route
+	</select>
+
+	<!-- 根据开始场区id和结束场区id获取路线 -->
+	<select id="getRoutesByBeginAndEnd" resultMap="routeMap">
+		SELECT id, name
+		  FROM tb_route
+		 WHERE beginStation = #{beginId}
+		   AND endStation = #{endId}
+	</select>
+
+	<!-- 根据工程id获取路线 -->
+	<select id="getRoutsByPId" parameterType="java.lang.String" resultMap="routeMap">
+		SELECT t.id,
+		       t.name,
+		       t.startTime,
+		       t.endTime,
+		       t.limitSpeedValue,
+		       t.delayValue,
+		       t.createDate,
+		       t.reportValue,
+		       t.width,
+		       t.beginStation,
+		       t.endStation,
+		       v1.name            AS beginStationName,
+		       v1.address         AS beginStationAddress,
+		       v2.name            AS endStationName
+		  FROM tb_route t
+		  LEFT JOIN tb_station v1 ON t.beginStation = v1.id
+		  LEFT JOIN tb_station v2 ON t.endStation = v2.id
+		WHERE t.id IN (SELECT routeId FROM Tb_Project_Route WHERE projectId =#{projectId})
+	</select>
+
+	<!-- 获取id -->
+	<select id="getId" resultType="Integer">
+        SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tb_route'
+    </select>
+
+    <!-- 获取id -->
+	<select id="getTotalUseOfStation" parameterType="Integer" resultType="int">
+        SELECT COUNT(1) FROM tb_route WHERE beginStation = #{id} OR endStation = #{id}
+    </select>
+</mapper>

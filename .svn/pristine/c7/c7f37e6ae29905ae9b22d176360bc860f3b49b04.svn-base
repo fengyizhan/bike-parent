@@ -1,0 +1,167 @@
+package com.tiamaes.bike.common.bean.command;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+/**
+ * 应答信息完成
+ * 
+ * @author Chen
+ *
+ */
+public class Completed implements Serializable {
+	private static final long serialVersionUID = -860507905645205410L;
+	/**
+	 * 主键，32位UUID
+	 */
+	private String id;
+	/**
+	 * sim卡号，12位，不足12位前补零
+	 */
+	private int terminalId;
+	/**
+	 * 应答消息ID(包类型)
+	 */
+	private int messageId;
+	/**
+	 * 应答消息流水号
+	 */
+	private long serialNo;
+	/**
+	 * 响应时间
+	 */
+	private Date time;
+	/**
+	 * 响应状态（0：失败，1：成功）
+	 */
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State state;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public int getTerminalId() {
+		return terminalId;
+	}
+
+	public void setTerminalId(int terminalId) {
+		this.terminalId = terminalId;
+	}
+
+	public int getMessageId() {
+		return messageId;
+	}
+
+	public void setMessageId(int messageId) {
+		this.messageId = messageId;
+	}
+
+	public long getSerialNo() {
+		return serialNo;
+	}
+
+	public void setSerialNo(long serialNo) {
+		this.serialNo = serialNo;
+	}
+
+	public Date getTime() {
+		return time;
+	}
+
+	public void setTime(Date time) {
+		this.time = time;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum State implements com.tiamaes.bike.common.Enum<State> {
+
+		SUCCESS("成功"), FAILD("失败"), ERRMES("消息有误"), NONSUPPORT("不支持");
+
+		private String name;
+
+		private State(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static State valueOf(@JsonProperty("index") final int index) {
+			State[] roleTypes = State.values();
+			if (index >= 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<State> {
+			@Override
+			public State deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return State.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return State.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return State.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+}

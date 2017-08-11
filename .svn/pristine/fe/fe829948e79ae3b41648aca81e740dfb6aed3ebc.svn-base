@@ -1,0 +1,73 @@
+<div ng-controller="RateController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">线路管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">费率级别</span>
+								<input type="text" class="form-control" name="name" ng-model="searchForm.data.stageLevel" ng-change="changeToNum(searchForm.data.stageLevel)" placeholder="请输入费率级别(数字)">
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add()">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增费率</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/rate/page/" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="130">费率时间</td>
+								<td width="130">费率价格</td>
+								<td width="130">费率级别</td>
+								<td width="130">入库时间</td>
+								<td width="160">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td ng-bind="item.stageTime"></td>
+								<td ng-bind="item.stagePrice"></td>
+								<td ng-bind="item.stageLevel"></td>
+								<td ng-bind="item.createTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/rate/dialog.html" style="width:1000px;height:inherit;"></div>
+</div>

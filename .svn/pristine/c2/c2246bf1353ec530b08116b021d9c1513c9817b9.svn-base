@@ -1,0 +1,252 @@
+package com.tiamaes.bike.api.authority.user.service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.authority.DriverServiceInterface;
+import com.tiamaes.bike.api.authority.WalletUserServiceInterface;
+import com.tiamaes.bike.api.authority.role.service.RoleServiceInterface;
+import com.tiamaes.bike.api.authority.user.persistence.UserMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Result;
+import com.tiamaes.bike.common.bean.system.LoginModel;
+import com.tiamaes.bike.common.bean.system.Role;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.system.User.Stage;
+import com.tiamaes.bike.common.bean.wallet.WalletUser;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.DefaultGrantedAuthority;
+import com.tiamaes.security.provisioning.MutableUser;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class UserService implements UserServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(UserService.class);
+
+	@Resource
+	private UserMapper userMapper;
+
+	@Resource
+	private StandardPasswordEncoder passwordEncoder;
+	@Resource
+	private UserServiceInterface userService;
+	@Resource
+	private RoleServiceInterface roleService;
+	@Resource
+	private RedisTemplate<String,String> redisTemplate;
+	@Autowired
+	private DriverServiceInterface driverService;
+	@Autowired
+	private WalletUserServiceInterface walletUserService;
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkUserName(String username) {
+		return userMapper.hasExists(username);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public UserDetails loadUserByUsername(String username) {
+		Assert.notNull(username, "用户名不能为空!");
+		User user = userMapper.loadUserDetailByUsername(username);
+
+		if (user != null) {
+			return user;
+		}
+		return null;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public User getUserById(String id) {
+		Assert.notNull(id, "用户编号不能为空!");
+		User user = userMapper.getUserById(id);
+		return user;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<User> getAllUsers(User user, Pagination<?> pagination) {
+		PageHelper.startPage(pagination);
+		return userMapper.getAllUsers(user);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfUsers(User user) {
+		return userMapper.getTotalOfUsers(user);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public User addUser(User user) {
+		Assert.notNull(user);
+		Assert.isTrue(!userMapper.hasExists(user.getUsername()), "用户名已经存在");
+		String password = passwordEncoder.encode("123456");
+		user.setPassword(password);
+		userMapper.addUser(user);
+		if (user.getAuthorities() != null && user.getAuthorities().size() > 0) {
+			userMapper.addUserRoles(user);
+		}
+		return userMapper.loadUserDetailByUsername(user.getUsername());
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public User updateUser(User user) {
+		Assert.notNull(user);
+		Assert.notNull(user.getUsername(), "用户名称不能为空");
+
+		User source = userMapper.loadUserDetailByUsername(user.getUsername());
+		try {
+			BeanUtils.copyProperties(source, user);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		userMapper.updateUser(source);
+		/*if (userMapper.existsUserInfo(source)) {
+			userMapper.updateUserSettings(source);
+		} else {
+			userMapper.addUserSettings(source);
+		}*/
+		userMapper.deleteUserRoles(source);
+		if (source.getAuthorities() != null && source.getAuthorities().size() > 0) {
+			userMapper.addUserRoles(source);
+		}
+		return source;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteUser(String username) {
+		User user = userMapper.loadUserDetailByUsername(username);
+		Assert.notNull(user, "用户不能为空!");
+		
+		userMapper.deleteUser(user);
+		userMapper.deleteUserRoles(user);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void upadatePassword(MutableUser user) {
+		userMapper.updatePassword(user);
+	}
+
+	@Override
+	public boolean hasRole(String authority) {
+		return userMapper.hasRole(authority);
+	}
+
+	@Override
+	public User loadUserDetailByUsername(String username) {
+		return userMapper.loadUserDetailByUsername(username);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Result userCheck(LoginModel loginModel)
+	{
+		String username_mobile=loginModel.getUsername();
+		String password_verifyCode=loginModel.getPassword();
+		Assert.notNull(username_mobile, "用户名称不能为空");
+		Assert.notNull(password_verifyCode, "验证码不能为空");
+		String storedverifyCodeKey=String.format(RedisKey.MESSAGE_VERIFYCODE,username_mobile);
+		String storedverifyCode=redisTemplate.opsForValue().get(storedverifyCodeKey);
+		Result result=new Result();
+		User user=new User();
+		//手机验证码是否有效
+		boolean verifyCodeValid=false;
+		if(password_verifyCode.equals(storedverifyCode))
+		{
+			verifyCodeValid=true;
+		}
+		if(!verifyCodeValid)
+		{
+			result.setSuccess(false);
+			result.setMessage("手机验证码不正确");
+			result.getData().put("user",user);
+			return result;
+		}
+		boolean userExisted=checkUserName(username_mobile);
+		try {
+			if(!userExisted)
+			{//如果用户不存在，注册一个APP默认角色的用户
+				user.setUsername(username_mobile);
+				user.setEnabled(true);
+				user.setCreateDate(new Date());
+				user.setMobile(username_mobile);
+				String password = passwordEncoder.encode(password_verifyCode);
+				user.setPassword(password);
+				List<DefaultGrantedAuthority> auths=new ArrayList<DefaultGrantedAuthority>();
+				Role role=roleService.getRoleById("ROLE_USER");
+				auths.add(role);
+				user.setAuthorities(auths);
+				user.setNickname(username_mobile);
+				result.setMessage("用户注册成功");
+				try{
+				/**
+				 * 插入bike库中tb_driver用户扩展信息
+				 */
+				user.setStage(Stage.REGISTED);
+				driverService.addDriver(user);
+				}catch(Exception e)
+				{
+					result.setSuccess(false);
+					result.setMessage("创建用户扩展信息异常，请重试！");
+					e.printStackTrace();
+					return result;
+				}
+				try{
+				/**
+				 * 插入wallet库中的tw_driver用户钱包信息
+				 */
+				WalletUser walletUser=new WalletUser();
+				walletUser.setUsername(username_mobile);
+				walletUser.setBalance(0f);
+				walletUserService.addWalletUser(walletUser);
+				}catch(Exception e)
+				{
+					result.setSuccess(false);
+					result.setMessage("创建用户钱包信息异常，请重试！");
+					e.printStackTrace();
+					return result;
+				}
+				user=userService.addUser(user);
+			}else
+			{//直接返回当前对应的APP用户
+				user=userService.loadUserDetailByUsername(username_mobile);
+				MutableUser mutableUser = new MutableUser(user);
+				mutableUser.setPassword(passwordEncoder.encode(password_verifyCode));
+				userService.upadatePassword(mutableUser);
+				result.setMessage("用户信息加载成功");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setSuccess(false);
+			result.setMessage("用户信息验证失败");
+		}
+		result.setSuccess(true);
+		result.getData().put("user",user);
+		return result;
+	
+	}
+
+}

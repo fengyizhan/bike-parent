@@ -1,0 +1,181 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+/**
+ * 工程项目
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Project", description = "工程项目")
+public class Project implements Serializable {
+	private static final long serialVersionUID = 4667586357677422386L;
+	@ApiModelProperty(value="项目编号")
+	private String id;
+	@ApiModelProperty(value="项目名称(新增时必填, 查询时可不填)")
+	private String name;
+	
+	/**
+	 * 项目地址
+	 */
+	@ApiModelProperty(value="项目地址(新增时必填, 查询时可不填)")
+	private String address;
+	
+	/**
+	 * 承建单位
+	 */
+	@ApiModelProperty(value="承建单位(新增时必填, 查询时可不填)")
+	private String unit;
+	
+	/**
+	 * 工程开始时间
+	 */
+	@ApiModelProperty(value="工程开始时间")
+	private Date startTime;
+	
+	/**
+	 * 工程结束时间
+	 */
+	@ApiModelProperty(value="工程结束时间")
+	private Date endTime;
+	
+	/**
+	 * 工程场区
+	 */
+	@ApiModelProperty(value="工程场区(新增时必填, 查询时可不填)")
+	private Station beginStation;
+	
+	/**
+	 * 指定消纳场
+	 */
+	@ApiModelProperty(value="指定消纳场(新增时必填, 查询时可不填)")
+	private Station endStation;
+	
+	/**
+	 * 责任人
+	 */
+	@ApiModelProperty(value="责任人")
+	private String principal;
+	
+	/**
+	 * 联系电话
+	 */
+	@ApiModelProperty(value="联系电话")
+	private String telephone;
+	
+	private Date createDate;
+	
+	/**
+	 * 工程的线路信息
+	 */
+	@ApiModelProperty(value="工程的线路信息")
+	private List<ProjectRoute> projectRoutes;
+	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public String getUnit() {
+		return unit;
+	}
+
+	public void setUnit(String unit) {
+		this.unit = unit;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	public Station getBeginStation() {
+		return beginStation;
+	}
+
+	public void setBeginStation(Station beginStation) {
+		this.beginStation = beginStation;
+	}
+
+	public Station getEndStation() {
+		return endStation;
+	}
+
+	public void setEndStation(Station endStation) {
+		this.endStation = endStation;
+	}
+
+	public String getPrincipal() {
+		return principal;
+	}
+
+	public void setPrincipal(String principal) {
+		this.principal = principal;
+	}
+
+	public String getTelephone() {
+		return telephone;
+	}
+
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public List<ProjectRoute> getProjectRoutes() {
+		return projectRoutes;
+	}
+
+	public void setProjectRoutes(List<ProjectRoute> projectRoutes) {
+		this.projectRoutes = projectRoutes;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

@@ -1,0 +1,103 @@
+<div class="container index" ng-controller="IndexController" ng-cloak>
+	<div class="row" style="margin-top: 6px;">
+		<div class="col-md-4" id="row-1-1-col-1">
+			<div class="row">
+				<div class="col-md-12" style="border-radius: 8px;">
+					<div class="text-center">
+						<i class="fa fa-eye" aria-hidden="true"></i>昨日数据一览
+					</div>
+				</div>
+				<div class="col-md-12 text-left" style="border-radius: 8px 8px 0 0;">
+					<div class="pull-left">
+						<div class="circle" style="background-color: #ffa800;"></div>
+					</div>
+					<div class="pull-left">
+						<label>运输总趟次：</label>
+					</div>
+					<div class="pull-left" style="height:64px;">
+						<span ng-bind="countsMap.vehicleTrips"></span>
+					</div>
+				</div>
+				<div class="col-md-12 text-left">
+					<div class="pull-left">
+						<div class="circle" style="background-color: #07cd98;"></div>
+					</div>
+					<div class="pull-left">
+						<label>运输土方数：</label>
+					</div>
+					<div class="pull-left" style="height:64px;">
+						<span ng-bind="countsMap.loadcubes"></span>
+					</div>
+				</div>
+				<div class="col-md-12 text-left">
+					<div class="pull-left">
+						<div class="circle" style="background-color: #a2d04a;"></div>
+					</div>
+					<div class="pull-left">
+						<label>车辆上线数：</label>
+					</div>
+					<div class="pull-left" style="height:64px;">
+						<span ng-bind="countsMap.onlineCount"></span>
+					</div>
+				</div>
+				<div class="col-md-12 text-left" style="border-radius: 0 0 8px 8px;">
+					<div class="pull-left">
+						<div class="circle" style="background-color: #8a90fe;"></div>
+					</div>
+					<div class="pull-left">
+						<label>车辆上线率：</label>
+					</div>
+					<div class="pull-left" style="height:64px;">
+						<span ng-bind="countsMap.onlineRate*100"></span><span>%</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-8" id="row-1-2-col-1">
+			<div class="row">
+				<div class="col-md-12" style="height: 36px;line-height: 36px;border-radius:8px 8px 0 0;"><i class="fa fa-line-chart" aria-hidden="true"></i>一周数据统计</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12" style="border-radius:0 0 8px 8px;">
+					<div id="1478855913889" style="width:867px;height:281px;"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row" style="margin-bottom: 14px;">
+		<div class="col-md-3">
+			<div id="row-2-col-1" ng-style="{'height': project_left_heigth}">
+				<div class="text-center">
+					<img src="resources/images/201611111002.png">&nbsp;渣土车工程
+				</div>
+				<div class="text-left">
+					<img src="resources/images/201611111000.png"><label>正在进行：</label><span ng-bind="ongoingTotal"></span>
+				</div>
+				<div class="text-left">
+					<img src="resources/images/201611111001.png"><label>累计总数：</label><span ng-bind="projectTotal"></span>
+				</div>
+			</div>
+		</div>
+		<div id="row-2-col-2" class="col-md-9">
+			<div class="col-md-3 project-card" ng-repeat="item in projectList track by $index" ng-click="detail(item)">
+				<div class="project-card-header" ng-bind="item.projectName"></div>
+				<div class="project-card-container">
+					<div class="pull-left">
+						<div class="project-card-days" ng-bind="item.schedule"></div>
+						<div class="text-center"><small>当前工期</small></div>
+					</div>
+					<div class="project-card-content">
+						<div>土方总数<span ng-bind="item.earthWork"></span></div>
+						<div>车辆总数<span ng-bind="item.carTotal"></span></div>
+						<div>运输趟次<span ng-bind="item.transportTimes"></span></div>
+						<div class="project-card-content-time">
+							<div><i class="fa fa-clock-o" aria-hidden="true"></i><span ng-bind="item.startTime"></span></div>
+							<div><i class="fa fa-clock-o" aria-hidden="true"></i><span ng-bind="item.endTime"></span></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/dialog.html" style="width: 812px;height: 492px;"></div>
+</div>

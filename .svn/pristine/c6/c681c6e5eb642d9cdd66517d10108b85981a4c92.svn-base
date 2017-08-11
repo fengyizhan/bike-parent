@@ -1,0 +1,45 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.commons.codec.DecoderException;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.connector.QuizAnswer;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8001;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 提问应答
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0302Handler extends ProtocolHandler {
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws JsonProcessingException, DecoderException {
+		String simNo = request.getHeader().getSimNo();
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), 0);
+		return response;
+	}
+	
+	public static QuizAnswer decodeBody(Message request){
+		QuizAnswer quizAnswer= new QuizAnswer();
+		byte[] bytebody=request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		//应答流水号
+		short serialNumber = (short)buffer.readUnsignedShort();
+		//答案id
+		int answerId = buffer.readUnsignedByte();
+		quizAnswer.setSerialNumber(serialNumber);
+		quizAnswer.setAnswerId(answerId);
+		
+		return quizAnswer;
+	}
+}

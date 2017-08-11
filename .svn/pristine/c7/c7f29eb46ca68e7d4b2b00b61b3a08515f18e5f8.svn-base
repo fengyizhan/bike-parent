@@ -1,0 +1,348 @@
+var globalOutset = null;        // 定义全局变量用于存放起点信息
+var globalDestination = null;   // 定义全局变量用于存放终点信息
+(function(angular) {
+	'use strict';
+	define(['app','BMap'], function (app, BMap) {
+		app.register.controller('RouteController', ["$rootScope", "$scope", "$resource", "$q", "$timeout", "$filter", function($rootScope, $scope, $resource, $q, $timeout, $filter){
+			/**============================================百度地图样式定义部分============================================**/
+			var map, drawingManager, styleOptions = {
+		        strokeColor:"green",
+		        fillColor:"green",
+		        strokeWeight: 3,
+		        strokeOpacity: 0.8,
+		        fillOpacity: 0.6,
+		        strokeStyle: 'solid',
+		        enableEditing: false,
+		        enableClicking: true
+		    }, outsetStyle = {
+		        strokeColor:"blue",
+		        fillColor:"blue",
+		        strokeWeight: 3,
+		        strokeOpacity: 0.8,
+		        fillOpacity: 0.6,
+		        strokeStyle: 'solid',
+		        enableEditing: false,
+		        enableClicking: true
+		    },destinationStyle = {
+		        strokeColor:"#6633CC",
+		        fillColor:"#6633CC",
+		        strokeWeight: 3,
+		        strokeOpacity: 0.8,
+		        fillOpacity: 0.6,
+		        strokeStyle: 'solid',
+		        enableEditing: false,
+		        enableClicking: true
+		    };
+			/**============================================接口对象定义部分============================================**/
+			var Route = $resource("api/information/route/:id", { "id" : "@id" }, {
+				init : { method : 'GET',responseType: "json", url : 'api/information/route/init'},
+				initStations : { method : 'GET', responseType: "json", url : 'api/information/station/pullTypeList/route'},
+				initReportValue: { methid : 'GET ', responseType: "json", url : 'api/information/route/initReportValue'},
+				validateName : {method : 'GET', url : 'api/information/route/checkname/:name/:id'},
+				get : { method : 'GET'},
+				save : { method : 'PUT'},
+				remove : { method : 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+//			var selected = {name : "全部"};
+			$scope.searchForm = {
+//				status:[selected],
+				data:{
+//					"type":selected,
+//					"state":selected
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.changeToNum = function(id){
+				if (isNaN(id)) {
+					$scope.searchForm.data.id = undefined;
+				}
+			};
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.pre();
+				$scope.dialog.title = "线路详情";
+				$scope.dialog.data = angular.copy(target);
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = (($scope.dialog.data.reportValue || 0) & (1 << i)) >> i === 1;
+				});
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				globalOutset = null;
+				globalDestination = null;
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.pre();
+				$scope.dialog.title = "新增线路";
+				$scope.dialog.data = {
+					"width": 10,
+					"delayValue": 10,
+					"limitSpeedValue": 60,
+					"startTime" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"endTime": (function(){
+						let now = new Date();
+						now.setYear(now.getFullYear() + 1);
+						now.setHours(0,0,0,0);
+						return now;
+					})()
+				};
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = true;
+				});
+				$scope.dialog.show();
+				
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					// 处理报警设置的值
+					$scope.dialog.data.reportValue = (function(reports){
+						var reportValue = 0;
+						angular.forEach($filter('filter')(reports, {"selected": true}), function(item){
+							reportValue += item.index;
+						}, reportValue);
+						return reportValue;
+					})($scope.dialog.reportMethods);
+					// 保存线路
+					Route.save($scope.dialog.data,function(response){
+						$scope.pagination.unshift(response);
+                    });
+					$scope.dialog.close();
+					map.clearOverlays();
+				};
+			};
+			$scope.edit = function(target){
+				globalOutset = null;
+				globalDestination = null;
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = false;
+				$scope.dialog.pre();
+				$scope.dialog.title = "修改线路";
+				$scope.dialog.data = angular.copy(target);
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = (($scope.dialog.data.reportValue || 0) & (1 << i)) >> i === 1;
+				});
+				$scope.dialog.show();
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					// 处理报警设置的值
+					$scope.dialog.data.reportValue = (function(reports){
+						var reportValue = 0;
+						angular.forEach($filter('filter')(reports, {"selected": true}), function(item){
+							reportValue += item.index;
+						}, reportValue);
+						return reportValue;
+					})($scope.dialog.reportMethods);
+					// 更新线路
+					Route.save($scope.dialog.data,function(response){
+						$scope.pagination.refresh(response);
+                    });
+					$scope.dialog.close();
+					map.clearOverlays();
+				};
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该线路?',callback:function(){
+					Route.remove({"id":target.id},function(response){
+						if (response.state == undefined) {
+							$scope.pagination.remove(target);
+						} else {
+							$scope.$confrim.init({title:'警告',type:'warning',content : response.message}).show();
+						}
+                    });
+				}}).show();
+			};
+			/**============================================页面元素初始化部分============================================**/
+//			Route.init(function(response){
+//				$scope.searchForm.types = $scope.searchForm.types.concat(response.types);
+//			});
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				dialog.selectBeginStation = function(item){
+					globalOutset = item;
+					map.clearOverlays();
+					if (globalDestination == null) {
+						globalDestination = dialog.data.endStation;
+					}
+					if (globalDestination != null) {
+						var destination = new BMap.Station(globalDestination, destinationStyle);
+						destination && map.addOverlay(destination);
+					}
+					var outset = new BMap.Station(item, outsetStyle);
+					outset && map.addOverlay(outset);
+					map.panTo(new BMap.Point(outset.getPath()[0].lng, outset.getPath()[0].lat));
+				};
+				dialog.selectEndStation = function(item){
+					globalDestination = item;
+					map.clearOverlays();
+					if (globalOutset == null) {
+						globalOutset = dialog.data.beginStation;
+					}
+					if (globalOutset != null) {
+						var outset = new BMap.Station(globalOutset, outsetStyle);
+						outset && map.addOverlay(outset);
+					}
+					var destination = new BMap.Station(item, destinationStyle);
+					destination && map.addOverlay(destination);
+					if (globalOutset == null) {
+						map.panTo(new BMap.Point(destination.getPath()[0].lng, destination.getPath()[0].lat));
+					}
+				};
+				dialog.start = {
+					"time" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"open": function($event) {
+						dialog.start.opened = true;
+					}
+				};
+				dialog.end = {
+					"time": (function(){
+						let now = new Date();
+						now.setYear(now.getFullYear() + 1);
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"open": function($event) {
+						dialog.end.opened = true;
+					}
+				};
+				dialog.validateName = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Route.validateName({"id": dialog.data.id, "name": name}, function(response){
+								response.data === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				
+				dialog.isNum = function(str){
+					return $q(function(resolve, reject) {
+						if (str === undefined) {
+							resolve();
+						} else if (!isNaN(str)) {
+					    	resolve();
+						} else {
+							reject();
+						}
+					});
+				};
+				
+				dialog.pre = function(){
+					var preBtn = document.getElementById("preBtn");
+					var nextBtn = document.getElementById("nextBtn");
+					preBtn.style.display = "none";
+					nextBtn.style.display = "initial";
+					var stepFirst = document.getElementById("step-1");
+					var stepLast = document.getElementById("step-2");
+					stepFirst.className = "selected";
+					stepLast.className = "disabled";
+					var msgDiv = document.getElementById("msgDiv");
+					var mapDiv = document.getElementById("mapDiv");
+					msgDiv.style.display = "block";
+					mapDiv.style.display = "none";
+				};
+				
+				dialog.next = function(){
+					var preBtn = document.getElementById("preBtn");
+					var nextBtn = document.getElementById("nextBtn");
+					preBtn.style.display = "initial";
+					nextBtn.style.display = "none";
+					var stepFirst = document.getElementById("step-1");
+					var stepLast = document.getElementById("step-2");
+					stepFirst.className = "disabled";
+					stepLast.className = "selected";
+					var msgDiv = document.getElementById("msgDiv");
+					var mapDiv = document.getElementById("mapDiv");
+					msgDiv.style.display = "none";
+					mapDiv.style.display = "block";
+					map = new BMap.Map("1474160887345",{enableMapClick:false});
+					map.enableScrollWheelZoom();
+					map.centerAndZoom(new BMap.Point(113.64964385, 34.75661006), 16);
+					map.enableAutoResize();
+					map.clearOverlays();
+					if ($scope.dialog.increased == false) {
+						var outset = new BMap.Station($scope.dialog.data.beginStation, outsetStyle);
+						if(outset !== undefined){
+							map.addOverlay(outset);
+						}
+						var destination = new BMap.Station($scope.dialog.data.endStation, destinationStyle);
+						if(destination !== undefined){
+							map.addOverlay(destination);
+						}
+						var routerLine = BMap.RouterLine($scope.dialog.data, styleOptions);
+						map.panTo(new BMap.Point(outset.getPath()[0].lng, outset.getPath()[0].lat));
+						if ($scope.dialog.editabled == true) {
+							if(routerLine !== undefined){
+								map.addOverlay(routerLine);
+								routerLine.enableEditing();
+								routerLine.addEventListener('lineupdate', function(event){
+									$scope.$apply(function(){
+										var paths = new BMap.PathsFromBD09ToWGS84(routerLine.getPath());
+										$scope.dialog.data.paths = paths;
+									});
+								});
+							}
+						} else {
+							if(routerLine !== undefined){
+								map.addOverlay(routerLine);
+							}
+						}
+					} else {
+						drawingManager = new BMapLib.DrawingManager(map, {
+							isOpen: false, //是否开启绘制模式
+							enableDrawingTool: true, //是否显示工具栏
+							enableCalculate: false,
+//							drawingType: BMAP_DRAWING_MARKER,
+							drawingToolOptions: {
+						        anchor: BMAP_ANCHOR_TOP_LEFT,
+						        offset: new BMap.Size(2, 2),
+						        scale: 1,
+						        drawingModes : [
+						            BMAP_DRAWING_POLYLINE,
+						        ]
+						    },
+//							circleOptions: styleOptions, //圆的样式
+							polylineOptions: styleOptions//, //线的样式
+//							polygonOptions: styleOptions, //多边形的样式
+//							rectangleOptions: styleOptions //矩形的样式
+						});
+						drawingManager.addEventListener("polylinecomplete", function(e, overlay) {
+							$scope.$apply(function(){
+								var paths = new BMap.PathsFromBD09ToWGS84(overlay.getPath());
+								$scope.dialog.data.paths = paths;
+							});
+						});
+						drawingManager.close();
+					}
+				};
+				//初始化场区列表
+				Route.initStations(function(response){
+					dialog.beginStations = response.beginStations;
+					dialog.endStations = response.endStations;
+				});
+				//初始化报警值
+				Route.initReportValue(function(response){
+					dialog.reportMethods = response.reportValues;
+					angular.forEach(dialog.reportMethods, function(item, i){
+						item.selected = true;
+					});
+				});
+			});
+		}]);
+	});
+})(window.angular);

@@ -1,0 +1,125 @@
+package com.tiamaes.bike.storage.listener;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.ParkStatusInfo;
+import com.tiamaes.bike.common.bean.connector.RequestInfo;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.integrated.ParkVehicleUseRecord;
+import com.tiamaes.bike.common.bean.integrated.PileRecord;
+import com.tiamaes.bike.storage.service.LocatioInfoServiceInterface;
+import com.tiamaes.bike.storage.service.ParkStatusInfoServiceInterface;
+import com.tiamaes.bike.storage.service.ParkWarningInfoServiceInterface;
+import com.tiamaes.bike.storage.service.RequestInfoServiceInterface;
+import com.tiamaes.bike.storage.service.ResponseInfoServiceInterface;
+import com.tiamaes.bike.storage.service.VehicleOnOffLineInfoServiceInterface;
+import com.tiamaes.bike.storage.service.VehicleUseInfoServiceInterface;
+
+@Component
+public class Listener {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(Listener.class);
+
+	@Autowired
+	private LocatioInfoServiceInterface locatioInfoService;
+	@Autowired
+	private ResponseInfoServiceInterface responseInfoService;
+	@Autowired
+	private RequestInfoServiceInterface requestInfoService;
+	@Autowired
+	private VehicleOnOffLineInfoServiceInterface vehicleOnOffLineInfoService;
+	@Autowired
+	private VehicleUseInfoServiceInterface vehicleUseInfoService;
+	@Autowired
+	private ParkWarningInfoServiceInterface parkWarningInfoService;
+	@Autowired
+	private ParkStatusInfoServiceInterface parkStatusInfoService;
+
+	/**
+	 * 消费车辆状态信息
+	 * @param vehicle
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen1", topics = "com.tiamaes.bike.common.bean.information.Vehicle")
+	public void listen1(@Payload Vehicle vehicle) throws Exception {
+		locatioInfoService.savePointVector(vehicle);
+	}
+
+	/**
+	 * 消费车辆报警信息
+	 * @param warning
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen2", topics = "com.tiamaes.bike.common.bean.connector.VehicleWarningInfo")
+	public void listen2(@Payload VehicleWarningInfo warning) throws Exception {
+		locatioInfoService.saveVehicleWarningInfo(warning);
+	}
+
+	/**
+	 * 消费响应报文信息
+	 * @param response
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen3", topics = "com.tiamaes.bike.common.bean.connector.ResponseInfo")
+	public void listen3(@Payload ResponseInfo response) throws Exception {
+		responseInfoService.saveResponseInfo(response);
+	}
+
+	/**
+	 * 消费请求报文信息
+	 * @param request
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen4", topics = "com.tiamaes.bike.common.bean.connector.RequestInfo")
+	public void listen4(@Payload RequestInfo request) throws Exception {
+		requestInfoService.saveRequestInfo(request);
+	}
+
+	/**
+	 * 消费车辆上下线信息
+	 * @param vehicleOnOffLineInfo
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen5", topics = "com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo")
+	public void listen5(@Payload VehicleOnOffLineInfo vehicleOnOffLineInfo) throws Exception {
+		vehicleOnOffLineInfoService.addVehicleOnOffLineInfo(vehicleOnOffLineInfo);
+	}
+
+	/**
+	 * 消费车辆借还信息
+	 * @param borrowRecord
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen6", topics = "com.tiamaes.bike.common.bean.integrated.ParkVehicleUseRecord")
+	public void listen6(@Payload ParkVehicleUseRecord parkVehicleUseRecord) throws Exception {
+		vehicleUseInfoService.addVehicleUseInfo(parkVehicleUseRecord);
+	}
+	
+	/**
+	 * 消费停放区报警信息
+	 * @param parkVehicleInfo
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen7", topics = "com.tiamaes.bike.common.bean.integrated.PileRecord")
+	public void listen7(@Payload PileRecord pileRecord) throws Exception {
+		parkWarningInfoService.addParkWarningInfo(pileRecord);
+	}
+	
+	/**
+	 * 消费停放区状态信息
+	 * @param parkStatusInfo
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen8", topics = "com.tiamaes.bike.common.bean.connector.ParkStatusInfo")
+	public void listen8(@Payload ParkStatusInfo parkStatusInfo) throws Exception {
+		parkStatusInfoService.addParkStatusInfo(parkStatusInfo);
+	}
+}

@@ -1,0 +1,558 @@
+package com.tiamaes.bike.connector.service;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.connector.MediaResponse;
+import com.tiamaes.bike.common.bean.connector.PhotoPackage;
+import com.tiamaes.bike.common.bean.connector.RegisterResult;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.RegisterResult.RegisterResultType;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo.ResponseState;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DirectionType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DistrictType;
+import com.tiamaes.bike.common.bean.connector.command.Command;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message0200;
+import com.tiamaes.bike.common.bean.message.Message8800;
+import com.tiamaes.bike.common.bean.message.Message.Header;
+import com.tiamaes.bike.common.utils.FTPClientUtils;
+import com.tiamaes.bike.common.utils.FileUtils;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.persistence.TerminalMapper;
+import com.tiamaes.bike.connector.persistence.VehicleMapper;
+
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 通信程序车辆数据库服务接口 远程调用API的mapper
+ * 
+ * @author lsl
+ *
+ */
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class HandlerService implements HandlerServiceInterface {
+	private static Logger logger = LogManager.getLogger(HandlerService.class);
+	
+	@Value("${ftp.host}")
+	private String host;	// 服务器路径
+	@Value("${ftp.username}")
+	private String username;// 服务器用户名
+	@Value("${ftp.password}")
+	private String password;// 服务器密码
+	@Value("${ftp.filepath}")
+	private String filepath;// 服务器图片文件夹路径
+	@Value("${ftp.serverpath}")
+	private String serverpath;// 服务器前缀
+	@Value("${java.io.tmpdir}")
+	private String tmpdir;// 本地临时文件目录
+	
+	@Resource
+	private VehicleMapper vehicleMapper;
+	@Resource
+	private TerminalMapper terminalMapper;
+	@Resource
+	private ChannelRepository channelRepository;
+	@Resource
+	private CommandServiceInterface commandService;
+	@Resource
+	private KafkaTemplate<String, String> kafkaTemplate;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Driver> driverOperator;
+	@Resource(name = "stringRedisTemplate")
+	private ValueOperations<String, Long> longOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Terminal> terminalOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, PointVector> pointVectorOperator;
+	@Resource(name = "vehicleTemplate")
+	private RedisTemplate<String, Vehicle> vehicleTemplate;
+	@Resource
+	private DefaultRedisScript<Vehicle> vehicleScriptExecutor;
+	@Resource
+	private ObjectMapper objectMapper;
+	@Resource(name = "stringRedisTemplate")
+	private SetOperations<String, String> setOperator;
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleBySimNo(String simNo) {
+		Assert.notNull(simNo, "车辆simNo不能为空!");
+		StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+		Jackson2JsonRedisSerializer<Vehicle> hashValueSerializer = new Jackson2JsonRedisSerializer<>(Vehicle.class);
+		hashValueSerializer.setObjectMapper(objectMapper);
+		List<String> keys = new ArrayList<String>();
+		keys.add(RedisKey.VEHICLES_TERMINALS_SIMNO);
+		keys.add(RedisKey.VEHICLES_TERMINALS_ID);
+		keys.add(RedisKey.VEHICLES);
+		Vehicle vehicle = vehicleTemplate.execute(vehicleScriptExecutor, stringRedisSerializer, hashValueSerializer,
+				keys, simNo);
+		return vehicle;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public RegisterResult registerVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle, "车辆信息不能为空!");
+		Assert.notNull(vehicle.getTerminal(), "车辆车载机信息不能为空!");
+		RegisterResult result = new RegisterResult();
+		// 从缓存中取出车辆信息
+		Vehicle actual = getVehicleByName(vehicle.getCarNo());
+		// 从缓存中取出终端信息
+		// 根据SIMNO获取主键
+		String terminalId = vehicle.getTerminal().getId();
+		Terminal terminal = terminalOperator.get(RedisKey.VEHICLES_TERMINALS, terminalId);
+		// 鉴权码
+		String authentication = "1234567890A";
+		if(actual != null && terminal != null && actual.getRegistered() != null && actual.getRegistered() && terminal.getRegistered() != null && terminal.getRegistered()){
+			if(actual.getTerminal() != null){
+				if(terminalId.equals(actual.getTerminal().getId())){
+					result.setRegisterNo(authentication);
+					result.setResult(RegisterResultType.SUCCESS);
+					return result;
+				}
+			}
+		}
+		// 数据库中无该车辆
+		if (null == actual) {
+			result.setRegisterNo("");
+			result.setResult(RegisterResultType.VNULL);
+			return result;
+		} else if (actual.getRegistered() != null && actual.getRegistered()) {
+			// 车辆已注册
+			result.setRegisterNo("");
+			result.setResult(RegisterResultType.VREGISTERED);
+			return result;
+		}
+		// 数据库中无该终端
+		if (null == terminal) {
+			result.setRegisterNo("");
+			result.setResult(RegisterResultType.TNULL);
+			return result;
+		} else if (terminal.getRegistered() != null && terminal.getRegistered()) {
+			result.setRegisterNo("");
+			result.setResult(RegisterResultType.TREGISTERED);
+			return result;
+		}
+		// 更新终端注册状态
+		terminal.setRegistered(true);
+		// 更新终端鉴权码
+		terminal.setAuthentication(authentication);
+		//更新手机号
+		terminal.setSimNo(vehicle.getTerminal().getSimNo());
+		// 更新车辆注册状态
+		actual.setRegistered(true);
+		// 更新终端
+		terminalMapper.updateTerminal(terminal);
+		// 更新车辆中的终端ID
+		actual.setTerminal(terminal);
+		//更新车辆所属行政区划
+		Vehicle.Property property = actual.getProperty();
+		if(property == null){
+			property = new Vehicle.Property();
+		}
+		property.setProvince(vehicle.getProperty().getProvince());
+		property.setCity(vehicle.getProperty().getCity());
+		actual.setProperty(property);
+		//更新车辆车牌颜色
+		actual.setPlateColor(vehicle.getPlateColor());
+		// 更新车辆
+		updateVehicle(actual);
+		terminalOperator.put(RedisKey.VEHICLES_TERMINALS, terminal.getId(), terminal);
+		stringOperator.put(RedisKey.VEHICLES_TERMINALS_SIMNO, terminal.getSimNo(), terminal.getId());
+		
+		//注册更新下线记录
+		actual.setSimCode(terminal.getSimNo());
+		VehicleOnOffLineInfo vehicleOnOffLineInfo = new VehicleOnOffLineInfo(actual,null);
+		vehicleOnOffLineInfo.setCreateTime(new Date());
+		vehicleOnOffLineInfo.setState(VehicleOnOffLineInfo.State.OFFLINE);
+		kafkaTemplate.send(MessageBuilder.withPayload(vehicleOnOffLineInfo).setHeader(KafkaHeaders.TOPIC, vehicleOnOffLineInfo.getClass().getName()).build());
+		
+		result.setRegisterNo(authentication);
+		result.setResult(RegisterResultType.SUCCESS);
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public boolean logoutVehicle(String simNo) {
+		// 根据simNo查询车辆信息
+		Vehicle vehicle = getVehicleBySimNo(simNo);
+		// 该车辆未注册
+		if (null == vehicle) {
+			return false;
+		}
+		String terminalId = stringOperator.get(RedisKey.VEHICLES_TERMINALS_SIMNO,simNo);
+		Terminal terminal = terminalOperator.get(RedisKey.VEHICLES_TERMINALS, terminalId);
+		terminal.setAuthentication(null);
+		terminal.setRegistered(false);
+		terminal.setSimNo(null);
+		// 更新终端
+		terminalMapper.updateTerminal(terminal);
+		// 从缓存中取出终端信息
+		terminalOperator.put(RedisKey.VEHICLES_TERMINALS, terminal.getId(), terminal);
+		// 移除映射
+		stringOperator.delete(RedisKey.VEHICLES_TERMINALS_ID, terminal.getId());
+		vehicle.setTerminal(null);
+		vehicle.setRegistered(false);
+		// 更新车辆
+		updateVehicle(vehicle);
+		
+		String id = vehicle.getId();
+		pointVectorOperator.delete(RedisKey.VEHICLES_POINTVECTORS, id);
+		
+		driverOperator.delete(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id);
+		
+		//注销移除
+		setOperator.remove(RedisKey.VEHICLES_ONLINE, simNo);
+		setOperator.remove(RedisKey.VEHICLES_OFFLINE, simNo);
+		setOperator.remove(RedisKey.VEHICLES_PARKING, simNo);
+		return true;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Vehicle updateVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle);
+		Assert.notNull(vehicle.getName(), "车牌号不能为空");
+
+		vehicleMapper.updateVehicle(vehicle);
+
+		HashOperations<String, String, Vehicle> operator = vehicleTemplate.opsForHash();
+		// 根据主键存放对象
+		operator.put(RedisKey.VEHICLES, vehicle.getId(), vehicle);
+		// 终端号和主键做映射
+		if (vehicle.getTerminal() != null && StringUtils.isNotBlank(vehicle.getTerminal().getId())) {
+			stringOperator.put(RedisKey.VEHICLES_TERMINALS_ID, vehicle.getTerminal().getId(),
+					vehicle.getId());
+		}
+
+		return vehicle;
+	}
+
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleByName(String name) {
+		Assert.notNull(name, "车牌号不能为空!");
+		// 根据车牌号获取主键
+		String id = (String) stringOperator.get(RedisKey.VEHICLES_CARNO, name);
+		if (null == id) {
+			return null;
+		}
+		HashOperations<String, String, Vehicle> operator = vehicleTemplate.opsForHash();
+		Vehicle vehicle = operator.get(RedisKey.VEHICLES, id);
+
+		return vehicle;
+	}
+	
+
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getSerialNo(String simNo) {
+		Assert.notNull(simNo, "SIM卡号不能为空!");
+		String key = String.format(RedisKey.SERIALNO_SIMNO, simNo);
+		Long serialNo = longOperator.increment(key, 1);
+		if (serialNo >= Short.MAX_VALUE) {
+			longOperator.increment(key, Math.negateExact(serialNo) + 1);
+			return 1;
+		}
+		return serialNo.intValue();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void handle0001(ResponseInfo responseInfo) {
+		StringBuffer stringBuffer = new StringBuffer();
+		stringBuffer.append(responseInfo.getMessageId());
+		stringBuffer.append(responseInfo.getSimNo());
+		stringBuffer.append(responseInfo.getMessageSeqNo());
+		// 从redis取生成的id
+		String id = (String) stringOperator.get(RedisKey.COMMAND_RESPONSES_ID, stringBuffer.toString());
+		if (StringUtils.isBlank(id)) {
+			id = UUIDGenerator.getUUID();
+		}
+		stringOperator.delete(RedisKey.COMMAND_RESPONSES_ID, stringBuffer.toString());
+		if (ResponseState.SUCCESS.equals(responseInfo.getResponseState())) {
+			Command command = new Command();
+			command.setId(id);
+			commandService.deleteCommand(command);
+		}
+		responseInfo.setId(id);
+		kafkaTemplate.send(MessageBuilder.withPayload(responseInfo).setHeader(KafkaHeaders.TOPIC, responseInfo.getClass().getName()).build());
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public void handle0102(Vehicle target ,boolean sendOnLine) throws UnknownHostException {
+		String simNo = target.getSimCode();
+		String ip = InetAddress.getLocalHost().getHostAddress();
+		//获取配置文件bootstrap中的server的port
+		StringBuffer address = new StringBuffer();
+		address.append(ip);
+		stringOperator.put(RedisKey.CONNECTS, simNo, address.toString());
+		
+		if(sendOnLine){
+			//上线更新上线记录
+			VehicleOnOffLineInfo vehicleOnOffLineInfo = new VehicleOnOffLineInfo(target,null);
+			vehicleOnOffLineInfo.setCreateTime(new Date());
+			vehicleOnOffLineInfo.setState(VehicleOnOffLineInfo.State.ONLINE);
+			kafkaTemplate.send(MessageBuilder.withPayload(vehicleOnOffLineInfo).setHeader(KafkaHeaders.TOPIC, vehicleOnOffLineInfo.getClass().getName()).build());
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public void handle0200(Message0200 message0200,Vehicle vehicle) {
+		sendInfoOfWarningAndStation(message0200, vehicle);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public void handle0704(List<Message0200> list0200,Vehicle vehicle) {
+		for(Message0200 message0200 : list0200){
+			sendInfoOfWarningAndStation(message0200, vehicle);
+		}
+	}
+	
+	private void sendInfoOfWarningAndStation(Message0200 message0200, Vehicle vehicle) {
+		vehicle = handleVehicleCenterAndInfo(message0200, vehicle);
+		
+		handleWarningInfo(message0200);
+		
+		handleInOutStation(message0200, vehicle);
+	}
+
+	private Vehicle handleVehicleCenterAndInfo(Message0200 message0200, Vehicle vehicle) {
+		PointVector pointVector = message0200.getPointVector();
+		vehicle.setCenter(pointVector.getCenter());
+		vehicle.setInfo(pointVector.getInfo());
+		//实时定位信息需要入库程序根据车辆simNo获取车辆信息
+		kafkaTemplate.send(MessageBuilder.withPayload(vehicle).setHeader(KafkaHeaders.TOPIC, vehicle.getClass().getName()).build());
+		return vehicle;
+	}
+	
+	private void handleWarningInfo(Message0200 message0200) {
+		List<VehicleWarningInfo> list = message0200.getVehicleWarningInfos();
+		for (VehicleWarningInfo vehicleWarningInfo : list) {
+			//报警信息需要入库程序根据车辆simNo获取车辆信息
+			kafkaTemplate.send(MessageBuilder.withPayload(vehicleWarningInfo).setHeader(KafkaHeaders.TOPIC, vehicleWarningInfo.getClass().getName()).build());
+		}
+	}
+	
+	private void handleInOutStation(Message0200 message0200, Vehicle vehicle) {
+		//处理进出场信息
+		//进出场kafka队列，这里需要入库程序根据车辆simNo获取车辆信息，根据站点ID获取站点信息，根据车辆信息获取对应的当前司机
+		VehicleWarningInfo vehicleWarningStationInfo = message0200.getVehicleStationInfo();
+		if(vehicleWarningStationInfo != null){
+			DistrictType districtType = vehicleWarningStationInfo.getDistrictType();
+			if(!(DistrictType.NOSPECLOCA.equals(districtType) || DistrictType.RAILWAY.equals(districtType))){
+				Station station = new Station();
+				station.setId(vehicleWarningStationInfo.getDistrictId());
+				VehicleStationInfo vehicleStationInfo = new VehicleStationInfo(vehicle , null , station);
+				vehicleStationInfo.setCreateTime(vehicleWarningStationInfo.getCreateTime());
+				DirectionType directionType = vehicleWarningStationInfo.getDirectionType();
+				if(DirectionType.OUT.equals(directionType)){
+					vehicleStationInfo.setState(VehicleStationInfo.State.OUT);
+				}else{
+					vehicleStationInfo.setState(VehicleStationInfo.State.IN);
+				}
+				//处理好的进出场信息放入kafka队列
+				kafkaTemplate.send(MessageBuilder.withPayload(vehicleStationInfo).setHeader(KafkaHeaders.TOPIC, vehicleStationInfo.getClass().getName()).build());
+			}
+		}
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Message8800 handle0801(PhotoPackage photoPackage, Header header, Vehicle tempVehicle) throws Exception {
+		String simNo = header.getSimNo();
+		Channel channel = channelRepository.get(simNo);
+		Attribute<PhotoPackage> photo = channel.attr(AttributeKey.valueOf("photo"));
+		photoPackage.setPackageNo(header.getPacketNo());
+		
+		//当前包为最后一个包
+		if ((header.isChildPackage() && (header.getPacketTotal() == header.getPacketNo()|| photoPackage.getPackageNo() == photoPackage.getMaxPackageNo()))
+					|| !header.isChildPackage()) {
+			String fileName = UUIDGenerator.getUUID() + "." + photoPackage.getPhotoType();
+			String filePath = tmpdir;
+			List<Integer> packetNos = new LinkedList<Integer>();
+			if(header.getPacketTotal() > 0){
+				for (int loop = 1; loop <= header.getPacketTotal(); loop++) {
+					packetNos.add(loop);
+				}
+			}
+			packetNos = createFile(photoPackage.getPhotoStream(), packetNos, filePath, fileName);
+			// 发重传
+			if (packetNos.size() > 0) {
+				photoPackage.setMaxPackageNo(packetNos.get(packetNos.size() - 1));
+				photo.set(photoPackage);
+				// 8800消息应答(将丢包信息返回)
+				MediaResponse mediaResponse = new MediaResponse();
+				mediaResponse.setMediaId(photoPackage.getMediaId());
+				mediaResponse.setRePacketTotal(packetNos.size());
+				mediaResponse.setPacketNos(packetNos);
+				Message8800 response = new Message8800(simNo);
+				response.setResponseBody(mediaResponse);
+				return response;
+			}
+			
+			uploadPhotoToFtp(filePath, fileName);
+			logger.debug(String.format("Image [%s] upload to complete", fileName));
+			photo.remove();
+			
+			VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+			vehiclePhotoInfo.setVehicle(tempVehicle);
+			vehiclePhotoInfo.setLng(photoPackage.getLng());
+			vehiclePhotoInfo.setLat(photoPackage.getLat());
+			vehiclePhotoInfo.setState(photoPackage.getState());
+			vehiclePhotoInfo.setPath(serverpath + filepath + fileName);
+			vehiclePhotoInfo.setCreateTime(new Date());
+			// kafka入库
+			kafkaTemplate.send(MessageBuilder.withPayload(vehiclePhotoInfo).setHeader(KafkaHeaders.TOPIC, vehiclePhotoInfo.getClass().getName()).build());
+			// 8800消息应答(接收到全部包)
+			Message8800 response = new Message8800(simNo);
+			MediaResponse mediaResponse = new MediaResponse();
+			mediaResponse.setMediaId(photoPackage.getMediaId());
+			mediaResponse.setRePacketTotal(packetNos.size());
+			mediaResponse.setPacketNos(packetNos);
+			response.setResponseBody(mediaResponse);
+			return response;
+		}
+		return null;
+	}
+	/**
+	 * 根据流生成文件
+	 * @param photoStream
+	 * @param packetNos
+	 * @param filePath
+	 * @param fileName
+	 * @return
+	 */
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public static List<Integer> createFile(Map<Integer, byte[]> photoStream, List<Integer> packetNos, String filePath, String fileName) {  
+        FileOutputStream fos = null;
+        File file = null;
+        try {
+        	if (packetNos != null) {
+        		for (int packetNo : photoStream.keySet()) {
+                	packetNos.remove(packetNos.indexOf(packetNo));
+                }
+                if (packetNos.size() > 0) {
+                	return packetNos;
+    			}
+			}
+            File dir = new File(filePath);
+            if(!dir.exists()){//判断文件目录是否存在
+                dir.mkdirs();
+            }
+			file = new File(filePath + "/" + fileName);
+            fos = new FileOutputStream(file, true);
+            for (int i = 1;i <= photoStream.size(); i++){
+            	byte[] photoStreamEntryByte = photoStream.get(i);
+            	fos.write(photoStreamEntryByte, 0, photoStreamEntryByte.length);
+            }
+//			for (Map.Entry<Integer, byte[]> photoStreamEntry : photoStream.entrySet()) {
+//            	fos.write(photoStreamEntry.getValue(), 0, photoStreamEntry.getValue().length);
+//			}
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+        return packetNos;
+	}
+	
+	/**
+	 * 将文件上传到ftp
+	 * @param filePath
+	 * @param fileName
+	 * @throws IOException
+	 */
+	private void uploadPhotoToFtp(String filePath, String fileName) throws IOException {
+		File photo = new File(filePath + "/" + fileName);
+		FTPClientUtils.upload(host, username, password, filepath, fileName, photo);
+		FileUtils.deleteFile(photo);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Terminal getTerminalBySimNo(String simNo) {
+		// 从缓存中取出终端信息
+		// 根据SIMNO获取主键
+		String terminalId = (String) stringOperator.get(RedisKey.VEHICLES_TERMINALS_SIMNO,simNo);
+		if(terminalId == null){
+			return null;
+		}
+		Terminal terminal = terminalOperator.get(RedisKey.VEHICLES_TERMINALS, terminalId);
+		return terminal;
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public void sendVehicleOnOffLineInfo(Vehicle target){
+		//断开连接，车辆状态变为下线
+		String simNo = target.getTerminal().getSimNo();
+		//下线更新下线记录
+		target.setSimCode(simNo);
+		VehicleOnOffLineInfo vehicleOnOffLineInfo = new VehicleOnOffLineInfo(target,null);
+		vehicleOnOffLineInfo.setCreateTime(new Date());
+		vehicleOnOffLineInfo.setState(VehicleOnOffLineInfo.State.OFFLINE);
+		vehicleOnOffLineInfo.setVehicle(target);
+		kafkaTemplate.send(MessageBuilder.withPayload(vehicleOnOffLineInfo).setHeader(KafkaHeaders.TOPIC, vehicleOnOffLineInfo.getClass().getName()).build());
+		
+		//断开连接，删除连接服务器信息
+		stringOperator.delete(RedisKey.CONNECTS, simNo);
+		this.channelRepository.remove(simNo);
+		logger.debug(String.format("Auto [%s] has been offline...", simNo));
+	}
+}

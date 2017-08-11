@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.dictionary.persistence.DictionaryMapper">
+	<!-- 获取所有生产厂家列表，用于下拉菜单生成 -->
+	<select id="getListOfFactories" resultType="com.tiamaes.bike.common.bean.information.FactoryDictionary">
+		SELECT id,name FROM TB_factory_Dictionary
+	</select>
+	
+	<!-- 获取所有终端类型列表，用于下拉菜单生成 -->
+	<select id="getListOfTypes" resultType="com.tiamaes.bike.common.bean.information.TerminalType">
+		SELECT id,factoryId,name FROM TB_TerminalType
+	</select>
+	<!-- 根据生产厂家id获取终端类型列表，用于下拉菜单生成 -->
+	<select id="getListOfTypesByFactory" parameterType="String" resultType="com.tiamaes.bike.common.bean.information.TerminalType">
+		SELECT id,factoryId,name FROM TB_TerminalType T WHERE T.factoryId = #{factoryId}
+	</select>
+	<!-- 获取所有车辆类型列表，用于下拉菜单生成 -->
+	<select id="getListOfVehicleTypes" resultType="com.tiamaes.bike.common.bean.information.VehicleType">
+		SELECT id,name FROM TB_Vehicletype 
+	</select>
+	<!-- 获取所有所属行业列表，用于下拉菜单生成 -->
+	<select id="getListOfIndustryTypes" resultType="com.tiamaes.bike.common.bean.information.IndustryType">
+		SELECT id,name FROM TB_Industrytype
+	</select>
+	<!-- 根据条件获取所有地区列表，用于下拉菜单生成 -->
+	<select id="getListOfRegions" parameterType="com.tiamaes.bike.common.bean.information.Region" resultType="com.tiamaes.bike.common.bean.information.Region">
+		SELECT id,name,parentId,type,state FROM TB_Region 
+		 <where>
+		 	 <if test="type!=null and type!=0">
+		 	 	AND type = #{type}
+		 	 </if>
+		 	 <if test="parentId!=null and parentId!=''">
+		 	 	AND parentId = #{parentId}
+		 	 </if>
+		 	 	AND state=1
+		 </where>
+	</select>
+</mapper>

@@ -1,0 +1,17 @@
+package com.tiamaes.bike.storage.information.persistence;
+
+import org.apache.ibatis.annotations.Param;
+
+/**
+ * 工程信息管理
+ * @author zgp
+ */
+public interface ProjectMapper {
+	/**
+	 * 根据厂区查询出工程id
+	 * @param beginStation
+	 * @param endStation
+	 * @return
+	 */
+	String getByStation(@Param("beginStation") int beginStation,@Param("endStation") int endStation);
+}

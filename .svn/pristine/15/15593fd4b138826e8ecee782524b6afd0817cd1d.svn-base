@@ -1,0 +1,106 @@
+package com.tiamaes.bike.storage.service;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.storage.persistence.DriverSigninInfoMapper;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class DriverSigninInfoService implements DriverSigninInfoServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(DriverSigninInfoService.class);
+	
+	@Resource
+	private DriverSigninInfoMapper driverSigninInfoMapper;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Driver> driverOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Vehicle> vehicleOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Terminal> terminalOperator;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public String addDriverSigninInfo(DriverSigninInfo driverSigninInfo) throws Exception {
+		Assert.notNull(driverSigninInfo, "司机插拔卡记录不能为空");
+		Assert.notNull(driverSigninInfo.getVehicle(), "车辆信息不能为空");
+		String id = driverSigninInfo.getVehicle().getId();
+		Assert.notNull(id, "车辆id不能为空");
+		// 通过id查询redis返回对应的车辆实体
+		Vehicle target = vehicleService.getVehicleById(id);
+		DriverSigninInfo.State state = driverSigninInfo.getState();
+		Driver driver = null;
+		if(state == DriverSigninInfo.State.IN){
+			if(driverSigninInfo.getResult() == DriverSigninInfo.Result.SUCCESS){
+				String driverId = null;//stringOperator.get(RedisKey.DRIVERS_LICENSENO, driverSigninInfo.getDriver().getLicenseNo());
+				if (StringUtils.isBlank(driverId)) {
+					driver = driverSigninInfo.getDriver();
+				} else {
+					driver = driverOperator.get(RedisKey.DRIVERS, driverId);
+				}
+			}
+		}else if(state == DriverSigninInfo.State.OUT){
+			driver = driverOperator.get(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id);
+		}
+		String driverSigninInfoId = null;
+		if (driver != null) {
+			if(state == DriverSigninInfo.State.IN){
+				//插卡则保存当前司机到缓存中
+				driverOperator.put(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id, driver);
+				// 生成插拔卡记录id
+				driverSigninInfoId = UUIDGenerator.getUUID();
+				// 将id存入redis中
+				stringOperator.put(RedisKey.SIGNINOUT_ID, id, driverSigninInfoId);
+				driverSigninInfo.setId(driverSigninInfoId);
+			}else if(state == DriverSigninInfo.State.OUT){
+				//插卡则保存当前司机到缓存中
+				driverOperator.delete(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id);
+				driverSigninInfo.setDriver(driver);
+				// 从redis中获取进出场记录id
+				driverSigninInfoId = stringOperator.get(RedisKey.SIGNINOUT_ID, id);
+				// id不存在
+				if (StringUtils.isBlank(driverSigninInfoId)) {
+					driverSigninInfoId = UUIDGenerator.getUUID();
+				}
+				// 删除id
+				stringOperator.delete(RedisKey.SIGNINOUT_ID, id);
+				driverSigninInfo.setId(driverSigninInfoId);
+			}
+		} else {
+			return null;
+		}
+		driverSigninInfo.setVehicle(target);
+		
+		driverSigninInfoMapper.addDriverSigninInfo(driverSigninInfo);
+		
+		return driverSigninInfoId;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteDriverSigninInfo(String id) {
+		driverSigninInfoMapper.deleteDriverSigninInfo(id);
+	}
+}

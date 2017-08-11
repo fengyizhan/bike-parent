@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.reporter.information.project.persistence.ProjectMapper">
+	<resultMap id="projectMap" type="com.tiamaes.bike.common.bean.information.Project">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="address" property="address"/>
+		<result column="unit" property="unit"/>
+		<result column="startTime" property="startTime"/>
+		<result column="endTime" property="endTime"/>
+		<result column="createDate" property="createDate"/>
+		<result column="principal" property="principal"/>
+		<result column="telephone" property="telephone"/>
+		<association property="beginStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="beginStation"/>
+	        <result property="name" column="beginStationName"/>
+	        <result column="beginStationStartTime" property="startTime"/>
+			<result column="beginStationEndTime" property="endTime"/>
+			<result column="beginStationEarthWork" property="earthWork"/>
+			<result column="beginStationAddress" property="address"/>
+			<result column="beginStationLimitSpeedValue" property="limitSpeedValue"/>
+	        <association property="paths" column="beginStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+    	<association property="endStation" javaType="com.tiamaes.bike.common.bean.information.Station">  
+	        <id property="id" column="endStation"/>
+	        <result property="name" column="endStationName"/>
+	        <result column="endStationStartTime" property="startTime"/>
+			<result column="endStationEndTime" property="endTime"/>
+			<result column="endStationEarthWork" property="earthWork"/>
+			<result column="endStationAddress" property="address"/>
+			<result column="endStationLimitSpeedValue" property="limitSpeedValue"/>
+	        <association property="paths" column="endStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+		<association property="projectRoutes" column="id" select="com.tiamaes.bike.api.information.project.persistence.ProjectRouteMapper.getProjectByProjectId"/>
+	</resultMap>
+	
+	<!-- 获取工程总数 -->
+	<select id="getTotalOfProjects" parameterType="com.tiamaes.bike.common.bean.information.Project" resultType="int">
+		SELECT COUNT(1) FROM  tb_Project t 
+		<where>
+			<if test="id != null and id != ''">
+		     AND t.id LIKE CONCAT('%',#{id},'%') 
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%') 
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取正在进行中的工程 -->
+	<select id="getListOfOngoingProjectId" parameterType="String" resultType="String">
+		SELECT id FROM tb_project t 
+			WHERE DATE_FORMAT(t.startTime, '%Y-%m-%d') &lt;= #{date} 
+		     AND #{date} &lt;= DATE_FORMAT(t.endTime, '%Y-%m-%d')
+	</select>
+</mapper>

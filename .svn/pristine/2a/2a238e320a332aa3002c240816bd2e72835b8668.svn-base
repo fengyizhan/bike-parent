@@ -1,0 +1,74 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import org.apache.commons.codec.binary.Hex;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+
+/**
+ * 终端注册包
+ * @author Chen
+ */
+public class TestReceived extends Received {
+	private Body body;
+	public TestReceived(Header header, byte[] bytes) {
+		super(header, bytes);
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytes);
+		int messageId = buffer.readInt();
+		byte[] productId=new byte[5];
+		buffer.readBytes(productId);
+
+		byte[] terminalType=new byte[20];
+		buffer.readBytes(terminalType);
+		
+		int terminalId=buffer.readInt();
+		
+		Body body = new Body();
+		this.body = body;
+		body.setProductId(Hex.encodeHexString(productId));
+		body.setMessageId(messageId);
+		body.setTerminalId(terminalId);
+		body.setTerminalType(Hex.encodeHexString(terminalType));
+		
+	}
+	public Body getBody() {
+		return body;
+	}
+
+	public void setBody(Body body) {
+		this.body = body;
+	}
+
+	public class Body {
+		private int messageId;
+		private String productId;
+		private int terminalId;
+		public int getTerminalId() {
+			return terminalId;
+		}
+		public void setTerminalId(int terminalId) {
+			this.terminalId = terminalId;
+		}
+		private String terminalType;
+		public int getMessageId() {
+			return messageId;
+		}
+		public void setMessageId(int messageId) {
+			this.messageId = messageId;
+		}
+		public String getProductId() {
+			return productId;
+		}
+		public void setProductId(String productId) {
+			this.productId = productId;
+		}
+		public String getTerminalType() {
+			return terminalType;
+		}
+		public void setTerminalType(String terminalType) {
+			this.terminalType = terminalType;
+		}
+		
+	}
+}

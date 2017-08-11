@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.reporter.integrated.borrow.persistence.BorrowQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.BorrowRecord" id="borrowRecordMap">
+		<id property="id" column="id"/>
+		<result property="startTime" column="startTime"/>
+		<result property="endTime" column="endTime"/>
+		<result property="countTime" column="countTime"/>
+		<result property="kilometers" column="kilometers"/>
+		<result property="cost" column="cost"/>
+		<result property="createDate" column="createDate"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="vehicleName"/>
+			<result property="simNo" column="simNo"/>
+		</association>
+		<association property="startPark" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result property="id" column="startParkId"/>
+			<result property="name" column="startParkName"/>
+		</association>
+		<association property="endPark" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result property="id" column="endParkId"/>
+			<result property="name" column="endParkName"/>
+		</association>
+		<association property="driver" javaType="com.tiamaes.bike.common.bean.information.Driver">
+			<result property="username" column="username"/>
+		</association>
+	</resultMap>
+	
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	
+	<!-- 查询借车记录列表 -->
+	<select id="getListOfBorrowRecords" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="borrowRecordMap">
+		SELECT t.id,
+		       t.startTime,
+		       t.endTime,
+		       SEC_TO_TIME(TIMESTAMPDIFF(SECOND, t.startTime, t.endTime)) AS countTime,
+		       t.kilometers,
+		       t.cost,
+		       t.createDate,
+		       t.vehicleId,
+		       t.vehicleName,
+		       t.simNo,
+		       t.startParkId,
+		       t.startparkName,
+		       t.endParkId,
+		       t.endparkName,
+		       t.username
+		  FROM tb_bike_borrow t
+		<where>
+			<if test="model.startPark != null and model.startPark.id != null">
+		     AND t.startParkId = #{model.startPark.id}
+			</if>
+			<if test="model.vehicle != null and model.vehicle.name != null and model.vehicle.name.trim() !=''">
+		     AND t.vehicleName LIKE CONCAT('%',#{model.vehicle.name},'%')
+			</if>
+			<if test="model.vehicle != null and model.vehicle.simNo != null and model.vehicle.simNo.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{model.vehicle.simNo},'%')
+			</if>
+			<if test="model.driver != null and model.driver.username != null and model.driver.username.trim() !=''">
+		     AND t.username LIKE CONCAT('%',#{model.driver.username},'%')
+			</if>
+			<if test="model.startTime != null">
+		     AND t.createDate &gt;= #{model.startTime} 
+			</if>
+			<if test="model.endTime != null">
+		     AND #{model.endTime} &gt;= t.createDate
+			</if>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<!-- 查询借车记录列表 -->
+	<select id="getListOfBikeBorrowRecords" parameterType="int" resultMap="borrowRecordMap">
+		SELECT t.id,
+		       t.startTime,
+		       t.endTime,
+		       SEC_TO_TIME(TIMESTAMPDIFF(SECOND, t.startTime, t.endTime)) AS countTime,
+		       t.kilometers,
+		       t.cost,
+		       t.createDate,
+		       t.vehicleId,
+		       t.vehicleName,
+		       t.simNo,
+		       t.startParkId,
+		       t.startparkName,
+		       t.endParkId,
+		       t.endparkName,
+		       t.username
+		  FROM tb_bike_borrow t
+		<where>
+			t.vehicleId = #{bikeId}
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{user.username}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+	
+	<!-- 查询借车记录列表 -->
+	<select id="getBikeUserTimeInfo" parameterType="int" resultType="String">
+		SELECT SEC_TO_TIME(SUM(v.countTime))
+		  FROM (SELECT t.id,
+				       TIMESTAMPDIFF(SECOND, t.startTime, t.endTime) AS countTime
+				  FROM tb_bike_borrow t
+				<where>
+					t.vehicleId = #{bikeId}
+					<!-- <include refid="userDataAuthorities">
+					  	<property name="userId" value="#{user.username}"/>
+					  	<property name="innerField" value="t.departmentId"/>
+					</include> -->
+				</where>) v
+	</select>
+	
+	<!-- 指定时间段的指定区域的车辆违规信息数据信息 -->
+	<!-- <select id="getListOfVehicleBorrow" parameterType="map" resultMap="borrowRecordMap">
+		SELECT t.id,
+		       t.carNo,
+		       t.simNo,
+		       t.createTime,
+		       t.warnCode,
+		       t.lng,
+		       t.lat
+		  FROM tb_vehicle_warning_info t
+		<where>
+			 warnCode = 1
+		     AND t.vehicleId IN
+		     <foreach item="item" index="index" collection="vehicleIds" open="(" separator="," close=")">  
+			  #{item}  
+			 </foreach>
+		     AND t.createTime>=#{borrowRecord.startTime}
+			<if test="borrowRecord.endTime != null">
+		     AND #{borrowRecord.endTime}&gt;=t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select> -->
+</mapper>

@@ -1,0 +1,54 @@
+server:
+  port: 8820
+  contextPath: /monitor
+security:
+  sessions: NEVER
+spring:
+  profiles:
+    active: local
+  application:
+    name: monitor
+  cloud:
+    config:
+      uri: http://192.168.241.165:8888
+    inetutils:
+      ignoredInterfaces:
+        - docker0
+        - veth.*
+  jackson:
+    serialization-inclusion: non_null
+    serialization:
+      indent_output: true
+  redis:
+    cluster:
+      timeout: 2000
+      max-redirects: 3
+  data:
+    mongodb:
+      host: 192.168.32.124
+      port: 27017
+      database: tmcgp
+      username: operator
+      password: tmkjzgb123
+# Discovery Server Access
+endpoints:
+  restart:
+    enabled: true
+  shutdown:
+    enabled: true
+  health:
+    sensitive: false
+eureka:
+  instance:
+    instanceId: ${spring.cloud.client.hostname}:${server.port}
+    preferIpAddress: false
+    leaseRenewalIntervalInSeconds: 10
+  client:
+    region: default
+    registryFetchIntervalSeconds: 5
+    registerWithEureka: true
+    fetchRegistry: true
+logging:
+  level:
+    com.netflix.discovery: 'OFF'
+    org.springframework.integration.monitor.IntegrationMBeanExporter: 'WARN'

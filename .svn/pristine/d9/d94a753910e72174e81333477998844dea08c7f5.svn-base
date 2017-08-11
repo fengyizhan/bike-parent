@@ -1,0 +1,181 @@
+package com.tiamaes.bike.common.bean.message;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * @author Chen
+ *
+ */
+public class Message implements java.io.Serializable {
+	private static final long serialVersionUID = 1681000386958867474L;
+
+	private Header header;
+
+	/**
+	 * 消息体， 为16进制数
+	 */
+	private byte[] body;
+
+	public Header getHeader() {
+		return header;
+	}
+
+	public void setHeader(Header header) {
+		this.header = header;
+	}
+
+	public byte[] getBody() {
+		return body;
+	}
+
+	public void setBody(byte[] body) {
+		this.body = body;
+	}
+
+	/**
+	 * 返回16进制数字符串
+	 */
+	@Override
+	public String toString() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(getHeader().toString());
+		if(getBody() != null){
+			buffer.append(Hex.encodeHexString(getBody()));
+		}
+		return buffer.toString();
+	}
+	
+	public class Header {
+		/**
+		 * 消息编号
+		 */
+		private int id;
+		/**
+		 * 是否分包
+		 */
+		private boolean childPackage;
+		/**
+		 * 是否使用RAS加密
+		 */
+		private boolean enableRSA;
+
+		/**
+		 * 终端手机号 手机号不足12时，则在前台补充数字0
+		 */
+		private String simNo;
+		/**
+		 * 消息流水号
+		 */
+		private int serialNo;
+		/**
+		 * 消息体长度
+		 */
+		private int length;
+		/**
+		 * 消息总包数
+		 */
+		private int packetTotal;
+		/**
+		 * 包序号
+		 */
+		private int packetNo;
+		public int getId() {
+			return id;
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public boolean isChildPackage() {
+			return childPackage;
+		}
+
+		public void setChildPackage(boolean childPackage) {
+			this.childPackage = childPackage;
+		}
+
+		public boolean isEnableRSA() {
+			return enableRSA;
+		}
+
+		public void setEnableRSA(boolean enableRSA) {
+			this.enableRSA = enableRSA;
+		}
+
+		public int getLength() {
+			return length;
+		}
+
+		public void setLength(int length) {
+			this.length = length;
+		}
+
+		public String getSimNo() {
+			return simNo;
+		}
+
+		public void setSimNo(String simNo) {
+			this.simNo = simNo;
+		}
+
+		public int getSerialNo() {
+			return serialNo;
+		}
+
+		public void setSerialNo(int serialNo) {
+			this.serialNo = serialNo;
+		}
+		
+		public int getPacketTotal() {
+			return packetTotal;
+		}
+
+		public void setPacketTotal(int packetTotal) {
+			this.packetTotal = packetTotal;
+		}
+
+		public int getPacketNo() {
+			return packetNo;
+		}
+
+		public void setPacketNo(int packetNo) {
+			this.packetNo = packetNo;
+		}
+
+		/**
+		 * 返回16进制数字符串
+		 */
+		@Override
+		public String toString() {
+			StringBuffer buffer = new StringBuffer();
+			buffer.append(String.format("%04X", getId()));
+			int length = getBody() != null ? getBody().length : 0;
+			if(isEnableRSA()){
+				length = 0x0400 | length;
+			}
+			if(isChildPackage()){
+				length = 0x2000 | length;
+			}
+			buffer.append(String.format("%04X", length));
+			buffer.append(StringUtils.leftPad(getSimNo(), 12, "0"));
+			buffer.append(String.format("%04X", getSerialNo()));
+			//消息封装项
+			if(isChildPackage()){
+				buffer.append(String.format("%04X", getPacketTotal()));
+				buffer.append(String.format("%04X", getPacketNo()));
+			}
+			
+			return buffer.toString();
+		}
+		
+		/**
+		 * 返回16进制数
+		 */
+		public byte[] toBytes() throws DecoderException{
+			return Hex.decodeHex(toString().toCharArray());
+		}
+	}
+}

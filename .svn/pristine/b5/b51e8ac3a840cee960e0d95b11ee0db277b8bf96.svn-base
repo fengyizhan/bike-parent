@@ -1,0 +1,78 @@
+package com.tiamaes.bike.connector;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.TestConstant;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand.TurnPoint;
+import com.tiamaes.bike.common.bean.message.Message8606;
+
+/**
+ * 设置线路0x8606实体类测试
+ * @author waibao001
+ *
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class Message8606Test extends TestConstant {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(Message8606Test.class);
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...");
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void message8606Test() throws Exception{
+		SimpleDateFormat format = new SimpleDateFormat("YYYY/MM/dd hh:mm:ss");
+		
+		LineAddCommand line = new LineAddCommand();
+		line.setLineId(10000);
+		line.setLineAttr((short)1);
+		line.setStartTime(new Date());
+		line.setEndTime(format.parse("2018/10/25 19:05:01"));
+		line.setPointCount((short)3);
+		List<TurnPoint> turnPoints = new ArrayList<TurnPoint>();
+		TurnPoint turnPoint = new TurnPoint();
+		turnPoint.setLat(34.842724);
+		turnPoint.setLng(113.514733);
+		TurnPoint turnPoint1 = new TurnPoint();
+		turnPoint1.setLat(34.842724);
+		turnPoint1.setLng(113.514733);
+		TurnPoint turnPoint2 = new TurnPoint();
+		turnPoint2.setLat(34.842724);
+		turnPoint2.setLng(113.514733);
+		turnPoints.add(turnPoint);
+		turnPoints.add(turnPoint1);
+		turnPoints.add(turnPoint2);
+		line.setTurnPoints(turnPoints);
+		
+		Message8606 message = new Message8606(simNo);
+		
+		message.setResponseBody(line);
+		
+		System.out.println(message.toString());
+	}
+}

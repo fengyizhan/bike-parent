@@ -1,0 +1,72 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import org.bouncycastle.util.encoders.Hex;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+
+/**
+ * 终端注册包
+ * 
+ * @author Chen
+ */
+public class Received0003 extends Received {
+	private Body body;
+	public Received0003(Header header, byte[] bytes) {
+		super(header, bytes);
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytes);
+		byte[] bytes1=new byte[5];
+		buffer.readBytes(bytes1);
+		String producerId=Hex.toHexString(bytes1);
+		byte[] bytes2=new byte[20];
+		buffer.readBytes(bytes2);
+		String terminalType=Hex.toHexString(bytes2);
+		byte[] bytes3=new byte[7];
+		buffer.readBytes(bytes3);
+		String terminalnum=Hex.toHexString(bytes3);
+		Body body=new Body();
+
+		body.setProducerId(producerId);
+
+		body.setTerminalType(terminalType);
+		body.setTerminalnum(terminalnum);
+		this.body=body;
+	}
+	
+public Body getBody() {
+		return body;
+	}
+
+	public void setBody(Body body) {
+		this.body = body;
+	}
+
+public class Body{
+
+	private String producerId;
+	private String terminalType;
+	private String terminalnum;
+
+	public String getProducerId() {
+		return producerId;
+	}
+	public void setProducerId(String producerId) {
+		this.producerId = producerId;
+	}
+	public String getTerminalType() {
+		return terminalType;
+	}
+	public void setTerminalType(String terminalType) {
+		this.terminalType = terminalType;
+	}
+	public String getTerminalnum() {
+		return terminalnum;
+	}
+	public void setTerminalnum(String terminalnum) {
+		this.terminalnum = terminalnum;
+	}
+	
+	
+}
+}

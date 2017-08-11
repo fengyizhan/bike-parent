@@ -1,0 +1,102 @@
+package com.tiamaes.bike.api.information.project.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.mybatis.Pagination;
+
+public interface ProjectServiceInterface {
+	
+	/**
+	 * 根据id查询工程项目信息
+	 * @param id
+	 * @return
+	 */
+	Project getProjectById(String id);
+	
+	/**
+	 * 查询工程项目分页列表
+	 * @param project
+	 * @param pagination
+	 * @return
+	 */
+	List<Project> getListOfProjects(Project project, Pagination<Project> pagination);
+	
+	/**
+	 * 查询工程项目总数
+	 * @param project
+	 * @return
+	 */
+	int getTotalOfProjects(Project project);
+	
+	/**
+	 * 增加工程项目信息
+	 * @param project
+	 * @return
+	 */
+	Project addProject(Project project);
+	
+	/**
+	 * 更新工程项目信息
+	 * @param project
+	 * @return
+	 */
+	Project updateProject(Project project);
+	
+	/**
+	 * 删除工程项目信息
+	 * @param project
+	 */
+	void deleteProject(Project project);
+	
+	/**
+	 * 检查工程项目信息名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	boolean checkProjectName(Optional<String> id, String name);
+	
+	/**
+	 * 获取工程项目信息列表
+	 * @return
+	 */
+	List<Project> getProjects();
+	
+	/**
+	 * 获取除本工程外的其他工程项目信息列表
+	 * @param projectId
+	 * @return
+	 */
+	List<Project> getProjects(String projectId);
+	
+	/**
+	 * 增加工程车辆
+	 * @param projectVehicles
+	 */
+	void addProjectVehicle(List<ProjectVehicle> projectVehicles);
+
+	/**
+	 * 删除工程车辆
+	 * @param projectId
+	 * @param projectVehicles
+	 */
+	void deleteProjectVehicle(String projectId, List<ProjectVehicle> projectVehicles);
+
+	/**
+	 * 根据场区id获取场区与工程的关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfStation(Integer id);
+
+	/**
+	 * 根据线路id获取线路与工程的关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfRoute(Integer id);
+
+}

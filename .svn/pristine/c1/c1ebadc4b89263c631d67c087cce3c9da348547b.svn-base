@@ -1,0 +1,122 @@
+package com.tiamaes.bike.api.information.terminal.service;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.terminal.persistence.TerminalMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class TerminalService implements TerminalServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(TerminalService.class);
+
+	@Resource
+	private TerminalMapper terminalMapper;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Terminal> operator;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	@Override
+	public boolean checkTerminalName(String termNo) {
+		return terminalMapper.hasExists(termNo);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Terminal getTerminalById(String id) {
+		Assert.notNull(id, "终端编号不能为空!");
+		Terminal terminal = operator.get(RedisKey.VEHICLES_TERMINALS, id);
+		return terminal;
+	}
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Terminal getTerminalBySimNo(String simNo) {
+		Assert.notNull(simNo, "simNo不能为空!");
+		
+		String id = (String) stringRedisTemplate.opsForHash().get(RedisKey.VEHICLES_TERMINALS_SIMNO, simNo);
+		Terminal terminal = getTerminalById(id);
+		return terminal;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Terminal> getAllTerminals(Terminal terminal, Pagination<Terminal> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return terminalMapper.getAllTerminals(terminal);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfTerminals(Terminal terminal) {
+		return terminalMapper.getTotalOfTerminals(terminal);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Terminal addTerminal(Terminal terminal) {
+		Assert.notNull(terminal);
+		Assert.isTrue(!terminalMapper.hasExists(terminal.getName()), "终端编号已经存在");
+		
+		terminalMapper.addTerminal(terminal);
+		
+		Terminal newTerminal = terminalMapper.getTerminalById(terminal.getId());
+		if(newTerminal!=null){
+			//把数据存入redis中
+			operator.putIfAbsent(RedisKey.VEHICLES_TERMINALS, newTerminal.getId(), newTerminal);
+			
+			return getTerminalById(newTerminal.getId());
+		}else{
+			return null;
+		}
+		
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Terminal updateTerminal(Terminal terminal) {
+		Assert.notNull(terminal);
+		Assert.notNull(terminal.getId(), "终端ID号不能为空");
+
+		terminalMapper.updateTerminal(terminal);
+		
+		//把数据更新redis中
+		operator.put(RedisKey.VEHICLES_TERMINALS, terminal.getId(), terminal);
+		
+		
+		if(StringUtils.isNotBlank(terminal.getSimNo())){
+			stringRedisTemplate.opsForHash().putIfAbsent(RedisKey.VEHICLES_TERMINALS_SIMNO, terminal.getSimNo(), terminal.getId());
+		}
+		
+		return getTerminalById(terminal.getId());
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteTerminal(Terminal terminal) {
+		Assert.notNull(terminal, "终端不能为空!");
+		terminalMapper.deleteTerminal(terminal);
+		//把数据更新redis中
+		operator.delete(RedisKey.VEHICLES_TERMINALS, terminal.getId());
+		
+		if(StringUtils.isNotBlank(terminal.getSimNo())){
+			stringRedisTemplate.opsForHash().delete(RedisKey.VEHICLES_TERMINALS_SIMNO, terminal.getSimNo());
+		}
+	}
+}

@@ -1,0 +1,108 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="form-group" hidden="true">
+						<div ng-if="dialog.editabled">
+							<input type="text" class="form-control input-sm" name="termId" ng-model="dialog.data.termId">
+						</div>
+					</div>
+			
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">终端号</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+							<input type="text" class="form-control input-sm" name="name"
+								ng-model="dialog.data.name" placeholder="七位数字或字母组合" required="true"
+								ui-validate-async="{alreadyExists: 'dialog.validateName($modelValue)'}"
+								ng-model-options="{debounce: 100}" ng-readonly="!dialog.editabled ||!dialog.itemEditabled"
+								maxlength="7">
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">设备状态</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.state.$invalid, 'has-success':form.state.$valid}">
+							<ui-select ng-model="dialog.data.state" name="state" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled" ng-required="true">
+								<ui-select-match placeholder="选择设备状态">{{$select.selected.name}}</ui-select-match>
+								<ui-select-choices position="down" repeat="item in dialog.terminalStates track by $index">
+									<span ng-bind="item.name"></span>
+								</ui-select-choices>
+							</ui-select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">生产厂家</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.factory.$invalid, 'has-success':form.factory.$valid}">
+								<ui-select ng-model="dialog.data.factory" name="factory" theme="bootstrap" on-select="dialog.selectFactory($item)"
+									title="{{$select.selected.name}}" ng-disabled="!dialog.editabled ||!dialog.itemEditabled" ng-required="true">
+									<ui-select-match placeholder="生产厂家">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.factories track by $index">
+										<div ng-bind-html="item.name"></div>
+									</ui-select-choices> 
+								</ui-select>
+							</div>
+						
+						<label class="col-sm-2 control-label" style="font-weight: normal;">终端类型</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.type.$invalid, 'has-success':form.type.$valid}">
+							<ui-select ng-model="dialog.data.type" name="type" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled ||!dialog.itemEditabled" ng-required="true">
+								<ui-select-match placeholder="选择终端类型">{{$select.selected.name}}</ui-select-match>
+								<ui-select-choices position="down" repeat="item in dialog.terminalTypes track by $index">
+									<span ng-bind="item.name"></span>
+								</ui-select-choices>
+							</ui-select>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">软件版本</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.softwareVersion.$invalid, 'has-success':form.softwareVersion.$valid}">
+							<input type="text" class="form-control input-sm" name="softwareVersion"
+								ng-model="dialog.data.softwareVersion" ng-readonly="!dialog.editabled" placeholder="请输入软件版本" required="true">
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">硬件版本</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.hardwareVersion.$invalid, 'has-success':form.hardwareVersion.$valid}">
+							<input type="text" class="form-control input-sm" name="hardwareVersion"
+								ng-model="dialog.data.hardwareVersion" ng-readonly="!dialog.editabled" placeholder="请输入硬件版本" required="true">
+						</div>
+					</div>
+					<!-- <div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">SIM卡号</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.simNo.$invalid, 'has-success':form.simNo.$valid}">
+							<input type="text" class="form-control input-sm" name="simNo"
+								ng-model="dialog.data.simNo" ng-readonly="!dialog.editabled||dialog.data.registered" placeholder="请输入SIM卡号" ng-minlength="11" ng-maxlength="12" required="true">
+						</div>
+						
+						<label class="col-sm-2 control-label" style="font-weight: normal;">注册时间</label>
+						<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.createDate"
+										is-open="dialog.createDate.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										 ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.createDate.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+						</div>
+					</div> -->
+					<div class="form-group">
+					
+						<label class="col-sm-2 control-label" style="font-weight: normal;">备注</label>
+						<div class="col-sm-10" ng-class="">
+							<textarea type="text" class="form-control input-sm" name="remark"
+								ng-model="dialog.data.remark" ng-readonly="!dialog.editabled" placeholder="请输入备注" rows="3">
+							</textarea>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

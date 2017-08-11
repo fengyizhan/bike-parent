@@ -1,0 +1,72 @@
+server:
+  port: 8080
+  contextPath: /bike
+spring:
+  profiles:
+    active: local
+  application:
+    name: gateway
+  cloud:
+    config:
+      uri: http://192.168.241.165:8888
+    inetutils:
+      ignoredInterfaces:
+        - docker0
+        - veth.*
+  jackson:
+    serialization-inclusion: non_null
+    serialization:
+      indent_output: false
+  redis:
+    cluster:
+      max-redirects: 3
+# Discovery Server Access
+endpoints:
+  restart:
+    enabled: true
+  shutdown:
+    enabled: true
+  health:
+    sensitive: false
+eureka:
+  instance:
+    instanceId: ${spring.cloud.client.hostname}:${server.port}
+    preferIpAddress: false
+    leaseRenewalIntervalInSeconds: 10
+  client:
+    region: default
+    registryFetchIntervalSeconds: 5
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://192.168.57.249:8761/eureka/
+zuul:
+  routes:
+    api:
+      path: /api/**
+      stripPrefix: false
+      sensitive-headers:
+    authority:
+      path: /authority/**
+      stripPrefix: false
+      sensitive-headers:
+    reporter:
+      path: /reporter/**
+      stripPrefix: false
+      sensitive-headers:
+    exporter:
+      path: /exporter/**
+      stripPrefix: false
+      sensitive-headers:
+    wallet:
+      path: /wallet/**
+      stripPrefix: false
+      sensitive-headers:
+springfox:
+  documentation:
+    swagger:
+      v2:
+        info:
+          title: ${spring.application.name} Api Documents
+          description: The Springfox suite of java libraries are all about automating the generation of machine and human readable specifications for JSON APIs written using the spring family of projects.
+          version: 1.1.0

@@ -1,0 +1,151 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo.Result;
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo.State;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.storage.service.DriverSigninInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class DriverSigninInfoServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(DriverSigninInfoServiceTest.class);
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Resource
+	private DriverSigninInfoServiceInterface service;
+	
+	@Test
+	public void addDriverSigninInfo() throws Exception{
+		DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setSimCode("015936876532");
+		Company company = new Company();
+		company.setId("f2287cf80a8d4b108d8ff2e2620d9220");
+		company.setName("重工新能源");
+		Department department = new Department();
+		department.setId("a409f39c1e73471f9d5beaf97a2d6825");
+		department.setName("渣土1部");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+		Driver driver = new Driver();
+//		driver.setName("李详");
+//		driver.setLicenseNo("340001093558");
+//		driver.setLicenseAgency("河南省郑州市公安局交警支队");
+//		driver.setInvalidDate(new Date());
+		driverSigninInfo.setVehicle(vehicle);
+		driverSigninInfo.setDriver(driver);
+		driverSigninInfo.setState(State.IN);
+		driverSigninInfo.setResult(Result.SUCCESS);
+		
+		service.addDriverSigninInfo(driverSigninInfo);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存司机插拔卡信息" + objectMapper.writeValueAsString(driverSigninInfo));
+		}
+	}
+	
+	@Test
+	public void addDriverSingoutInfo() throws Exception{
+		DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+//		vehicle.setSimCode("015936876532");
+		Company company = new Company();
+		company.setId("f2287cf80a8d4b108d8ff2e2620d9220");
+		company.setName("重工新能源");
+		Department department = new Department();
+		department.setId("a409f39c1e73471f9d5beaf97a2d6825");
+		department.setName("渣土1部");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+		Driver driver = new Driver();
+//		driver.setName("李详");
+//		driver.setLicenseNo("340001093558");
+//		driver.setLicenseAgency("河南省郑州市公安局交警支队");
+//		driver.setInvalidDate(new Date());
+		driverSigninInfo.setVehicle(vehicle);
+		driverSigninInfo.setDriver(driver);
+		driverSigninInfo.setState(State.OUT);
+		driverSigninInfo.setResult(Result.SUCCESS);
+		
+		String id = service.addDriverSigninInfo(driverSigninInfo);
+		service.deleteDriverSigninInfo(id);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存司机插拔卡信息" + objectMapper.writeValueAsString(driverSigninInfo));
+		}
+	}
+	
+	@Test
+	@Ignore
+	public void driverSigninInfoKafkaTest() {
+		for (int i = 0; i < 56; i++) {
+			DriverSigninInfo driverSigninInfo = new DriverSigninInfo();
+			if (i % 2 == 0) {
+				driverSigninInfo.setState(State.IN);
+			} else {
+				driverSigninInfo.setState(State.OUT);
+			}
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId("d196b09f835842d79c993d961d94849f");
+//			vehicle.setCarNo("京Q23456");
+//			vehicle.setSimCode("015800020022");
+			Company company = new Company();
+			company.setId("a7db3db0e0a541b38e2e71e1449f906f");
+			company.setName("公交十二公司");
+			Department department = new Department();
+			department.setId("b8c2d49da0334091bacd21adf08ac54c");
+			department.setName("一车队");
+//			vehicle.setCompany(company);
+//			vehicle.setDepartment(department);
+			Driver driver = new Driver();
+//			driver.setName("张三");
+//			driver.setLicenseNo("545454654");
+//			driver.setLicenseAgency("哈哈");
+//			driver.setInvalidDate(new Date());
+			driverSigninInfo.setVehicle(vehicle);
+			driverSigninInfo.setDriver(driver);
+			driverSigninInfo.setResult(Result.SUCCESS);
+			kafkaTemplate.send(MessageBuilder.withPayload(driverSigninInfo).setHeader(KafkaHeaders.TOPIC, driverSigninInfo.getClass().getName()).build());
+		}
+	}
+
+}

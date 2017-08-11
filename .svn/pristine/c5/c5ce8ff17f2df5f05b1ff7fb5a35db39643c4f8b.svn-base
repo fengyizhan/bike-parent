@@ -1,0 +1,20 @@
+package com.tiamaes.bike.connector.controller;
+
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+@RestController
+@RequestMapping("/command")
+public class DefaultController {
+	
+	@RequestMapping(value = "/{id}/test", method = RequestMethod.POST)
+	public Object test(@PathVariable("id")int id, @RequestBody Object parameters, @CurrentUser User operator){
+		return "hello";
+	}
+}

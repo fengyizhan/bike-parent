@@ -1,0 +1,283 @@
+package com.tiamaes.bike.api.information.route.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.command.service.CommandServiceInterface;
+import com.tiamaes.bike.api.information.paths.persistence.PathsMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectRouteMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectVehicleMapper;
+import com.tiamaes.bike.api.information.route.persistence.RouteMapper;
+import com.tiamaes.bike.api.information.station.service.StationService;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand.TurnPoint;
+import com.tiamaes.bike.common.bean.connector.command.LineDelCommand;
+import com.tiamaes.bike.common.bean.information.Pathpoint;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Route;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * 路线信息管理接口实现类
+ * @author kangty
+ */
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class RouteService implements RouteServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(StationService.class);
+	
+	@Resource
+	private RouteMapper routeMapper;
+	
+	@Resource
+	private PathsMapper pathsMapper;
+	
+	@Resource
+	private ProjectRouteMapper projectRouteMapper;
+	
+	@Resource
+	private ProjectVehicleMapper projectVehicleMapper;
+	
+	@Resource
+	private CommandServiceInterface commandService;
+	
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Route> operator;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Route getRouteById(int id) {
+		Assert.notNull(id, "路线编号不能为空!");
+		Route route = operator.get(RedisKey.ROUTES, String.valueOf(id));
+		if (route == null) {
+			route = routeMapper.getRouteById(id);
+			if (route != null) {
+				operator.putIfAbsent(RedisKey.ROUTES, String.valueOf(route.getId()), route);
+			}
+		}
+		return route;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Route> getListOfRoutes(Route route, Pagination<Route> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return routeMapper.getListOfRoutes(route);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfRoutes(Route route) {
+		return routeMapper.getTotalOfRoutes(route);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Route addRoute(Route route) {
+		Assert.notNull(route);
+		Assert.notNull(route.getName(), "线路名称不能为空");
+		Assert.isTrue(!routeMapper.hasExists(null, route.getName()), "线路名称已经存在");
+		routeMapper.addRoute(route);
+		List<Pathpoint> pathpoints = route.getPaths();
+		for (Pathpoint pp : pathpoints) {
+			pp.setTargetid(route.getId());
+		}
+		pathsMapper.addPaths(pathpoints);
+		Route result = routeMapper.getRouteById(route.getId());
+		if (result != null) {
+			operator.putIfAbsent(RedisKey.ROUTES, String.valueOf(route.getId()), route);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Route updateRoute(Route route) {
+		Assert.notNull(route);
+		Assert.notNull(route.getName(), "线路名称不能为空");
+		Assert.isTrue(!routeMapper.hasExists(route.getId(), route.getName()), "线路名称已经存在");
+		routeMapper.updateRoute(route);
+		pathsMapper.deletePaths(route.getId());
+		List<Pathpoint> pathpoints = route.getPaths();
+		for (Pathpoint pp : pathpoints) {
+			pp.setTargetid(route.getId());
+		}
+		pathsMapper.addPaths(pathpoints);
+		Route result = routeMapper.getRouteById(route.getId());
+		if (result != null) {
+			operator.put(RedisKey.ROUTES, String.valueOf(route.getId()), route);
+		}
+		//1.根据路线id查询该厂区是否已经添加到工程中
+		String projectId = projectRouteMapper.getProjectByRoute(route);
+		if(StringUtils.isNotBlank(projectId)){
+			//2.如果该路线在工程中，获取工程id，路线对象，工程车辆集合
+			//原有的工程车辆
+			List<ProjectVehicle> projectVehicleList =  projectVehicleMapper.findVehiclesByPId(projectId);
+			
+			if(projectVehicleList!=null && projectVehicleList.size()>0){
+				
+				//删除线路
+				setDelete(projectVehicleList, route);
+				//4.封装设置路线命令
+				for (ProjectVehicle projectVehicle : projectVehicleList) {
+					//设置线路的命令
+					List<LineAddCommand> lineAddCommands = new ArrayList<LineAddCommand>();
+					
+					Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+					//装配设置线路命令
+					lineAddCommands = setLineCommand(lineAddCommands,route,vehicle.getTerminal().getSimNo());
+					//5.发送命令
+					commandService.sendCommands(lineAddCommands);
+				}
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * 装配设置线路命令
+	 * @param lineAddCommands
+	 * @param route
+	 * @param simNo
+	 * @return
+	 */
+	private List<LineAddCommand> setLineCommand(List<LineAddCommand> lineAddCommands, Route route,String simNo) {
+		//线路
+		LineAddCommand lineAddCommand = new LineAddCommand();
+		//id
+		lineAddCommand.setId(UUIDGenerator.getUUID());
+		//simNo
+		lineAddCommand.setSimNo(simNo);
+		//线路id
+		lineAddCommand.setLineId(route.getId());
+		//线路属性
+		lineAddCommand.setLineAttr(route.getReportValue());
+		//起始时间
+		lineAddCommand.setStartTime(route.getStartTime());
+		//结束时间
+		lineAddCommand.setEndTime(route.getEndTime());
+		//路线总拐点数
+		int pointCount = route.getPaths().size();
+		lineAddCommand.setPointCount((short)pointCount);
+		List<TurnPoint> turnPoints = new ArrayList<TurnPoint>();
+		//拐点项
+		if (route.getPaths() != null && route.getPaths().size() > 0) {
+			for (Pathpoint pathpoint : route.getPaths()) {
+				TurnPoint turnPoint = new TurnPoint();
+				//拐点id
+				turnPoint.setPointId(pathpoint.getId());
+				//路段ID
+				turnPoint.setSectionId(route.getId());
+				//拐点纬度
+				turnPoint.setLat(pathpoint.getLat());
+				//拐点经度
+				turnPoint.setLng(pathpoint.getLng());
+				//路段宽度
+				turnPoint.setSectionWidth(route.getWidth());
+				turnPoint.setLongThreshold((short)3600);
+				turnPoint.setShortThreshold((short)0);
+				//最高速度
+				turnPoint.setMaxSpeed((short)route.getLimitSpeedValue());
+				//路段超速持续时间，默认20秒
+				turnPoint.setOverSpeedS(20);
+				turnPoints.add(turnPoint);
+				lineAddCommand.setTurnPoints(turnPoints);
+			}
+			lineAddCommands.add(lineAddCommand);
+		}
+		return lineAddCommands;
+	}
+	
+	
+
+	/**
+	 * 封装删除线路命令
+	 * @param projectId
+	 * @param projectVehicles
+	 * @param route
+	 */
+	private void setDelete(List<ProjectVehicle> projectVehicles, Route route) {
+		
+		//根据工程获取所有线路id
+		List<Integer> lineIds = new ArrayList<Integer>();
+		lineIds.add(route.getId());
+		//循环车辆
+		for (ProjectVehicle projectVehicle : projectVehicles) {
+			//删除线路的命令
+			LineDelCommand lineDelCommand = new LineDelCommand();
+			lineDelCommand.setId(UUIDGenerator.getUUID());
+			//线路的id集合
+			lineDelCommand.setLineIds(lineIds);
+			
+			Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+			lineDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+			commandService.sendCommand(lineDelCommand);
+		}
+	}
+	
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteRoute(Route route) {
+		Assert.notNull(route, "线路不能为空");
+		routeMapper.deleteRoute(route);
+		pathsMapper.deletePaths(route.getId());
+		Route result = routeMapper.getRouteById(route.getId());
+		if (result == null) {
+			operator.delete(RedisKey.ROUTES, String.valueOf(route.getId()));
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkRouteName(Optional<Integer> id, String name) {
+		return routeMapper.hasExists(id.isPresent() ? id.get() : null, name);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Route> getRoutes() {
+		return routeMapper.getRoutes();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Route> getRoutesByBeginAndEnd(Integer beginId, Integer endId) {
+		return routeMapper.getRoutesByBeginAndEnd(beginId, endId);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Integer getId() {
+		return routeMapper.getId();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfStation(Integer id) {
+		return routeMapper.getTotalUseOfStation(id);
+	}
+
+}

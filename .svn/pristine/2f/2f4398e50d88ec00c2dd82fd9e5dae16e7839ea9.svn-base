@@ -1,0 +1,48 @@
+package com.tiamaes.bike;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.connector.protocol.handler.Protocol0001Handler;
+
+/**
+ * 通用应答入库程序测试类
+ * @author lsl
+ *
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class Protocol0001HandlerTest extends TestConstant {
+	private static Logger logger = LogManager.getLogger(Protocol0001HandlerTest.class);
+	@Before
+	public void before() {
+	}
+	
+	@Test
+	public void execute() throws Exception {
+		byte[] body = {0x00,0x0D,0x00,0x02,0x00};
+		Message request = new Message();
+		Message.Header header = request.new Header();
+		header.setId(0x0001);
+		header.setChildPackage(false);
+		header.setEnableRSA(false);
+		header.setLength(body.length);
+		header.setSimNo(simNo);
+		header.setSerialNo(1);
+		request.setBody(body);
+		request.setHeader(header);
+		
+		ResponseInfo responseInfo = Protocol0001Handler.decodeBody(request);
+		ObjectMapper mapper = new ObjectMapper();
+		logger.info(mapper.writeValueAsString(responseInfo));
+	}
+	
+}

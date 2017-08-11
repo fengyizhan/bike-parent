@@ -1,0 +1,116 @@
+<div ng-controller="AutoController">
+	<ol class="breadcrumb">
+		<li>系统管理</li>
+		<li class="active">车辆管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon"><font style="letter-spacing: 2em;">省</font>份</span>
+								<div class="input-group-provinces">
+									<ui-select ng-model="provinces.selected" theme="bootstrap" title="选择省份" on-select="selectProvince($item)">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="province in provinces | filter:{name:$select.search} track by $index">
+											<div ng-bind-html="province.name"></div>
+										</ui-select-choices>
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon"><font style="letter-spacing: 2em;">地</font>市</span>
+								<div class="input-group-cities">
+									<ui-select ng-model="cities.selected" theme="bootstrap" title="选择地市" on-select="selectCity($item)">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in cities | filter:{name:$select.search} track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices>
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">
+									<font style="letter-spacing: .5em;">区</font><font style="letter-spacing: .5em;">/</font>县
+								</span>
+								<div class="input-group-districts">
+									<ui-select ng-model="districts.selected" theme="bootstrap" title="选择区县" on-select="selectDistrict($item)">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in districts | filter:{name:$select.search} track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices>
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon"><font style="letter-spacing: 2em;">车</font>辆</span>
+								<div class="input-group-default">
+									<ui-select ng-model="autos.selected" theme="bootstrap" title="请选择车辆">
+										<ui-select-match placeholder="全部">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in autos| filter:{name:$select.search} track by $index"
+											refresh="searchAutos($select.search)" refresh-delay="0">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<button type="button" class="btn btn-primary btn-sm hidden-xs" ng-click="form.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" ng-click="export()"
+								ng-disabled="!pagination.hasResults()">
+								<span class="glyphicon glyphicon-download-alt"></span>
+								<span>导出</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm"
+								ng-click="dialogShow($event)"
+								data-title="添加车辆"
+								data-action="system/auto"
+								data-editabled="true">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>添加车辆</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 uri="history/logistics/statistics/temperature/page/" parameters="form.data" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td>车牌号</td>
+								<td>SIM号</td>
+								<td>VIN号</td>
+								<td>注册时间</td>
+								<td>操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td ng-bind="item.auto.carNo"></td>
+								<td ng-bind="item.auto.simCode"></td>
+								<td></td>
+								<td ng-bind="item.time| date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a ng-click="dialogShow($event, value, $index)"
+										data-title="修改车辆信息"
+										data-editabled="true"
+										ng-href="system/auto/{{value.id}}">编辑</a>
+									<a ng-click="deleteObj($event, value, $index)" ng-href="system/auto/{{value.id}}">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+</div>

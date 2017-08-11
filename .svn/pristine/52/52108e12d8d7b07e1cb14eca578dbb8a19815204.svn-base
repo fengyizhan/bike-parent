@@ -1,0 +1,195 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.IndustryType;
+import com.tiamaes.bike.common.bean.information.Region;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.information.VehicleType;
+import com.tiamaes.bike.common.bean.information.Vehicle.PlateColor;
+import com.tiamaes.bike.common.bean.information.Vehicle.Property;
+import com.tiamaes.bike.common.bean.information.Vehicle.Property.RunStatus;
+import com.tiamaes.bike.common.bean.information.Vehicle.Property.UseType;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.userdetails.User;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class VehicleServiceTest {
+	private static Logger logger = LogManager.getLogger(VehicleServiceTest.class);
+
+	@Autowired
+	private VehicleServiceInterface service;
+	@Autowired
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+
+	@Test
+	public void addVehicle() throws Exception {
+		String id = "5f786b8227234081ab6577adb2c47b4e";
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId(id);
+		vehicle.setName("豫A12345");
+		Terminal terminal = new Terminal();
+		terminal.setId("8fcb2ceef77049c1a12d3c34b951259b");
+		terminal.setName("1000000");
+		vehicle.setTerminal(terminal);
+		vehicle.setPlateColor(PlateColor.BLACK);
+		Department department = new Department();
+		department.setId("0049ed06f0bf4e8f83c4490c77c96aec");
+		department.setName("一车队");
+		vehicle.setDepartment(department);
+		
+		Property property = new Property();
+		property.setRunStatus(RunStatus.NORMAL);
+		property.setUseType(UseType.ZHATU);
+		IndustryType industryType = new IndustryType();
+		industryType.setId("d9c8e9f757cb42a1b29ca3ee3be43679");
+		industryType.setName("道路运输");
+		property.setIndustryType(industryType);
+		VehicleType vehicleType = new VehicleType();
+		vehicleType.setId("3acf8c8f59554d58b53af0e5d9222414");
+		vehicleType.setName("渣土车");
+		property.setVehicleType(vehicleType);
+		
+		property.setStartDate(new Date());
+		property.setEndDate(new Date());
+		
+		property.setOperPermit("允许经营");
+		property.setMotorId("C190C8008");
+		
+		Region region = new Region();
+		region.setId("441424");
+		region.setName("五华县");
+		property.setRegion(region);
+		vehicle.setRemark("备注");
+		vehicle.setProperty(property);
+		
+		service.addVehicle(vehicle);
+		
+		Vehicle actual = service.getVehicleById(id);
+		Assert.assertNotNull(actual);
+		Assert.assertEquals(id, actual.getId());
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(actual));
+	}
+
+	@Test
+	public void updateVehicle() throws Exception {
+		String id = "5f786b8227234081ab6577adb2c47b4e";
+		String name = "豫A45678";
+		Vehicle expected = service.getVehicleById(id);
+		expected.setName(name);
+		service.updateVehicle(expected);
+		
+		Vehicle actual = service.getVehicleById(id);
+		Assert.assertEquals(name, actual.getName());
+	}
+	
+	@Test
+	public void getVehicleByIdTest() throws Exception {
+		String id = "5f786b8227234081ab6577adb2c47b4e";
+		
+		Vehicle expected = service.getVehicleById(id);
+		
+		Assert.assertEquals(id, expected.getId());
+	}
+	
+	@Test
+	@Ignore
+	public void getVehicleBySimNoTest() throws Exception {
+		String id = "ebc47b5b5237493ba4c4c6e53441ea3f";
+		
+		Vehicle expected = service.getVehicleBySimNo("015800020022");
+		
+		Assert.assertEquals(id, expected.getId());
+	}
+	
+	@Test
+	public void getVehicleByNameTest() throws Exception {
+		String id = "5f786b8227234081ab6577adb2c47b4e";
+		
+		Vehicle expected = service.getVehicleByName("豫A12345");
+		
+		Assert.assertEquals(id, expected.getId());
+	}
+	
+	@Test
+	public void getListOfVehicles() throws Exception {
+		int number = 1;
+		Vehicle vehicle = new Vehicle();
+		Parameters<Vehicle> parameters = new Parameters<Vehicle>();
+		User user = AuthorityServiceTest.setUser();
+//		user.setId("849aa67d60aa438a83e7024f1ec2d93f");
+		parameters.setUser(user);
+		parameters.setModel(vehicle);
+		
+		int total = service.getTotalOfVehicles(parameters);
+		Pagination<Vehicle> pagination = new Pagination<Vehicle>(number, total);
+		List<Vehicle> vehicles = service.getListOfVehicles(parameters, pagination);
+		Assert.assertNotNull(vehicles);
+		logger.debug(jacksonObjectMapper.writeValueAsString(vehicles));
+	}
+	
+
+	@Test
+	public void deleteVehicle() throws Exception {
+		String id = "5f786b8227234081ab6577adb2c47b4e";
+		Vehicle actual = service.getVehicleById(id);
+		service.deleteVehicle(actual);
+		actual = service.getVehicleById(id);
+		Assert.assertNull(actual);
+	}
+	
+	@Test
+	public void getTotalUseOfCompany() throws Exception {
+		int total = service.getTotalUseOfCompany("f2287cf80a8d4b108d8ff2e2620d9220");
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+	@Test
+	public void getTotalUseOfDepartment() throws Exception {
+		int total = service.getTotalUseOfDepartment("0049ed06f0bf4e8f83c4490c77c96aec");
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+	@Test
+	public void getLoadcubesByIds() throws Exception{
+		List<String> vehicleIds = new ArrayList<String>();
+		String id = "f18151babc964b4fbc3a09e141dad21b";
+		vehicleIds.add(id);
+		vehicleIds.add(id);
+		double count = service.getLoadcubesByIds(vehicleIds);
+		System.out.println(count);
+	}
+	@Test
+	public void getRegisteredCount() throws Exception{
+		int count = service.getRegisteredCount();
+		System.out.println(count);
+	}
+}

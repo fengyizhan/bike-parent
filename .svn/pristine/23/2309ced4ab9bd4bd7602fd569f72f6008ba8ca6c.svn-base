@@ -1,0 +1,51 @@
+package com.tiamaes.bike.api;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.authority.service.AuthorityServiceInterface;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+@RestController
+@RequestMapping("/map")
+public class MapController {
+	
+	@Autowired
+	private AuthorityServiceInterface authorityService;
+	/**
+	 * 查询车辆树形结构
+	 * @param user
+	 * @return
+	 */
+	@RequestMapping(value = {"/realtime/tree"}, method = {RequestMethod.GET})
+	public @ResponseBody Map<String,Object> realtimeTreeData(@CurrentUser User user){
+		return authorityService.queryUserDataAuthoritiesTree(user);
+	}
+
+	@RequestMapping(value = {"/history/trace"}, method = {RequestMethod.POST})
+	public List<Object> historyTrace(@RequestBody Map<String, Object> parameter){
+		List<Object> list = new ArrayList<Object>();
+//		Map<String, Double> map = new HashMap<String, Double>();
+		return list;
+	}
+	
+	/**
+	 * 查询车辆实时信息
+	 * @param user
+	 * @return
+	 */
+	@RequestMapping(value = {"/realtime/vehicleDetails"}, method = {RequestMethod.POST})
+	public @ResponseBody Vehicle vehicleDetails(@RequestBody Vehicle vehicle,@CurrentUser User user){
+		return authorityService.getDetails(vehicle);
+	}
+}

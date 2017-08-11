@@ -1,0 +1,36 @@
+package com.tiamaes.bike.common.bean.information;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 行业分类字典表
+ * @author waibao001
+ *
+ */
+@ApiModel(value = "IndustryType", description = "行业分类字典表")
+public class IndustryType {
+	/**
+	 * 行业主键
+	 */
+	@ApiModelProperty(value="行业主键")
+	private String id;
+	/**
+	 * 行业名称
+	 */
+	@ApiModelProperty(value="行业名称")
+	private String name;
+	
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+}

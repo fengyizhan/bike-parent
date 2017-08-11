@@ -1,0 +1,63 @@
+package com.tiamaes.bike.api.information.driver.persistence;
+
+import java.util.List;
+
+import org.springframework.data.repository.query.Param;
+
+import com.tiamaes.bike.common.bean.information.Driver;
+
+public interface DriverMapper {
+	
+	/**
+	 * 根据驾驶员编号查询驾驶员信息
+	 * @param driverId
+	 * @return
+	 * @throws Exception
+	 */
+	Driver getDriverInfoById(@Param("id")String id);
+	/**
+	 * 查询所有驾驶员
+	 * @return
+	 */
+	List<Driver> getAllDrivers();
+	/**
+	 * 查询所有驾驶员
+	 * @return
+	 */
+	List<Driver> getAllDrivers(Driver driver);
+	/**
+	 * 查询注册驾驶员数
+	 * @return
+	 */
+	int getTotalOfDrivers(Driver driver);
+	/**
+	 * 保存驾驶员
+	 * @param driver
+	 */
+	void addDriver(Driver driver);
+	/**
+	 * 更新驾驶员
+	 * @param driver
+	 */
+	void updateDriver(Driver driver);
+	/**
+	 * 删除驾驶员
+	 * @param driver
+	 */
+	void deleteDriver(Driver driver);
+	/**
+	 * 验证驾驶员从业资格证号是否存在
+	 * @param licenseNo
+	 * @return
+	 */
+	boolean checkLicenseNo(String licenseNo);
+	
+	/**
+	 * 验证驾驶员身份证号是否存在
+	 * @param identityCard
+	 * @return
+	 */
+	boolean checkIdentityCard(String identityCard);
+	
+	
+}

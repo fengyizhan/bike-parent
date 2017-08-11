@@ -1,0 +1,65 @@
+package com.tiamaes.bike.api.information.terminal.persistence;
+
+import java.util.List;
+
+import org.springframework.data.repository.query.Param;
+
+import com.tiamaes.bike.common.bean.information.Terminal;
+
+public interface TerminalMapper {
+	
+	/**
+	 * 根据终端编号查询终端信息
+	 * @param id
+	 * @return
+	 * @throws Exception
+	 */
+	Terminal getTerminalById(@Param("termId")String id);
+	/**
+	 * 根据终端编号查询终端信息
+	 * @param name
+	 * @return
+	 */
+	Terminal getTerminalByName(String name);
+	/**
+	 * 查询所有终端
+	 * @return
+	 */
+	List<Terminal> getAllTerminals();
+	/**
+	 * 查询所有终端
+	 * @return
+	 */
+	List<Terminal> getAllTerminals(Terminal terminal);
+	/**
+	 * 查询注册终端数
+	 * @return
+	 */
+	int getTotalOfTerminals(Terminal terminal);
+	/**
+	 * 保存终端
+	 * @param terminal
+	 */
+	void addTerminal(Terminal terminal);
+	/**
+	 * 更新终端
+	 * @param terminal
+	 */
+	void updateTerminal(Terminal terminal);
+	/**
+	 * 删除终端
+	 * @param terminal
+	 */
+	void deleteTerminal(Terminal terminal);
+	/**
+	 * 检查终端号是否已经存在
+	 * @param termNo
+	 * @return
+	 */
+	boolean hasExists(String termNo);
+	/**
+	 * 获取所有未分配终端列表，用于下拉菜单生成
+	 * @return
+	 */
+	List<Terminal> getTerminalsWithUnused();
+}

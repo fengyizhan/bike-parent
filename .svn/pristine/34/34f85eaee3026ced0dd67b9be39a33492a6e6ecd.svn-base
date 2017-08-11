@@ -1,0 +1,156 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo;
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo.State;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.storage.service.VehiclePhotoInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class VehiclePhotoInfoServiceTest {
+	private static Logger logger = LogManager.getLogger(VehiclePhotoInfoServiceTest.class);
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Resource
+	private VehiclePhotoInfoServiceInterface service;
+	
+	@Test
+	public void addInStationVehiclePhotoInfo() throws Exception {
+		VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+		Company company = new Company();
+		company.setId("f2287cf80a8d4b108d8ff2e2620d9220");
+		company.setName("重工新能源");
+		Department department = new Department();
+		department.setId("a409f39c1e73471f9d5beaf97a2d6825");
+		department.setName("渣土1部");
+		Terminal terminal = new Terminal();
+		terminal.setSimNo("015936876532");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		Driver driver = new Driver();
+		driver.setIdentityCard("410427198805063214");
+//		driver.setName("李详");
+//		driver.setTelephone("15623560123");
+		vehiclePhotoInfo.setVehicle(vehicle);
+		vehiclePhotoInfo.setDriver(driver);
+		vehiclePhotoInfo.setState(State.INSTATION);
+		vehiclePhotoInfo.setLng(113.647829);
+		vehiclePhotoInfo.setLat(34.753793);
+		vehiclePhotoInfo.setPath("/upload/1558a13fc8f04597b43629ea12320b35.jpeg");
+		
+		service.addVehiclePhotoInfo(vehiclePhotoInfo);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存设备拍照信息" + objectMapper.writeValueAsString(vehiclePhotoInfo));
+		}
+	}
+	
+	@Test
+	public void addOutStationVehiclePhotoInfo() throws Exception {
+		VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("ac11903768ab454aa28c12f7ab243ed8");
+//		vehicle.setCarNo("豫A8888");
+		Company company = new Company();
+		company.setId("f2287cf80a8d4b108d8ff2e2620d9220");
+		company.setName("重工新能源");
+		Department department = new Department();
+		department.setId("a409f39c1e73471f9d5beaf97a2d6825");
+		department.setName("渣土1部");
+		Terminal terminal = new Terminal();
+		terminal.setSimNo("015936876532");
+//		vehicle.setCompany(company);
+//		vehicle.setDepartment(department);
+//		vehicle.setTerminal(terminal);
+		Driver driver = new Driver();
+		driver.setIdentityCard("410427198805063214");
+//		driver.setName("李详");
+//		driver.setTelephone("15623560123");
+		vehiclePhotoInfo.setVehicle(vehicle);
+		vehiclePhotoInfo.setDriver(driver);
+		vehiclePhotoInfo.setState(State.OUTSTATION);
+		vehiclePhotoInfo.setLng(113.647829);
+		vehiclePhotoInfo.setLat(34.753793);
+		vehiclePhotoInfo.setPath("/upload/1558a13fc8f04597b43629ea12320b35.jpeg");
+		
+		String id = service.addVehiclePhotoInfo(vehiclePhotoInfo);
+		service.deleteVehiclePhotoInfo(id);
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("保存设备拍照信息" + objectMapper.writeValueAsString(vehiclePhotoInfo));
+		}
+	}
+	
+	@Test
+	@Ignore
+	public void vehiclePhotoInfoKafkaTest() {
+		for (int i = 0; i < 56; i++) {
+			VehiclePhotoInfo vehiclePhotoInfo = new VehiclePhotoInfo();
+			if (i % 2 == 0) {
+				vehiclePhotoInfo.setState(VehiclePhotoInfo.State.INSTATION);
+			} else {
+				vehiclePhotoInfo.setState(VehiclePhotoInfo.State.OUTSTATION);
+			}
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId("d196b09f835842d79c993d961d94849f");
+//			vehicle.setCarNo("京Q23456");
+//			vehicle.setSimCode("015800020022");
+			Company company = new Company();
+			company.setId("a7db3db0e0a541b38e2e71e1449f906f");
+			company.setName("公交十二公司");
+			Department department = new Department();
+			department.setId("b8c2d49da0334091bacd21adf08ac54c");
+			department.setName("一车队");
+//			vehicle.setCompany(company);
+//			vehicle.setDepartment(department);
+			Driver driver = new Driver();
+			driver.setIdentityCard("4101064484231");
+//			driver.setName("张三");
+//			driver.setTelephone("18513974682");
+			vehiclePhotoInfo.setVehicle(vehicle);
+			vehiclePhotoInfo.setDriver(driver);
+			vehiclePhotoInfo.setLng(113.647829);
+			vehiclePhotoInfo.setLat(34.753793);
+			vehiclePhotoInfo.setPath("");
+			kafkaTemplate.send(MessageBuilder.withPayload(vehiclePhotoInfo).setHeader(KafkaHeaders.TOPIC, vehiclePhotoInfo.getClass().getName()).build());
+		}
+	}
+}

@@ -1,0 +1,92 @@
+<div ng-controller="DriverController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">用户信息管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">用户名</span>
+								<input type="text" class="form-control" name="name" ng-model="searchForm.data.name" placeholder="请输入用户名">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">身份证号</span>
+								<input type="text" class="form-control" name="identityCard" ng-model="searchForm.data.identityCard" placeholder="请输入身份证号">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">联系电话</span>
+								<input type="text" class="form-control" name="telephone" ng-model="searchForm.data.telephone" placeholder="请输入联系电话">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">黑白名单</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.state" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="黑白名单">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.states track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<pagination2 parameters="searchForm.data" uri="api/information/driver/page/" id="pagination" items-per-page="20" style="margin-top:40px;">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="100">用户名</td>
+								<td width="100">用户昵称</td>
+								<td width="160">身份证号</td>
+								<td width="130">联系电话</td>
+								<td width="130">黑白名单</td>
+								<td width="130">注册时间</td>
+								<td width="180">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 100px;" ng-bind="item.username" title="{{item.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 100px;" ng-bind="item.nickname" title="{{item.nickName}}"></div></td>
+								<td class="ellipsis"><div style="width: 160px;" ng-bind="item.identityCard" title="{{item.identityCard}}"></div></td>
+								<td class="ellipsis"><div style="width: 130px;" ng-bind="item.username" title="{{item.telephone}}"></div></td>
+								<td class="ellipsis"><div style="width: 130px;" ng-bind="item.state.name" title="{{item.state.name}}"></div></td>
+								<td ng-bind="item.createDate | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="join(item)">
+										<span ng-if="item.state.index == 0">加入黑名单</span>
+										<span ng-if="item.state.index == 1">加入白名单</span>
+									</a>
+									<a href="javascript:;" ng-click="info(item)">钱包</a>
+									<a href="javascript:;" ng-click="rechargeRecords(item)">充值记录</a>
+									<a href="javascript:;" ng-click="consumeRecords(item)">消费记录</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/driver/dialog.html" style="width:660px;"></div>
+	<div dialog="userRechargeDialog" template-url="module/information/driver/userRechargeDialog.html" style="width:1200px;height:80%;"></div>
+	<div dialog="userConsumeDialog" template-url="module/information/driver/userConsumeDialog.html" style="width:1200px;height:80%;"></div>
+</div>

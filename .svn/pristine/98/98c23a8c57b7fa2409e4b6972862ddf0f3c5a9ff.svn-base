@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.command.persistence.CommandMapper">
+	<resultMap id="commandMapper" type="com.tiamaes.bike.common.bean.command.Command">
+		<id property="id" column="id"/>
+		<result property="clazz" column="clazz"/>
+		<result property="simNo" column="simNo"/>
+		<result property="seqNo" column="seqNo"/>
+		<result property="createTime" column="createTime"/>
+		<result property="payload" column="payload"/>
+		<result property="terminalId" column="terminalId"/>
+	</resultMap>
+	<!-- 根据车载机simNO查询指令  按时间排序-->
+	<select id="getListOfCommandBySimNo" parameterType="String" resultMap="commandMapper">
+			SELECT 	id,
+					clazz,
+					simNo,
+					seqNo
+					createTime,
+					payload,
+					terminalId 
+				FROM Tb_Commands 
+				WHERE simNo = #{simNo}
+				ORDER BY seqNo 
+	</select>
+	<!-- 保存单个指令 -->
+	<insert id="saveCommand" parameterType="com.tiamaes.bike.common.bean.command.Command">
+		INSERT INTO TB_COMMANDS(ID,CLAZZ,SIMNO,SEQNO,CREATETIME,PAYLOAD,TERMINALID) VALUES (#{id},#{clazz},#{simNo},#{seqNo},#{createTime},#{payload, jdbcType=CLOB},#{terminalId})
+	</insert>
+	
+	<!-- 批量保存指令 -->
+	<insert id="saveCommands" parameterType="com.tiamaes.bike.common.bean.command.Command">
+		INSERT INTO TB_COMMANDS(ID,CLAZZ,SIMNO,SEQNO,CREATETIME,PAYLOAD,TERMINALID) VALUES
+		<foreach collection="list" item="item" separator=",">
+			(#{item.id}, #{item.clazz}, #{item.simNo}, #{item.seqNo}, #{item.createTime}, #{item.payload, jdbcType=CLOB}, #{item.terminalId})
+		</foreach>
+	</insert>
+	
+	<!-- 根据电话号码删除指令 -->
+	<delete id="deleteBySimNo" parameterType="java.lang.String">
+		DELETE FROM TB_COMMANDS WHERE simNo = #{simNo}
+	</delete>
+</mapper>

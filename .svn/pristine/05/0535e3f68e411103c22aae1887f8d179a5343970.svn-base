@@ -1,0 +1,120 @@
+package com.tiamaes.bike.api.information.project.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Station;
+
+/**
+ * 工程信息管理持久层接口
+ * @author kangty
+ */
+public interface ProjectMapper {
+	
+	/**
+	 * 根据工程编号查询工程信息
+	 * @param id
+	 * @return
+	 */
+	Project getProjectById(@Param("id")String id);
+	
+	/**
+	 * 无参获取工程列表
+	 * @return
+	 */
+	List<Project> getListOfProjects();
+	
+	/**
+	 * 根据参数获取工程列表
+	 * @param project
+	 * @return
+	 */
+	List<Project> getListOfProjects(Project project);
+	/**
+	 * 获取工程总数
+	 * @param project
+	 * @return
+	 */
+	int getTotalOfProjects(Project project);
+	
+	/**
+	 * 新增工程信息
+	 * @param project
+	 */
+	void addProject(Project project);
+	
+	/**
+	 * 更新工程信息
+	 * @param project
+	 */
+	void updateProject(Project project);
+	
+	/**
+	 * 删除工程信息
+	 * @param project
+	 */
+	void deleteProject(Project project);
+	
+	/**
+	 * 检查工程名是否已经存在
+	 * @param param
+	 * @return
+	 */
+	boolean hasExists(@Param("id")String id, @Param("name")String name);
+	
+	/**
+	 * 获取所有工程列表, 用于下拉菜单生成
+	 * @return
+	 */
+	List<Project> getProjects();
+
+	/**
+	 * 获取除本工程外其他工程列表, 用于下拉菜单生成
+	 * @param projectId
+	 * @return
+	 */
+	List<Project> getProjects(@Param("projectId")String projectId);
+	/**
+	 * 根据工程获取所有的厂区
+	 * @param projectIds
+	 * @return
+	 */
+	List<Station> getStationByPIds(@Param("projectIds")List<String> projectIds);
+	/**
+	 * 根据工程获取所有的线路
+	 * @param projectIds
+	 * @return
+	 */
+	List<Integer> getLinesByPIds(@Param("projectIds")List<String> projectIds);
+
+	/**
+	 * 根据场区id获取场区与工程的关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfStation(Integer id);
+	
+	/**
+	 * 获取正在进行的工程id
+	 * @param date
+	 * @return
+	 */
+	List<String> getListOfOngoingProjectId(String date);
+	
+	/**
+	 * 根据场区获取与场区相关工程的id
+	 * @param station
+	 * @return
+	 */
+	String getProjectByStation(Station station);
+	
+	/**
+	 * 根据场区获取与场区相关工程的车辆
+	 * @param station
+	 * @return
+	 */
+	List<ProjectVehicle> getProjectVehicleByStation(Station station);
+}

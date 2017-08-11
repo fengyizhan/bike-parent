@@ -1,0 +1,179 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.route.service.RouteServiceInterface;
+import com.tiamaes.bike.common.bean.information.Pathpoint;
+import com.tiamaes.bike.common.bean.information.Route;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * @author kangty
+ * 路线信息管理接口实现类的单元测试
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class RouteServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(RouteServiceTest.class);
+	
+	private Integer id = 1100001;
+	
+	@Autowired
+	private RouteServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jsonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void addRoute() throws Exception {
+		Route route = new Route();
+		route.setId(id);
+		route.setName("大学路场区到中原路消纳场");
+		Calendar curr = Calendar.getInstance();
+		route.setStartTime(curr.getTime());
+		curr.set(Calendar.YEAR,curr.get(Calendar.YEAR)+1);
+		route.setEndTime(curr.getTime());
+		route.setLimitSpeedValue(40);
+		route.setDelayValue(10);
+		route.setReportValue(1);
+		route.setWidth(10);
+		Station beginStation = new Station();
+		beginStation.setId(1);
+		route.setBeginStation(beginStation);
+		Station endStation = new Station();
+		endStation.setId(2);
+		route.setEndStation(endStation);
+		List<Pathpoint> pathpoints = new ArrayList<Pathpoint>();
+		Pathpoint pp1 = new Pathpoint();
+		pp1.setLng(113.663221);
+		pp1.setLat(34.7568711);
+		pathpoints.add(pp1);
+		Pathpoint pp2 = new Pathpoint();
+		pp2.setLng(112.663221);
+		pp2.setLat(34.7568711);
+		pathpoints.add(pp2);
+		Pathpoint pp3 = new Pathpoint();
+		pp3.setLng(113.663221);
+		pp3.setLat(33.7568711);
+		pathpoints.add(pp3);
+		route.setPaths(pathpoints);
+		
+		service.addRoute(route);
+		
+		Route result = service.getRouteById(route.getId());
+		this.id = result.getId();
+		Assert.assertNotNull(result);
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void getListOfRoute() throws Exception {
+		int number = 1;
+		Route route = new Route();
+		int total = service.getTotalOfRoutes(route);
+		Pagination<Route> pagination = new Pagination<Route>(number, total);
+		List<Route> routeList = service.getListOfRoutes(route, pagination);
+		Assert.assertNotNull(routeList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(routeList));
+	}
+	
+	@Test
+	public void updateRoute() {
+		Route route = service.getRouteById(id);
+		String name = "大学路场区到中原路消纳场1";
+		route.setName(name);
+		List<Pathpoint> pathpoints = new ArrayList<Pathpoint>();
+		Pathpoint pp1 = new Pathpoint();
+		pp1.setLng(113.663221);
+		pp1.setLat(34.7568711);
+		pathpoints.add(pp1);
+		Pathpoint pp2 = new Pathpoint();
+		pp2.setLng(112.663221);
+		pp2.setLat(34.7568711);
+		pathpoints.add(pp2);
+		Pathpoint pp3 = new Pathpoint();
+		pp3.setLng(113.663221);
+		pp3.setLat(33.7568711);
+		pathpoints.add(pp3);
+		route.setPaths(pathpoints);
+		service.updateRoute(route);
+		
+		Route result = service.getRouteById(id);
+		Assert.assertEquals(name, result.getName());
+	}
+	
+	@Test
+	@Ignore
+	public void checkName() {
+//		Optional<Integer> optional = Optional.ofNullable(null);
+		Optional<Integer> optional = Optional.of(id);
+		Boolean result = service.checkRouteName(optional, "大学路场区到中原路消纳场");
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+	}
+	
+	@Test
+	public void deleteRoute() {
+		Route result = service.getRouteById(id);
+		service.deleteRoute(result);
+		result = service.getRouteById(id);
+		Assert.assertNull(result);
+	}
+	
+	@Test
+	public void getRoutes() throws Exception {
+		List<Route> routes = service.getRoutes();
+		Assert.assertNotNull(routes);
+		logger.debug(jacksonObjectMapper.writeValueAsString(routes));
+	}
+	
+	@Test
+	public void getRoutesByBeginAndEnd() throws Exception {
+		Integer beginId = 1;
+		Integer endId = 2;
+		List<Route> routes = service.getRoutesByBeginAndEnd(beginId, endId);
+		Assert.assertNotNull(routes);
+		logger.debug(jacksonObjectMapper.writeValueAsString(routes));
+	}
+	
+	@Test
+	public void getTotalUseOfStation() throws Exception {
+		int total = service.getTotalUseOfStation(1);
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+	public static void main(String[] args) {
+		String id = UUIDGenerator.getUUID();
+		System.out.println("this test should use id: " + id);
+	}
+
+}

@@ -1,0 +1,58 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.Device;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Message8001;
+import com.tiamaes.bike.connector.protocol.message.Message8001.Result;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.protocol.message.Received0003;
+import com.tiamaes.bike.connector.service.AuthenticationServiceInterface;
+
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 终端注册0x0003
+ * 
+ * @author Chen
+ *
+ */
+@Component
+public class Protocol0003Handler implements ProtocolHandler<Received0003> {
+	private static Logger logger = LogManager.getLogger(Protocol0003Handler.class);
+	@Autowired
+	private ChannelRepository channelRepository;
+	@Autowired
+	private AuthenticationServiceInterface authenticationService;
+	@Override
+	public Message execute(Channel channel,Received received) throws Exception {
+		Header header = received.getHeader();
+		int terminalId = header.getTerminalId();
+		com.tiamaes.bike.connector.protocol.message.Header.Type termimalType=header.getTerminalType();
+		Device target = null;
+		// 查询数据库判断车辆和终端是否已经注册，如果都有并且没有注册，则更新【设备】(锁或者锁桩)的terminalId和注册状态
+		
+		// 注册成功，则更新鉴权码到数据库表中，并随实体返回
+		
+		// 注册结果0成功，1车辆已被注册，2数据库中无该车辆，3终端已被注册，4数据库中无该终端
+		byte result = 2;
+		//TODO 保存设备
+		String address = channel.remoteAddress().toString();
+		if(logger.isDebugEnabled()){
+			logger.debug("Client [{}] has bean authorized。address [{}]", terminalId,address);
+		}
+		Message8001 response = new Message8001(header,Result.SUCCESS);
+		return response;
+	}
+
+	
+}

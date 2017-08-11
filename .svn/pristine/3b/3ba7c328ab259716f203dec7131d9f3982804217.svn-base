@@ -1,0 +1,15 @@
+package com.tiamaes.bike.alipay;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.config.SystemConfig.PayProperties;
+
+/**
+ * 支付宝支付工具类
+ */
+@Component("payUtil")
+public class Pay {
+	@Autowired
+	private PayProperties payProperties;
+}

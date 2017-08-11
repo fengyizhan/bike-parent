@@ -1,0 +1,100 @@
+<div ng-controller="ParkController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">场区管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">场区类型</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.type" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="请选择类型">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.types track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">场区编号</span>
+								<input type="text" class="form-control" name="id" ng-model="searchForm.data.id" ng-change="changeToNum(searchForm.data.id)" placeholder="请输入场区编号(数字)" maxlength="9" style="min-width: 120px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">场区名称</span>
+								<input type="text" class="form-control" name="name" ng-model="searchForm.data.name" placeholder="请输入场区名称" maxlength="15" style="min-width: 120px;">
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add()">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增场区</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/station/page/" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="110">场区编号</td>
+								<td>场区名称</td>
+								<td width="80">场区类型</td>
+								<td width="100">总土方数(万<font style="font-size:1.2em;">m</font><sup>3</sup>)</td>
+								<td width="80">限速(km/h)</td>
+								<td width="80">延时报警(s)</td>
+								<td width="60">责任人</td>
+								<td width="80">责任人电话</td>
+								<td width="130">生效时间</td>
+								<td width="130">失效时间</td>
+								<td width="100">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 110px;" ng-bind="item.id" title="{{item.id}}"></div></td>
+								<td ng-bind="item.name"></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.type.name" title="{{item.type.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 100px;" ng-bind="item.earthWork" title="{{item.earthWork}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.limitSpeedValue" title="{{item.limitSpeedValue}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.delayValue" title="{{item.delayValue}}"></div></td>
+								<td class="ellipsis"><div style="width: 60px;" ng-bind="item.principal" title="{{item.principal}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.telephone" title="{{item.telephone}}"></div></td>
+								<td ng-bind="item.startTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td ng-bind="item.endTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/station/dialog.html" style="width:1000px;height:inherit;"></div>
+</div>

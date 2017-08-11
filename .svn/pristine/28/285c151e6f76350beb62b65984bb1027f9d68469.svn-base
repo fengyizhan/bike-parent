@@ -1,0 +1,133 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.util.Date;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.tiamaes.bike.common.bean.system.Authority;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 公司
+ * 
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Company", description = "公司实体")
+public class Company extends Authority {
+	private static final long serialVersionUID = 1L;
+	/**
+	 * 备注
+	 */
+	@ApiModelProperty(value="备注")
+	private String remark;
+	/**
+	 * 联系人
+	 */
+	@ApiModelProperty(value="联系人(新增时必填, 查询时可不填)")
+	private String contactName;
+	/**
+	 * 联系电话
+	 */
+	@ApiModelProperty(value="联系电话(新增时必填, 查询时可不填)")
+	private String contactPhone;
+	/**
+	 * 经营范围
+	 */
+	@ApiModelProperty(value="经营范围")
+	private String businessScope;
+	/**
+	 * 公司地址
+	 */
+	@ApiModelProperty(value="公司地址")
+	private String address;
+	/**
+	 * 经营许可证号
+	 */
+	@ApiModelProperty(value="经营许可证号(新增时必填, 查询时可不填)")
+	private String licenseNo;
+	/**
+	 * 经营许可证字
+	 */
+	@ApiModelProperty(value="经营许可证字(新增时必填, 查询时可不填)")
+	private String licenseWord;
+	
+	private Date createDate;
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getContactName() {
+		return contactName;
+	}
+
+	public void setContactName(String contactName) {
+		this.contactName = contactName;
+	}
+
+	public String getContactPhone() {
+		return contactPhone;
+	}
+
+	public void setContactPhone(String contactPhone) {
+		this.contactPhone = contactPhone;
+	}
+
+	public String getBusinessScope() {
+		return businessScope;
+	}
+
+	public void setBusinessScope(String businessScope) {
+		this.businessScope = businessScope;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public String getLicenseNo() {
+		return licenseNo;
+	}
+
+	public void setLicenseNo(String licenseNo) {
+		this.licenseNo = licenseNo;
+	}
+
+	public String getLicenseWord() {
+		return licenseWord;
+	}
+
+	public void setLicenseWord(String licenseWord) {
+		this.licenseWord = licenseWord;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	@Override
+	public Integer getLevel() {
+		return 1;
+	}
+	
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

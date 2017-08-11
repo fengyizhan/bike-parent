@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.reporter.integrated.vehicle.persistence.VehicleLocationMapper">
+	<resultMap id="vehicleLoctionMap" type="com.tiamaes.bike.common.bean.integrated.LocationRecord">
+		<id property="id" column="id"/>
+		<result property="createTime" column="createTime"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="height" column="height"/>
+		<result property="speed" column="speed"/>
+		<result property="direction" column="direction"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="carNo"/>
+			<result property="simCode" column="simNo"/>
+			<association property="company" javaType="com.tiamaes.bike.common.bean.information.Company">
+				<result property="id" column="companyId"/>
+				<result property="name" column="companyName"/>
+			</association>
+			<association property="department" javaType="com.tiamaes.bike.common.bean.information.Department">
+				<result property="id" column="departmentId"/>
+				<result property="name" column="departmentName"/>
+			</association>
+		</association>
+		<association property="vehicleStatusInfo" javaType="com.tiamaes.bike.common.bean.connector.VehicleStatusInfo">
+			<result property="accState" column="accState"/>
+			<result property="electricState" column="electricState"/>
+			<result property="milage" column="milage"/>
+		</association>
+	</resultMap>
+	<!-- 根据id获取车辆的定位信息 -->
+	<select id="getLocationById" parameterType="String" resultMap="vehicleLoctionMap">
+		SELECT 	id,
+				companyId,
+				companyName,
+				departmentId,
+				departmentName,
+				vehicleId,
+		     	carNo,
+		     	simNo,
+		     	createTime,
+		     	lng,
+		     	lat,
+		     	height,
+		     	speed,
+		     	direction
+		  FROM Tb_Vehicle_Location 
+		  WHERE id=#{id}
+	</select>
+	<!-- 根据时间段或车辆id查询车辆的定位信息 -->
+	<select id="getLocationByTime" parameterType="com.tiamaes.bike.common.bean.integrated.LocationRecord" resultType="com.tiamaes.bike.common.bean.system.PointVector$Center">
+		SELECT 	t.lng,
+				t.lat
+		  FROM tb_bike_location_info t 
+		  <where>
+			<if test="vehicle != null and vehicle.id != null">
+		     AND t.vehicleId = #{vehicle.id}
+			</if>
+			<if test="startTime != null">
+		     AND t.createDate &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createDate
+			</if>
+		</where>
+		ORDER BY t.createDate
+	</select>
+	<!-- 保存车辆定位信息 -->
+	<insert id="addVehicleLocation" parameterType="com.tiamaes.bike.common.bean.integrated.LocationRecord">
+		INSERT INTO Tb_Vehicle_Location (id,companyId,companyName,departmentId,departmentName,vehicleId,
+		     							 carNo,simNo,createTime,lng,lat,height,speed,direction)
+					  			VALUES  (#{id},#{vehicle.company.id},#{vehicle.company.name},
+					  					 #{vehicle.department.id},#{vehicle.department.name},#{vehicle.id},
+					  					 #{vehicle.carNo},#{vehicle.terminal.simNo},now(),#{lng},#{lat},#{height},#{speed},#{direction})
+	</insert>
+	
+	<!-- 获取车辆历史定位信息 -->
+	<select id="getListOfHistoryPositionInfo" parameterType="com.tiamaes.bike.common.bean.integrated.LocationRecord" resultMap="vehicleLoctionMap">
+		SELECT 	t.id,
+				t.carNo,
+				t.simNo,
+				t.lng,
+				t.lat,
+				t.speed,
+				t.direction,
+				t.createTime,
+				v.accState,
+				v.electricState,
+				v.odometer AS milage
+		  FROM tb_vehicle_location t 
+		    INNER JOIN tb_vehicle_status_info v ON t.id = v.id
+		  <where>
+		    t.carNo = #{vehicle.carNo}
+		    AND t.createTime&gt;=#{startTime}
+			<if test="endTime != null">
+		     AND #{endTime}&gt;=t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select>
+	
+	<!-- 获取车辆实时定位信息 -->
+	<select id="getListOfRealtimePositionInfo" parameterType="map" resultMap="vehicleLoctionMap">
+		SELECT t.id,
+		       t.carNo,
+		       t.simNo,
+		       t.lng,
+		       t.lat,
+		       t.speed,
+		       t.direction,
+		       t.createTime,
+		       v.accState,
+		       v.electricState,
+		       v.odometer AS milage
+		  FROM tb_vehicle_location t
+		 INNER JOIN tb_vehicle_status_info v ON t.id = v.id
+		 WHERE t.createtime IN (SELECT MAX(vl.createTime)
+	                          FROM tb_vehicle_location vl
+	                         <where>
+							    <if test="carNos != null">
+							    AND vl.carNo IN
+							     <foreach item="item" index="index" collection="carNos" open="(" separator="," close=")">  
+								  #{item}  
+								 </foreach>
+								</if>
+							    <if test="vehicleIds != null">
+							    AND vl.vehicleId IN
+							     <foreach item="item" index="index" collection="vehicleIds" open="(" separator="," close=")">  
+								  #{item}  
+								 </foreach>
+								</if>
+							 </where>
+	                         GROUP BY vl.carno)
+	</select>
+</mapper>

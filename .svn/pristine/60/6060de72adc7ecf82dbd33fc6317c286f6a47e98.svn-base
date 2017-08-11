@@ -1,0 +1,97 @@
+package com.tiamaes.bike.config;
+
+import javax.sql.DataSource;
+
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.annotation.MapperScan;
+import org.mybatis.spring.boot.autoconfigure.SpringBootVFS;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+
+@Configuration
+public class MyBatisConfig {
+	
+	@Value("${spring.datasource.type}")
+	private Class<? extends DataSource> dataSourceType;
+	
+	@Configuration
+	@MapperScan(basePackages = "com.tiamaes.bike.storage.persistence", sqlSessionFactoryRef = "primarySqlSessionFactory")
+	public class PrimaryMyBatisConfig{
+		
+		@Primary
+		@Bean(name = "primaryDataSourceProperties")
+		@ConfigurationProperties("spring.datasource.primary")
+		protected DataSourceProperties dataSourceProperties(){
+			return new DataSourceProperties();
+		}
+		
+		@Primary
+		@Bean(name = "primaryDataSource")
+		@ConfigurationProperties(prefix = "spring.datasource.primary")
+		protected DataSource dataSource() {
+			return DataSourceBuilder.create().type(dataSourceType).build();
+		}
+		
+		@Bean(name = "primarySqlSessionFactory")
+		protected SqlSessionFactory sqlSessionFactory(@Qualifier("primaryDataSource")DataSource dataSource) throws Exception {
+			SqlSessionFactoryBean factory = new SqlSessionFactoryBean();
+			factory.setFailFast(true);
+			factory.setDataSource(dataSource);
+			factory.setVfs(SpringBootVFS.class);
+			factory.setConfigLocation(new ClassPathResource("mybatis-config.xml"));
+			return factory.getObject();
+		}
+		
+		@Primary
+		@Bean(name = "primaryTransactionManager")
+		public DataSourceTransactionManager transactionManager(@Qualifier("primaryDataSource")DataSource dataSource) {
+			return new DataSourceTransactionManager(dataSource);
+		}
+		
+		@Primary
+		@Bean(name = "primarySqlSessionTemplate")
+		public SqlSessionTemplate sqlSessionTemplate(@Qualifier("primarySqlSessionFactory")SqlSessionFactory sqlSessionFactory) {
+			return new SqlSessionTemplate(sqlSessionFactory);
+		}
+	}
+	
+	@Configuration
+	@MapperScan(basePackages = "com.tiamaes.bike.storage.information.persistence", sqlSessionFactoryRef = "secondSqlSessionFactory")
+	public class SecondMyBatisConfig{
+		@Bean(name = "secondDataSource")
+		@ConfigurationProperties(prefix = "spring.datasource.second")
+		protected DataSource dataSource() {
+			return DataSourceBuilder.create().type(dataSourceType).build();
+		}
+		
+		@Bean(name = "secondSqlSessionFactory")
+		protected SqlSessionFactory sqlSessionFactory(@Qualifier("secondDataSource")DataSource dataSource) throws Exception {
+			SqlSessionFactoryBean factory = new SqlSessionFactoryBean();
+			factory.setFailFast(true);
+			factory.setDataSource(dataSource);
+			factory.setVfs(SpringBootVFS.class);
+			factory.setConfigLocation(new ClassPathResource("mybatis-config.xml"));
+			return factory.getObject();
+		}
+		
+		@Bean(name = "secondTransactionManager")
+		public DataSourceTransactionManager transactionManager(@Qualifier("secondDataSource")DataSource dataSource) {
+			return new DataSourceTransactionManager(dataSource);
+		}
+		
+		@Bean(name = "secondSqlSessionTemplate")
+		public SqlSessionTemplate sqlSessionTemplate(@Qualifier("secondSqlSessionFactory")SqlSessionFactory sqlSessionFactory) {
+			return new SqlSessionTemplate(sqlSessionFactory);
+		}
+	}
+}

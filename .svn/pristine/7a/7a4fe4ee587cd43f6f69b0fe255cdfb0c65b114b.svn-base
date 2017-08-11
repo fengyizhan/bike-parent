@@ -1,0 +1,199 @@
+package com.tiamaes.bike.api.authority.user.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.authority.DriverServiceInterface;
+import com.tiamaes.bike.api.authority.WalletUserServiceInterface;
+import com.tiamaes.bike.api.authority.role.service.RoleServiceInterface;
+import com.tiamaes.bike.api.authority.user.service.UserServiceInterface;
+import com.tiamaes.bike.common.bean.Result;
+import com.tiamaes.bike.common.bean.system.LoginModel;
+import com.tiamaes.bike.common.bean.system.Role;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.system.UserSetting.DisplayName;
+import com.tiamaes.bike.common.bean.wallet.WalletUser;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/user")
+@Api(tags = {"user"}, description = "用户管理")
+public class UserController {
+	private static Logger logger = LogManager.getLogger(UserController.class);
+	@Resource
+	private UserServiceInterface userService;
+	@Resource
+	private RoleServiceInterface roleService;
+	@Resource
+	private RedisTemplate<String,String> redisTemplate;
+	@Resource
+	private StandardPasswordEncoder passwordEncoder;
+	@Autowired
+	private DriverServiceInterface driverService;
+	@Autowired
+	private WalletUserServiceInterface walletUserService;
+	
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "用户分页信息", notes = "获取当前页的用户列表数据")
+	public @ResponseBody PageInfo<User> page(@RequestBody User user, @PathVariable Map<String,String> pathVariable, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<User> pagination = new Pagination<User>(number, pageSize);
+		List<User> list = userService.getAllUsers(user, pagination);
+		return new PageInfo<User>(list);
+	}
+	
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
+	@ApiOperation(value = "获取指定用户", notes = "根据用户id获取用户", response = User.class)
+	public @ResponseBody User get(@PathVariable("id")String id, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		User user = userService.getUserById(id);
+		return user;
+	}
+	
+	@RequestMapping(value="/load/{username}", method = RequestMethod.GET)
+	@ApiOperation(value = "获取用户详细信息", notes = "根据用户名获取用户详细信息", response = UserDetails.class)
+	public UserDetails loadUserByName(@PathVariable String username){
+		if(StringUtils.isNotBlank(username)){
+			return userService.loadUserByUsername(username);
+		}
+		return null;
+	}
+	
+	@RequestMapping(value = "/checkname/{username}", method = RequestMethod.GET)
+	@ApiOperation(value = "检查用户名是否存在", notes = "检查用户名是否存在")
+	public @ResponseBody Map<String,Boolean> checkname(@PathVariable("username")String username) {
+		Map<String,Boolean> result = new HashMap<String,Boolean>();
+		Boolean state = userService.checkUserName(username);
+		result.put("state", state);
+		return result;
+	}
+	
+	@RequestMapping(method = RequestMethod.PUT)
+	@ApiOperation(value = "新增用户", notes = "增加新的用户", response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	public @ResponseBody User add(@RequestBody User user, @CurrentUser com.tiamaes.security.core.userdetails.User operator){
+		user = userService.addUser(user);
+		return user;
+	}
+	
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	@ApiOperation(value = "更新指定用户", notes = "根据用户id更新用户信息", response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户实体", required = true, dataType = "User")
+	public @ResponseBody User update(@RequestBody User user, @PathVariable("id")String id, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		user = userService.updateUser(user);
+		return user;
+	}
+	
+	@RequestMapping(value = "/{username}", method = RequestMethod.DELETE)
+	@ApiOperation(value = "删除指定用户", notes = "根据用户id删除用户信息", response = Void.class)
+	public @ResponseBody void delete(@PathVariable("username")String username, @CurrentUser com.tiamaes.security.core.userdetails.User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(username);
+		}
+		if(StringUtils.isNotBlank(username)){
+			userService.deleteUser(username);
+		}
+	}
+	
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	@ApiOperation(value = "初始化用户角色", notes = "初始化用户角色信息")
+	public @ResponseBody Map<String,Object> init(@CurrentUser com.tiamaes.security.core.userdetails.User operator){
+		List<Role> roles = roleService.getAllRoles();
+		DisplayName[] displayNames = DisplayName.values();
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("roles", roles);
+		result.put("displayNames", displayNames);
+		return result;
+	}
+	
+	@RequestMapping(value = "/userCheck",method = RequestMethod.POST)
+	@ApiOperation(value = "用户登陆校验", notes = "如果用户存在，返回用户信息，否则注册新用户", response = User.class)
+	@ApiImplicitParam(name = "loginModel", value = "用户登陆/注册信息", required = true, dataType = "LoginModel")
+	public @ResponseBody Result userCheck(@RequestBody LoginModel loginModel)
+	{
+		return userService.userCheck(loginModel);
+	}
+	@RequestMapping(value = "/userCertification",method = RequestMethod.POST)
+	@ApiOperation(value = "用户实名认证", notes = "用户实名认证", response = User.class)
+	@ApiImplicitParam(name = "user", value = "用户登陆/注册信息", required = true, dataType = "User")
+	public @ResponseBody Result userCertification(HttpServletRequest request,@RequestBody User user,@CurrentUser com.tiamaes.security.core.userdetails.User operator){
+		//TODO 获取不到用户身份
+		System.out.println(request.getHeader("Authorization"));
+		//TODO 获取不到当前登陆人，先屏蔽
+		//Assert.notNull(operator, "用户登陆信息不正确！");
+		String nickname=user.getNickname();
+		String identityCard=user.getIdentityCard();
+		String username=user.getUsername();
+		Assert.notNull(username, "用户账号信息不正确");
+		Assert.notNull(nickname, "用户名称不能为空");
+		Assert.notNull(identityCard, "身份证号不能为空");
+		Result result=new Result();
+		result.setSuccess(true);
+		try
+		{
+			user=driverService.certification(user);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setSuccess(false);
+			result.setMessage("用户实名认证失败");
+		}
+		result.getData().put("user",user);
+		return result;
+	}
+	@RequestMapping(value = "/userDetailInfo",method = RequestMethod.POST)
+	@ApiOperation(value = "获取用户详细信息", notes = "获取用户详细信息，包含基础信息、附加信息、钱包信息等", response = User.class)
+	public @ResponseBody Result userDetailInfo(HttpServletRequest request,@RequestBody User user,@CurrentUser com.tiamaes.security.core.userdetails.User operator){
+		//Assert.notNull(operator, "用户登陆信息不能为空！");
+		Result result=new Result();
+		Map<String, Object> dataMap=result.getData();
+		User driver=new User();
+		String username=user.getUsername();
+		//TODO 获取不到当前登陆人，先屏蔽
+		//String username=operator.getUsername();
+		WalletUser walletUser=new WalletUser();
+		try
+		{
+			/**
+			 * 获取【基础信息】
+			 */
+			driver=driverService.getDriverByUsername(username);
+			/**
+			 * 获取【钱包信息】
+			 */
+			walletUser=walletUserService.getWalletUserByUsername(username);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setSuccess(false);
+			result.setMessage("获取用户详细信息失败");
+		}
+		dataMap.put("user",driver);
+		dataMap.put("wallet",walletUser);
+		result.setSuccess(true);
+		return result;
+	}
+}

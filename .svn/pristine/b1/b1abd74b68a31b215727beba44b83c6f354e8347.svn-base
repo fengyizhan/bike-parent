@@ -1,0 +1,19 @@
+package com.tiamaes.bike.connector.service;
+
+import com.tiamaes.bike.common.bean.connector.command.Command;
+
+public interface CommandServiceInterface {
+	
+	/**
+	 * 下发指令
+	 * @param command
+	 * @throws Exception
+	 */
+	void sendCommand(Command command) throws Exception;
+	
+	/**
+	 * 删除下发指令
+	 * @param command
+	 */
+	void deleteCommand(Command command);
+}

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.exporter.integrated.borrow.persistence.BorrowQueryMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.BorrowRecord" id="borrowRecordMap">
+		<id property="id" column="id"/>
+		<result property="startTime" column="startTime"/>
+		<result property="endTime" column="endTime"/>
+		<result property="countTime" column="countTime"/>
+		<result property="kilometers" column="kilometers"/>
+		<result property="cost" column="cost"/>
+		<result property="createDate" column="createDate"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="vehicleName"/>
+			<result property="simNo" column="simNo"/>
+		</association>
+		<association property="startPark" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result property="id" column="startParkId"/>
+			<result property="name" column="startParkName"/>
+		</association>
+		<association property="endPark" javaType="com.tiamaes.bike.common.bean.information.Park">
+			<result property="id" column="endParkId"/>
+			<result property="name" column="endParkName"/>
+		</association>
+		<association property="driver" javaType="com.tiamaes.bike.common.bean.information.Driver">
+			<result property="username" column="username"/>
+		</association>
+	</resultMap>
+	
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	<!-- 查询报警记录列表 -->
+	<select id="getListOfBorrowRecords" parameterType="com.tiamaes.bike.common.bean.integrated.BorrowRecord" resultMap="borrowRecordMap">
+		SELECT t.id,
+			   IFNULL(t.vehicleName,'无')     AS vehicleName,
+		       IFNULL(t.simNo,'无')           AS simNo,
+		       IFNULL(t.startParkName,'无')   AS startParkName,
+		       IFNULL(t.endParkName,'无')     AS endParkName,
+		       IFNULL(t.username,'无')        AS username,
+		       t.startTime,
+		       t.endTime,
+		       SEC_TO_TIME(TIMESTAMPDIFF(SECOND, t.startTime, t.endTime)) AS countTime,
+		       t.kilometers,
+		       t.cost,
+		       t.createDate
+		  FROM tb_bike_borrow t
+		<where>
+			<if test="startPark != null and startPark.id != null ">
+		     AND t.startParkId = #{startPark.id}
+			</if>
+			<if test="vehicle != null and vehicle.name != null and vehicle.name.trim() !=''">
+		     AND t.vehicleName LIKE CONCAT('%',#{vehicle.name},'%')
+			</if>
+			<if test="vehicle != null and vehicle.simNo != null and vehicle.simNo.trim() !=''">
+		     AND t.simNo LIKE CONCAT('%',#{vehicle.simNo},'%')
+			</if>
+			<if test="driver != null and driver.username != null and driver.username.trim() !=''">
+		     AND t.username LIKE CONCAT('%',#{driver.username},'%')
+			</if>
+			<if test="startTime != null">
+		     AND t.createDate &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createDate
+			</if>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{userId}"/>
+			  	<property name="innerField" value="t.departmentId"/>
+			</include> -->
+		</where>
+		ORDER BY t.createDate DESC 
+	</select>
+</mapper>

@@ -1,0 +1,385 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 驾驶员
+ * @author lenovo
+ *
+ */
+@ApiModel(value = "Driver", description = "驾驶员")
+public class Driver implements Serializable{
+	private static final long serialVersionUID = -3432865544246927095L;
+	/**
+	 * 主键
+	 */
+	@ApiModelProperty(value="主键")
+	private String id;
+	/**
+	 * 姓名
+	 */
+	@ApiModelProperty(value="姓名(新增时必填, 查询时可不填)")
+	private String name;
+	/**
+	 * 驾驶车辆
+	 */
+	@ApiModelProperty(value="驾驶车辆(新增时必填, 查询时可不填)")
+	private Vehicle vehicle;
+	/**
+	 * 司机性别
+	 */
+	@ApiModelProperty(value="司机性别")
+	@JsonDeserialize(using = Sex.Deserializer.class)
+	private Sex sex;
+	/**
+	 * 地址
+	 */
+	@ApiModelProperty(value="地址")
+	private String address;
+	/**
+	 * 身份证
+	 */
+	@ApiModelProperty(value="身份证(新增时必填, 查询时可不填)")
+	private String identityCard;
+	/**
+	 * 联系电话
+	 */
+	@ApiModelProperty(value="联系电话(新增时必填, 查询时可不填)")
+	private String telephone;
+	/**
+	 * 是否主驾驶
+	 */
+	@ApiModelProperty(value="是否主驾驶")
+	private Boolean isMaster;
+	/**
+	 * 从业资格证，驾驶证
+	 */
+	@ApiModelProperty(value="从业资格证，驾驶证(新增时必填, 查询时可不填)")
+	private String licenseNo;
+	/**
+	 * 驾照类型
+	 */
+	@ApiModelProperty(value="驾照类型(新增时必填, 查询时可不填)")
+	@JsonDeserialize(using = LicenseType.Deserializer.class)
+	private LicenseType licenseType;
+	/**
+	 * 发证机构
+	 */
+	@ApiModelProperty(value="发证机构")
+	private String licenseAgency;
+	/**
+	 * 发证时间
+	 */
+	@ApiModelProperty(value="发证时间")
+	private Date licenseDate;
+	/**
+	 * 过期时间
+	 */
+	@ApiModelProperty(value="过期时间")
+	private Date invalidDate;
+	/**
+	 * 监管机构
+	 */
+	@ApiModelProperty(value="监管机构")
+	private String superviseAgency;
+	/**
+	 * 监督电话
+	 */
+	@ApiModelProperty(value="监督电话")
+	private String supervisePhone;
+	
+	private String remark;
+	/**
+	 * 出生日期
+	 */
+	@ApiModelProperty(value="出生日期")
+	private Date birthday;
+	/**
+	 * 年审
+	 */
+	@ApiModelProperty(value="年审")
+	private Date examineYear;
+	/**
+	 * 更新时间
+	 */
+	@ApiModelProperty(value="更新时间")
+	private Date updateTime;
+	/**
+	 * 注册时间
+	 */
+	@ApiModelProperty(value="注册时间")
+	private Date createDate;
+	
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+	public Sex getSex() {
+		return sex;
+	}
+	public void setSex(Sex sex) {
+		this.sex = sex;
+	}
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	public String getIdentityCard() {
+		return identityCard;
+	}
+	public void setIdentityCard(String identityCard) {
+		this.identityCard = identityCard;
+	}
+	public String getTelephone() {
+		return telephone;
+	}
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
+	}
+	public Boolean getIsMaster() {
+		return isMaster;
+	}
+	public void setIsMaster(Boolean isMaster) {
+		this.isMaster = isMaster;
+	}
+	public String getLicenseNo() {
+		return licenseNo;
+	}
+	public void setLicenseNo(String licenseNo) {
+		this.licenseNo = licenseNo;
+	}
+	public LicenseType getLicenseType() {
+		return this.licenseType;
+	}
+	public void setLicenseType(LicenseType licenseType) {
+		this.licenseType = licenseType;
+	}
+	public String getLicenseAgency() {
+		return licenseAgency;
+	}
+	public void setLicenseAgency(String licenseAgency) {
+		this.licenseAgency = licenseAgency;
+	}
+	public Date getLicenseDate() {
+		return licenseDate;
+	}
+	public void setLicenseDate(Date licenseDate) {
+		this.licenseDate = licenseDate;
+	}
+	public Date getInvalidDate() {
+		return invalidDate;
+	}
+	public void setInvalidDate(Date invalidDate) {
+		this.invalidDate = invalidDate;
+	}
+	public String getSuperviseAgency() {
+		return superviseAgency;
+	}
+	public void setSuperviseAgency(String superviseAgency) {
+		this.superviseAgency = superviseAgency;
+	}
+	public String getSupervisePhone() {
+		return supervisePhone;
+	}
+	public void setSupervisePhone(String supervisePhone) {
+		this.supervisePhone = supervisePhone;
+	}
+	public String getRemark() {
+		return remark;
+	}
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+	public Date getBirthday() {
+		return birthday;
+	}
+	public void setBirthday(Date birthday) {
+		this.birthday = birthday;
+	}
+	public Date getExamineYear() {
+		return examineYear;
+	}
+	public void setExamineYear(Date examineYear) {
+		this.examineYear = examineYear;
+	}
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+	public Date getCreateDate() {
+		return createDate;
+	}
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum LicenseType implements com.tiamaes.bike.common.Enum<LicenseType> {
+
+		A1("A1"), A2("A2"), B1("B1"), B2("B2"), C1("C1"), C2("C2");
+
+		private String name;
+
+		LicenseType(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static LicenseType valueOf(@JsonProperty("index") final int index) {
+			LicenseType[] types = LicenseType.values();
+			if (index > 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<LicenseType> {
+			@Override
+			public LicenseType deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return LicenseType.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return LicenseType.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return LicenseType.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+
+		}
+
+	}
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Sex implements com.tiamaes.bike.common.Enum<Sex> {
+
+		MALE("男"), FEMALE("女");
+
+		private String name;
+
+		Sex(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static Sex valueOf(@JsonProperty("index") final int index) {
+			Sex[] types = Sex.values();
+			if (index > 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<Sex> {
+			@Override
+			public Sex deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Sex.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return Sex.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Sex.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+}

@@ -1,0 +1,60 @@
+package com.tiamaes.bike;
+
+import java.util.Date;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message0200;
+import com.tiamaes.bike.connector.protocol.handler.Protocol0200Handler;
+
+/**
+ * 位置信息汇报入库程序测试类
+ * @author lsl
+ *
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class Protocol0200HandlerTest extends TestConstant {
+	private static Logger logger = LogManager.getLogger(Protocol0200HandlerTest.class);
+	@Before
+	public void before() {
+	}
+	
+	@Test
+	public void execute() throws Exception {
+		Date begin = new Date();
+//		String bodyStr = "0200002A01580002002200220003c0050000180301cb998e068251210322029e001e16110410242701040001e852020200640302029e";
+//		byte[] body = TestUtils.hexStringToByte(bodyStr);
+		byte[] body = {0, 3, -64, 5, 0, 0, 24, 3, 1, -53, -103, -114, 6, -126, 81, 33, 3, 34, 2, -98, 0, 30, 22, 17, 4, 16, 36, 39, 1, 4, 0, 1, -24, 82, 2, 2, 0, 100, 3, 2, 2, -98};
+		Message request = new Message();
+		Message.Header header = request.new Header();
+		header.setId(0x0200);
+		header.setChildPackage(false);
+		header.setEnableRSA(false);
+		header.setLength(body.length);
+		header.setSimNo(simNo);
+		header.setSerialNo(1);
+		request.setBody(body);
+		request.setHeader(header);
+		
+//			String simNo = request.getHeader().getSimNo();
+		Vehicle vehicle = new Vehicle();
+//		vehicle = vehicleService.getVehicleBySimNo(simNo);
+		
+		Message0200 message0200 = Protocol0200Handler.decodeBody(request, vehicle);
+		ObjectMapper mapper = new ObjectMapper();
+		logger.info(mapper.writeValueAsString(message0200));
+		Date end = new Date();
+		System.out.println("time:"+(end.getTime()-begin.getTime()));
+	}
+	
+}

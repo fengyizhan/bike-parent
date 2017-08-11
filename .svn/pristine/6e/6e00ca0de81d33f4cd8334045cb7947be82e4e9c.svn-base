@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tiamaes.bike.exporter.integrated.task.persistence.TaskMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.integrated.Task" id="taskMap">
+		<id property="id" column="id"/>
+		<result property="userId" column="userId"/>
+		<result property="fileName" column="fileName"/>
+		<result property="filePath" column="filePath"/>
+		<result property="createTime" column="createTime"/>
+		<result property="progress" column="progress" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="download" column="download"/>
+	</resultMap>
+	
+	<!-- 查询用户任务列表 -->
+	<select id="getListOfTasks" parameterType="com.tiamaes.bike.common.bean.integrated.Task" resultMap="taskMap">
+		SELECT t.id,
+			   t.userId,
+		       t.fileName,
+		       t.filePath,
+		       t.createTime,
+		       t.progress,
+		       t.download
+		  FROM tb_task t
+		WHERE t.userId = #{userId}
+		  ORDER BY t.createTime DESC
+	</select>
+	
+	<!-- 根据id获取用户任务信息 -->
+	<select id="getTaskById" parameterType="String" resultMap="taskMap">
+		SELECT t.id,
+			   t.userId,
+		       t.fileName,
+		       t.filePath,
+		       t.createTime,
+		       t.progress,
+		       t.download
+		  FROM tb_task t
+		  	WHERE id = #{id}
+	</select>
+	
+	<!-- 保存用户任务信息 -->
+	<insert id="addTask" parameterType="com.tiamaes.bike.common.bean.integrated.Task">
+		INSERT INTO tb_task
+		  (id,
+		   userId,
+		   fileName,
+		   filePath,
+		   createTime,
+		   progress,
+		   download)
+		VALUES
+		  (#{id,jdbcType=CHAR},
+		   #{userId,jdbcType=CHAR},
+		   #{fileName,jdbcType=VARCHAR},
+		   #{filePath,jdbcType=VARCHAR},
+		   now(),
+		   #{progress.index,jdbcType=VARCHAR},
+		   0)
+	</insert>
+	
+	<!-- 更新用户任务信息 -->
+	<update id="updateTask" parameterType="com.tiamaes.bike.common.bean.integrated.Task">
+		UPDATE tb_task
+			<set>
+				<if test="userId!=null and userId!='' ">
+		            userId = #{userId,jdbcType=CHAR},
+		        </if>
+		        <if test="fileName!=null and fileName!='' ">
+		            fileName = #{fileName,jdbcType=VARCHAR},
+		        </if>
+		        <if test="filePath!=null and filePath!='' ">
+		            filePath = #{filePath,jdbcType=VARCHAR},
+		        </if>
+		        <if test="progress!=null">
+		            progress = #{progress.index,jdbcType=VARCHAR},
+		        </if>
+		        <if test="download!=null">
+		            download = #{download,jdbcType=INTEGER}
+		        </if>
+			</set>
+		 WHERE id = #{id}
+	</update>
+	
+	<!-- 删除用户任务信息 -->
+	<delete id="deleteTask" parameterType="com.tiamaes.bike.common.bean.integrated.Task">
+		DELETE FROM tb_task WHERE id = #{id}
+	</delete>
+</mapper>

@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Implementation-Title: authority
+Implementation-Version: 1.0.0
+Built-By: fyz
+Implementation-Vendor-Id: com.tiamaes
+Build-Jdk: 1.8.0_65
+Implementation-URL: http://projects.spring.io/spring-boot/bike-parent/
+ bike-authority/
+Created-By: Maven Integration for Eclipse
+Implementation-Vendor: Pivotal Software, Inc.
+Main-Class: com.tiamaes.bike.Application
+

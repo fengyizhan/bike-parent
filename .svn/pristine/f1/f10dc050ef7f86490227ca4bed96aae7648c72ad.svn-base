@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.department.persistence.CompanyMapper">
+	<resultMap id="companyMap" type="com.tiamaes.bike.common.bean.information.Company">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result property="level" column="companyLevel"/>
+		<result column="contactName" property="contactName"/>
+		<result column="contactPhone" property="contactPhone"/>
+		<result column="businessScope" property="businessScope"/>
+		<result column="address" property="address"/>
+		<result column="licenseWord" property="licenseWord"/>
+		<result column="licenseNo" property="licenseNo"/>
+		<result property="createDate" column="createDate"/>
+		<result column="remark" property="remark"/>
+	</resultMap>
+	<!-- 根据Id查询公司信息 -->
+	<select id="getCompanyById" parameterType="String" resultMap="companyMap">
+		SELECT t.id,
+		       t.name,
+		       1 AS companyLevel,
+		       t.contactName,
+		       t.contactPhone,
+		       t.businessScope,
+		       t.address,
+		       t.licenseWord,
+		       t.licenseNo,
+		       t.createDate,
+		       t.remark
+		  FROM tb_company t
+		WHERE t.id = #{id}
+	</select>
+	<!-- 查询公司信息列表 -->
+	<select id="getListOfCompanys" parameterType="com.tiamaes.bike.common.bean.Parameters" resultMap="companyMap">
+		SELECT t.id,
+		       t.name,
+		       t.contactName,
+		       t.contactPhone,
+		       t.businessScope,
+		       t.address,
+		       t.licenseWord,
+		       t.licenseNo,
+		       t.createDate,
+		       t.remark
+		  FROM tb_company t
+		  INNER JOIN Tb_Data_Authority da ON da.userId = #{user.username}
+										AND da.levels = 1
+										AND t.id = da.targetId
+		<where>
+			<if test="model.name != null and model.name != ''">
+		     AND t.name LIKE CONCAT('%',#{model.name},'%')
+			</if>
+		</where>
+		ORDER BY t.createDate DESC
+	</select>
+	<!-- 获取公司总数 -->
+	<select id="getTotalOfCompanys" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) FROM  tb_company t
+		INNER JOIN Tb_Data_Authority da ON da.userId = #{user.username}
+										AND da.levels = 1
+										AND t.id = da.targetId
+		<where>
+			<if test="model.name != null and model.name != ''">
+		     AND t.name LIKE CONCAT('#',#{model.name},'#')
+			</if>
+		</where>
+	</select>
+
+	<!-- 保存公司信息 -->
+	<insert id="addCompany" parameterType="com.tiamaes.bike.common.bean.information.Company">
+		INSERT INTO tb_company
+		  (id,
+		   name,
+		   contactName,
+		   contactPhone,
+		   businessScope,
+		   address,
+		   licenseWord,
+		   licenseNo,
+		   remark,
+		   createDate)
+		VALUES
+		  (#{id,jdbcType=CHAR},
+		   #{name,jdbcType=VARCHAR},
+		   #{contactName,jdbcType=VARCHAR},
+		   #{contactPhone,jdbcType=VARCHAR},
+		   #{businessScope,jdbcType=VARCHAR},
+		   #{address,jdbcType=VARCHAR},
+		   #{licenseWord,jdbcType=VARCHAR},
+		   #{licenseNo,jdbcType=VARCHAR},
+		   #{remark,jdbcType=VARCHAR},
+		   now())
+	</insert>
+	<!-- 更新公司信息 -->
+	<update id="updateCompany" parameterType="com.tiamaes.bike.common.bean.information.Company">
+		UPDATE tb_company
+		   SET name          = #{name,jdbcType=VARCHAR},
+		       contactName   = #{contactName,jdbcType=VARCHAR},
+		       contactPhone  = #{contactPhone,jdbcType=VARCHAR},
+		       businessScope = #{businessScope,jdbcType=VARCHAR},
+		       address       = #{address,jdbcType=VARCHAR},
+		       licenseWord   = #{licenseWord,jdbcType=VARCHAR},
+		       licenseNo     = #{licenseNo,jdbcType=VARCHAR},
+		       remark        = #{remark,jdbcType=VARCHAR}
+		 WHERE id = #{id}
+	</update>
+	<!-- 删除公司信息 -->
+	<delete id="deleteCompany" parameterType="com.tiamaes.bike.common.bean.information.Company">
+		DELETE FROM tb_company WHERE id = #{id}
+	</delete>
+	<!-- 检查公司名是否存在 -->
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_company T
+		<where>
+			T.name = #{name}
+			<if test="id != null and id != ''">
+		     AND T.id != #{id}
+			</if>
+		</where>
+	</select>
+	<!-- 获取所有公司列表，用于下拉菜单生成 -->
+	<select id="getCompanys" resultType="com.tiamaes.bike.common.bean.information.Company">
+		SELECT id, name FROM tb_company
+	</select>
+</mapper>

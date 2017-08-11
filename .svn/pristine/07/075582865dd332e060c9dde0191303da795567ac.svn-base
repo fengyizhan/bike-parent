@@ -1,0 +1,73 @@
+package com.tiamaes.bike.api.information.department.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+
+/**
+ * @author kangty
+ * 公司信息管理持久层接口
+ */
+public interface CompanyMapper {
+	
+	/**
+	 * 根据公司编号查询公司信息
+	 * @param id
+	 * @return
+	 */
+	Company getCompanyById(@Param("id")String id);
+	
+	/**
+	 * 无参获取公司列表
+	 * @return
+	 */
+	List<Company> getListOfCompanys();
+	
+	/**
+	 * 根据参数获取公司列表
+	 * @param company
+	 * @return
+	 */
+	List<Company> getListOfCompanys(Parameters<Company> parameters);
+	/**
+	 * 获取公司总数
+	 * @param company
+	 * @return
+	 */
+	int getTotalOfCompanys(Parameters<Company> parameters);
+	
+	/**
+	 * 新增公司信息
+	 * @param company
+	 */
+	void addCompany(Company company);
+	
+	/**
+	 * 更新公司信息
+	 * @param company
+	 */
+	void updateCompany(Company company);
+	
+	/**
+	 * 删除公司信息
+	 * @param company
+	 */
+	void deleteCompany(Company company);
+	
+	/**
+	 * 检查公司名是否已经存在
+	 * @param param
+	 * @return
+	 */
+	boolean hasExists(@Param("id")String id, @Param("name")String name);
+	
+	/**
+	 * 获取所有公司列表, 用于下拉菜单生成
+	 * @return
+	 */
+	List<Company> getCompanys();
+
+}

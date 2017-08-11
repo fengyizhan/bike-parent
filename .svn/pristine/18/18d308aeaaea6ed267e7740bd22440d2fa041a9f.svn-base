@@ -1,0 +1,158 @@
+package com.tiamaes.bike.connector.handler;
+
+
+import java.io.IOException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.config.SpringContextHolder;
+import com.tiamaes.bike.connector.protocol.handler.ProtocolHandler;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+@Component
+@ChannelHandler.Sharable
+@Qualifier("somethingServerHandler")
+public class SomethingServerHandler extends ChannelInboundHandlerAdapter {
+	private static Logger logger = LogManager.getLogger(SomethingServerHandler.class);
+	
+	/**
+	 * <p>连接注册器，可该注册器中取出指定终端的连接</p>
+	 * <code>
+	 * 		Channel channel = channelRepository.get(UUIDGenerator.getUUID());
+			channel.writeAndFlush(object);
+	 * </code>
+	 */
+	@Autowired
+	private ChannelRepository channelRepository;
+	
+	@Autowired
+	private HandlerServiceInterface<Vehicle> handlerService;
+	
+	@Override
+	public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+		super.channelRegistered(ctx);
+		logger.trace("{} has been registered.", ctx.channel());
+	}
+	
+	/**
+	 * 连接建立成功之后触发
+	 */
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		Assert.notNull(this.channelRepository, "[Assertion failed] - ChannelRepository is required; it must not be null");
+		super.channelActive(ctx);
+		Channel channel = ctx.channel();
+		channelRepository.put(Integer.toHexString(channel.hashCode()), channel);
+		logger.trace("{} has been connected. Current Size : {}", channel, channelRepository.size());
+	}
+
+	/**
+	 * 处理消息
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
+		Received received = (Received) obj;
+		Assert.notNull(received.getHeader().getId(), "message id must not be null");
+		int messageId = received.getHeader().getId();
+		
+		int terminalId = received.getHeader().getTerminalId();
+		Channel channelOld = channelRepository.get(String.valueOf(terminalId));
+		Channel channel = ctx.channel();
+		Attribute<Long> lastSerialNo = channel.attr(AttributeKey.valueOf("lastSerialNo"));
+		Long lastSerialNoNum = lastSerialNo.get();
+		long serialNo = received.getHeader().getSerialNo();
+		if (lastSerialNoNum != null && lastSerialNoNum == serialNo) {
+			return;
+		}
+		lastSerialNo.set(serialNo);
+		Attribute<Vehicle> attribute = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle target = attribute.get();
+		//如果既不是注册也不是鉴权，并且没有鉴权通过，则返回
+		if ((channelOld == null || target == null) && messageId != 0x0100 && messageId != 0x0102) {
+			ctx.close();
+			return;
+		}
+		ProtocolHandler<Received> handler = SpringContextHolder.getBean(String.format("protocol%sHandler", String.format("%04X", messageId)));
+		if(handler == null){
+			return;
+		}
+		Message response = handler.execute(channel, received);
+		if (response != null) {
+			channel.writeAndFlush(response);
+			return;
+		}
+	}
+
+	/**
+	 * 产生异常时触发
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		if(!(cause instanceof IOException)) {
+			logger.error(cause.getMessage(), cause);
+		}
+		ctx.close();
+		
+		
+		logger.trace("process has been exceptionCaughted. Current Size : {}", channelRepository.size());
+	}
+
+	/**
+	 * 当长连接断开时触发，在连接注册器中注销该终端
+	 * @throws JsonProcessingException 
+	 */
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws JsonProcessingException {
+		Assert.notNull(ctx);
+		Assert.notNull(this.channelRepository, "[Assertion failed] - ChannelRepository is required");
+		
+		Channel channel = ctx.channel();
+		Attribute<Vehicle> attribute = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle target = attribute.get();
+		if(target != null){
+			attribute.remove();
+			handlerService.logout(target);
+		}
+		channelRepository.remove(Integer.toHexString(channel.hashCode()));
+		logger.trace("{} has been disconnected.", ctx.channel());
+	}
+	
+	@Override
+	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+		super.channelUnregistered(ctx);
+		logger.trace("{} has been unregistered.", ctx.channel());
+	}
+	
+	/**
+	 * 超时处理
+	 */
+	@Override
+	public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception{
+	    if (evt instanceof IdleStateEvent) {
+	        IdleStateEvent event = (IdleStateEvent) evt;
+	        if (event.state() == IdleState.ALL_IDLE) {
+	        	ctx.close();
+	        	logger.trace("{} has been disengaged.", ctx.channel());
+	        }
+	    }
+	}
+}

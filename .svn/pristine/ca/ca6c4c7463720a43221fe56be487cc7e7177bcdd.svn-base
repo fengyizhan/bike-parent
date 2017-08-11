@@ -1,0 +1,46 @@
+package com.tiamaes.bike.api.information.project.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.information.ProjectRoute;
+import com.tiamaes.bike.common.bean.information.Route;
+
+public interface ProjectRouteMapper {
+	
+	/**
+	 * 根据工程编号查询工程线路信息
+	 * @param id
+	 * @return
+	 */
+	List<ProjectRoute> getProjectByProjectId(String projectId);
+	
+	/**
+	 * 新增项目工程线路信息
+	 * @param projectId
+	 * @param projectRoutes
+	 */
+	void addProjectRoutes(@Param("projectId")String projectId, @Param("projectRoutes")List<ProjectRoute> projectRoutes);
+	
+	/**
+	 * 删除项目工程线路信息
+	 * @param projectId
+	 */
+	void deleteProjectRoutes(@Param("projectId")String projectId);
+
+	/**
+	 * 根据线路id获取线路和工程的关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfRoute(Integer id);
+	
+	/**
+	 * 根据线路获取与线路相关的工程
+	 * @param route
+	 * @return
+	 */
+	String getProjectByRoute(Route route);
+
+}

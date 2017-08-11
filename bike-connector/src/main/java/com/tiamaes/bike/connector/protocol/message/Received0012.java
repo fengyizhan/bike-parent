@@ -1,0 +1,175 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 车辆控制执行结果包
+ * 
+ * @author Chen
+ */
+public class Received0012 extends Received {
+	
+	private Body body;
+
+	public Received0012(Header header, byte[] bytes) {
+		super(header, bytes);
+		
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytes);
+		int serialNo = buffer.readUnsignedShort();
+		int result = buffer.readByte();
+		int lockState = buffer.readByte();
+		int temp=buffer.readByte();
+		boolean locationState;
+		if((temp&0x0001)==0x0001){
+			locationState=true;
+		}else{
+			locationState=false;
+		}
+		boolean lngState;
+		if((temp&0x0010)==0x0010){
+			lngState=true;
+		}else{
+			lngState=false;
+		}
+		boolean latState;
+		if((temp&0x0100)==0x0100){
+			latState=true;
+		}else{
+			latState=false;
+		}
+		double lat;
+		double lng;
+		int lattemp=buffer.readInt();
+		lat=(double)lattemp/(Math.pow(10, 6));
+		int lngtemp=buffer.readInt();
+		lng=(double)lngtemp/(Math.pow(10, 6));
+		int vehicleId=buffer.readInt();
+		Body body = new Body();
+		body.setSerialNo(serialNo);
+		body.setResult(Result.values()[result]);
+		body.setLockstate(LockState.values()[lockState]);
+		body.setLocationState(locationState);
+		body.setLatState(latState);
+		body.setLngState(lngState);
+		body.setLat(lat);
+		body.setLng(lng);
+		body.setVehicleId(vehicleId);
+		this.body = body;
+	}
+	
+	public Body getBody() {
+		return body;
+	}
+
+	public void setBody(Body body) {
+		this.body = body;
+	}
+
+	public class Body {
+		/**
+		 * 流水号
+		 */
+		private int serialNo;
+		/**
+		 * 车锁状态
+		 */
+		private LockState lockstate;
+		/**
+		 * 执行结果
+		 */
+		private Result result;
+		/**
+		 * 定位状态
+		 */
+		private boolean locationState;
+		/**
+		 * 东西经
+		 */
+		private boolean lngState;
+		/**
+		 * 南北纬
+		 */
+		private boolean latState;
+		/**
+		 * 纬度
+		 * 
+		 */
+		private double lat;
+		/**
+		 * 经度
+		 * 
+		 */
+		private double lng;
+		/**
+		 * 
+		 * 车辆ID
+		 */
+		private int vehicleId;
+		public double getLat() {
+			return lat;
+		}
+		public void setLat(double lat) {
+			this.lat = lat;
+		}
+		public double getLng() {
+			return lng;
+		}
+		public void setLng(double lng) {
+			this.lng = lng;
+		}
+		public int getSerialNo() {
+			return serialNo;
+		}
+		public void setSerialNo(int serialNo) {
+			this.serialNo = serialNo;
+		}
+
+		public LockState getLockstate() {
+			return lockstate;
+		}
+		public void setLockstate(LockState lockstate) {
+			this.lockstate = lockstate;
+		}
+		public Result getResult() {
+			return result;
+		}
+		public void setResult(Result result) {
+			this.result = result;
+		}
+		public boolean isLocationState() {
+			return locationState;
+		}
+		public void setLocationState(boolean locationState) {
+			this.locationState = locationState;
+		}
+		public boolean getLngState() {
+			return lngState;
+		}
+		public void setLngState(boolean lngState) {
+			this.lngState = lngState;
+		}
+		public boolean getLatState() {
+			return latState;
+		}
+		public void setLatState(boolean latState) {
+			this.latState = latState;
+		}
+		public int getVehicleId() {
+			return vehicleId;
+		}
+		public void setVehicleId(int vehicleId) {
+			this.vehicleId = vehicleId;
+		}
+	
+	}
+public enum Result{
+	SUCCESS,FAILER;
+}
+public enum LockState{
+	CLOSE,OPEN;
+}
+}

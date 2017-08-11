@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.project.persistence.ProjectMapper">
+	<resultMap id="projectMap" type="com.tiamaes.bike.common.bean.information.Project">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="address" property="address"/>
+		<result column="unit" property="unit"/>
+		<result column="startTime" property="startTime"/>
+		<result column="endTime" property="endTime"/>
+		<result column="createDate" property="createDate"/>
+		<result column="principal" property="principal"/>
+		<result column="telephone" property="telephone"/>
+		<association property="beginStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="beginStation"/>
+	        <result property="name" column="beginStationName"/>
+	        <result column="beginStationStartTime" property="startTime"/>
+			<result column="beginStationEndTime" property="endTime"/>
+			<result column="beginStationEarthWork" property="earthWork"/>
+			<result column="beginStationAddress" property="address"/>
+			<result column="beginStationTelephone" property="telephone"/>
+			<result column="beginStationPrincipal" property="principal"/>
+			<result column="beginStationLimitSpeedValue" property="limitSpeedValue"/>
+			<result column="beginStationDelayValue" property="delayValue"/>
+			<result column="beginStationReportValue" property="reportValue"/>
+			<result column="beginStationRadius" property="radius"/>
+	        <result column="beginStationAreaType" property="areaType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+	        <result column="beginStationUnit" property="unit"/>
+	        <association property="paths" column="beginStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+    	<association property="endStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="endStation"/>
+	        <result property="name" column="endStationName"/>
+	        <result column="endStationTelephone" property="telephone"/>
+			<result column="endStationPrincipal" property="principal"/>
+	        <result column="endStationStartTime" property="startTime"/>
+			<result column="endStationEndTime" property="endTime"/>
+			<result column="endStationEarthWork" property="earthWork"/>
+			<result column="endStationAddress" property="address"/>
+			<result column="endStationLimitSpeedValue" property="limitSpeedValue"/>
+			<result column="endStationDelayValue" property="delayValue"/>
+			<result column="endStationReportValue" property="reportValue"/>
+			<result column="endStationRadius" property="radius"/>
+	        <result column="endStationAreaType" property="areaType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+	        <result column="endStationUnit" property="unit"/>
+	        <association property="paths" column="endStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+		<association property="projectRoutes" column="id" select="com.tiamaes.bike.api.information.project.persistence.ProjectRouteMapper.getProjectByProjectId"/>
+	</resultMap>
+
+	<!-- 根据Id查询路线信息 -->
+	<select id="getProjectById" parameterType="String" resultMap="projectMap">
+		SELECT t.id,
+		       t.name,
+		       t.startTime,
+		       t.endTime,
+		       t.address,
+		       t.unit,
+		       t.createDate,
+		       t.principal,
+		       t.telephone,
+		       t.beginStation,
+		       t.endStation,
+		       v1.name 				AS beginStationName,
+		       v1.principal			AS beginStationPrincipal,
+		       v1.telephone			AS beginStationTelephone,
+		       v1.startTime  		AS beginStationStartTime,
+		       v1.endTime			AS beginStationEndTime,
+		       v1.earthWork			AS beginStationEarthWork,
+		       v1.address			AS beginStationAddress,
+		       v1.limitSpeedValue 	AS beginStationLimitSpeedValue,
+		       v1.delayValue		AS beginStationDelayValue,
+		       v1.reportValue		AS beginStationReportValue,
+		       v1.radius            AS beginStationRadius,
+		       v1.areaType          AS beginStationAreaType,
+		       v1.unit              AS beginStationUnit,
+		       v2.name 				AS endStationName,
+		       v2.principal			AS endStationPrincipal,
+		       v2.telephone			AS endStationTelephone,
+		       v2.startTime  		AS endStationStartTime,
+		       v2.endTime			AS endStationEndTime,
+		       v2.earthWork			AS endStationEarthWork,
+		       v2.address			AS endStationAddress,
+		       v2.limitSpeedValue 	AS endStationLimitSpeedValue,
+		       v2.delayValue		AS endStationDelayValue,
+		       v2.reportValue		AS endStationReportValue,
+		       v2.radius            AS endStationRadius,
+		       v2.areaType          AS endStationAreaType,
+		       v2.unit              AS endStationUnit
+		  FROM tb_project t
+		  LEFT JOIN tb_station v1 ON t.beginStation = v1.id
+		  LEFT JOIN tb_station v2 ON t.endStation = v2.id
+		WHERE t.id = #{id}
+	</select>
+	<!-- 查询工程信息列表 -->
+	<select id="getListOfProjects" parameterType="com.tiamaes.bike.common.bean.information.Project" resultMap="projectMap">
+		SELECT t.id,
+		       t.name,
+		       t.startTime,
+		       t.endTime,
+		       t.address,
+		       t.unit,
+		       t.createDate,
+		       t.principal,
+		       t.telephone,
+		       t.beginStation,
+		       t.endStation,
+		       v1.name              AS beginStationName,
+		       v1.radius            AS beginStationRadius,
+		       v1.areaType          AS beginStationAreaType,
+		       v1.unit              AS beginStationUnit,
+		       v2.name              AS endStationName,
+		       v2.radius            AS endStationRadius,
+		       v2.areaType          AS endStationAreaType,
+		       v2.unit              AS endStationUnit
+		  FROM tb_project t
+		  LEFT JOIN tb_station v1 ON t.beginStation = v1.id
+		  LEFT JOIN tb_station v2 ON t.endStation = v2.id
+		<where>
+			<if test="id != null and id != ''">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%') 
+			</if>
+		</where>
+		ORDER BY t.createDate DESC
+	</select>
+	<!-- 获取工程总数 -->
+	<select id="getTotalOfProjects" parameterType="com.tiamaes.bike.common.bean.information.Project" resultType="int">
+		SELECT COUNT(1) FROM  tb_Project t
+		<where>
+			<if test="id != null and id != ''">
+		     AND t.id LIKE CONCAT('%',#{id},'%')
+			</if>
+			<if test="name != null and name != ''">
+		     AND t.name LIKE CONCAT('%',#{name},'%')
+			</if>
+		</where>
+	</select>
+
+	<!-- 保存工程信息 -->
+	<insert id="addProject" parameterType="com.tiamaes.bike.common.bean.information.Project">
+		INSERT INTO tb_project
+		  (id,
+		   name,
+		   startTime,
+		   endTime,
+		   address,
+		   unit,
+		   principal,
+		   telephone,
+		   beginStation,
+		   endStation,
+		   createDate)
+		VALUES
+		  (#{id,jdbcType=CHAR},
+		   #{name,jdbcType=VARCHAR},
+		   #{startTime,jdbcType=DATE},
+		   #{endTime,jdbcType=DATE},
+		   #{address,jdbcType=VARCHAR},
+		   #{unit,jdbcType=VARCHAR},
+		   #{principal,jdbcType=VARCHAR},
+		   #{telephone,jdbcType=VARCHAR},
+		   #{beginStation.id,jdbcType=INTEGER},
+		   #{endStation.id,jdbcType=INTEGER},
+		   now())
+	</insert>
+	<!-- 更新工程信息 -->
+	<update id="updateProject" parameterType="com.tiamaes.bike.common.bean.information.Project">
+		UPDATE tb_project
+		   SET name         = #{name,jdbcType=VARCHAR},
+		       startTime    = #{startTime,jdbcType=DATE},
+		       endTime      = #{endTime,jdbcType=DATE},
+		       address      = #{address,jdbcType=VARCHAR},
+		       unit         = #{unit,jdbcType=VARCHAR},
+		       principal    = #{principal,jdbcType=VARCHAR},
+		       telephone    = #{telephone,jdbcType=VARCHAR},
+		       beginStation = #{beginStation.id,jdbcType=INTEGER},
+		       endStation   = #{endStation.id,jdbcType=INTEGER}
+		 WHERE id = #{id}
+	</update>
+	<!-- 删除工程信息 -->
+	<delete id="deleteProject" parameterType="com.tiamaes.bike.common.bean.information.Project">
+		DELETE FROM tb_project WHERE id = #{id}
+	</delete>
+	<!-- 检查工程名是否存在 -->
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_project T
+		<where>
+			T.name = #{name}
+			<if test="id != null and id != ''">
+		     AND T.id != #{id}
+			</if>
+		</where>
+	</select>
+	<!-- 获取所有工程列表，用于下拉菜单生成 -->
+	<select id="getProjects" resultType="com.tiamaes.bike.common.bean.information.Project">
+		SELECT id, name FROM tb_project
+		<if test="projectId != null and projectId != ''">
+	     WHERE id != #{projectId}
+		</if>
+	</select>
+
+	<!-- 根据多个工程Id查询厂区id -->
+	<select id="getStationByPIds" resultMap="com.tiamaes.bike.api.information.station.persistence.StationMapper.stationMap">
+		SELECT
+		       t.beginStation	AS ID,
+		       s.areaType		AS areaType
+		  FROM tb_project t,tb_station s
+		  <where>
+			<if test="projectIds != null">
+				t.id IN
+					<foreach collection="projectIds" index="index" item="item" open="(" separator="," close=")">
+				  		#{item}
+				    </foreach>
+    		</if>
+    		AND s.id = t.beginStation
+   		</where>
+   		UNION ALL
+   		SELECT
+		       t.endStation		AS ID,
+		       s.areaType		AS areaType
+		  FROM tb_project t,tb_station s
+		  <where>
+			<if test="projectIds != null">
+				t.id IN
+					<foreach collection="projectIds" index="index" item="item" open="(" separator="," close=")">
+				  		#{item}
+				    </foreach>
+    		</if>
+    		AND s.id = t.beginStation
+   		</where>
+	</select>
+
+	<!-- 根据工程查询线路id -->
+	<select id="getLinesByPIds" resultType="java.lang.Integer">
+		SELECT DISTINCT routeId FROM Tb_Project_Route t
+		 <where>
+			<if test="projectIds != null">
+				t.projectId IN
+					<foreach collection="projectIds" index="index" item="item" open="(" separator="," close=")">
+				  		#{item}
+				    </foreach>
+    		</if>
+   		</where>
+	</select>
+
+	<!-- 根据场区id获取场区与工程的关联数 -->
+	<select id="getTotalUseOfStation" parameterType="Integer" resultType="int">
+		SELECT COUNT(1) FROM tb_project WHERE beginStation = #{id} OR endStation = #{id}
+	</select>
+
+	<!-- 获取正在进行中的工程 -->
+	<select id="getListOfOngoingProjectId" parameterType="String" resultType="String">
+		SELECT id FROM tb_project t
+			WHERE date_format(t.startTime, '%Y-%m-%d') &lt;= #{date}
+		     AND #{date} &lt;= date_format(t.endTime, '%Y-%m-%d')
+	</select>
+
+	<!-- 根据场区获取与场区相关工程的id-->
+	<select id="getProjectByStation" parameterType="com.tiamaes.bike.common.bean.information.Station" resultType="String">
+		SELECT ID FROM tb_project WHERE beginStation = #{id} OR endStation = #{id}
+	</select>
+
+	<!-- 根据厂区获取相关工程的车辆 -->
+	<select id="getProjectVehicleByStation" parameterType="com.tiamaes.bike.common.bean.information.Station" resultType="com.tiamaes.bike.common.bean.information.ProjectVehicle">
+		SELECT PV.projectId, PV.vehicleId
+		  FROM tb_project_vehicle PV
+		 INNER JOIN tb_project p
+		    ON p.id = pv.projectId
+		 WHERE p.beginStation = #{id}
+		    OR p.endStation = #{id}
+	</select>
+</mapper>

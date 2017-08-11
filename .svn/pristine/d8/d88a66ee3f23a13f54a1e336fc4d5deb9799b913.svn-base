@@ -1,0 +1,39 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.util.Date;
+
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.command.Completed;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Received0001;
+import com.tiamaes.bike.connector.protocol.message.Received0001.Body;
+
+import io.netty.channel.Channel;
+
+/**
+ * 终端通用应答0x0001
+ * 
+ * @author Chen
+ *
+ */
+@Component
+public class Protocol0001Handler implements ProtocolHandler<Received0001> {
+
+	@Override
+	public Message execute(Channel channel, Received0001 received) throws Exception {
+		int terminalId = received.getHeader().getTerminalId();
+		Body body = received.getBody();
+		Completed completed = new Completed();
+		completed.setTime(new Date());
+		completed.setTerminalId(terminalId);
+		completed.setId(UUIDGenerator.getUUID());
+		completed.setSerialNo(body.getSerialNo());
+		completed.setMessageId(body.getMessageId());
+		completed.setState(Completed.State.valueOf(body.getResultValue()));
+
+		//
+		return null;
+	}
+}

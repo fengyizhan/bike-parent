@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.reporter.information.vehicle.persistence.VehicleMapper">
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	<!-- 统计车辆总数 -->
+	<select id="getRegisteredCount" parameterType="com.tiamaes.bike.common.bean.Parameters" resultType="int">
+		SELECT COUNT(1) FROM tb_vehicle t WHERE 
+		t.registered = 1
+		 <include refid="userDataAuthorities">
+		  	<property name="userId" value="#{user.username}"/>
+		  	<property name="innerField" value="t.PARENTID"/>
+		</include>
+	</select>
+	
+	<!-- 获取行政区划下的车辆id -->
+	<select id="getListOfVehicleIds" parameterType="String" resultType="String">
+		SELECT id FROM tb_vehicle t WHERE t.region = #{region}
+	</select>
+</mapper>

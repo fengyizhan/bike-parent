@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.park.persistence.ParkMapper">
+	<resultMap id="parkMap" type="com.tiamaes.bike.common.bean.information.Park">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result property="address" column="address"/>
+		<result property="principal" column="principal"/>
+		<result property="telephone" column="telephone"/>
+		<result property="createTime" column="createTime"/>
+		<result property="radius" column="radius"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="vehicles" column="vehicles"/>
+		<association property="region" javaType="com.tiamaes.bike.common.bean.information.Region">
+	        <id property="id" column="regionId"/>
+	        <result property="name" column="regionName"/>
+	    </association>
+	    <association property="property" javaType="com.tiamaes.bike.common.bean.information.Park$Property">
+			<association property="province" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="provinceId" property="id"/>
+				<result column="provinceName" property="name"/>
+			</association>
+			<association property="city" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="cityId" property="id"/>
+				<result column="cityName" property="name"/>
+			</association>
+			<association property="district" javaType="com.tiamaes.bike.common.bean.information.Region">
+				<result column="districtId" property="id"/>
+				<result column="districtName" property="name"/>
+			</association>
+		</association>
+	</resultMap>
+	
+	<select id="getParkById" parameterType="String" resultMap="parkMap">
+		SELECT 
+		    vw.id,
+		    vw.name,
+		    vw.address,
+		    vw.principal,
+		    vw.telephone,
+		    vw.createTime,
+		    vw.radius,
+		    vw.lng,
+		    vw.lat,
+		    vw.vehicles,
+		    vw.regionId,
+		    vw.regionName,
+		    vw.districtId,
+		    vw.districtName, 
+		    vw.cityId,
+		    vw.cityName,
+		    ifnull(vw.provinceId, (SELECT sub1.id FROM tb_region sub1, tb_region sub2 WHERE sub1.id = sub2.parentId AND sub2.id = vw.cityId)) AS provinceId,
+		    ifnull(vw.provinceName, (SELECT sub1.name FROM tb_region sub1, tb_region sub2 WHERE sub1.id = sub2.parentId AND sub2.id = vw.cityId)) AS provinceName
+		FROM
+		    (SELECT 
+		        t.id,
+				t.name,
+				t.address,
+		        t.principal,
+		       	t.telephone,
+		       	t.createTime,
+		       	t.radius,
+		       	t.lng,
+		       	t.lat,
+		       	t.vehicles,
+				v.id AS regionId,
+				v.name AS regionName,
+				r.id AS districtId,
+				ifnull(r.name, '全部') AS districtName, 
+				ifnull(r1.id, v.id) AS cityId,
+				ifnull(r1.name, v.name) AS cityName,
+				r2.id AS provinceId,
+				r2.name AS provinceName
+		    FROM
+		        tb_park t
+		    INNER JOIN tb_region v ON t.districtcode = v.id
+		    LEFT JOIN tb_region r ON t.districtcode = r.id AND r.type = 3
+		    LEFT JOIN tb_region r1 ON r1.id = r.parentId AND r1.type = 2
+		    LEFT JOIN tb_region r2 ON r2.id = r1.parentId AND r2.type = 1
+		    	WHERE t.id = #{id}) vw
+	</select>
+	
+	<select id="getListOfParks" parameterType="com.tiamaes.bike.common.bean.information.Park" resultMap="parkMap">
+		SELECT 
+		    vw.id,
+		    vw.name,
+		    vw.address,
+		    vw.principal,
+		    vw.telephone,
+		    vw.createTime,
+		    vw.radius,
+		    vw.lng,
+		    vw.lat,
+		    vw.vehicles,
+		    vw.regionId,
+		    vw.regionName,
+		    vw.districtId,
+		    vw.districtName, 
+		    vw.cityId,
+		    vw.cityName,
+		    ifnull(vw.provinceId, (SELECT sub1.id FROM tb_region sub1, tb_region sub2 WHERE sub1.id = sub2.parentId AND sub2.id = vw.cityId)) AS provinceId,
+		    ifnull(vw.provinceName, (SELECT sub1.name FROM tb_region sub1, tb_region sub2 WHERE sub1.id = sub2.parentId AND sub2.id = vw.cityId)) AS provinceName
+		FROM
+		    (SELECT 
+		        t.id,
+				t.name,
+				t.address,
+		        t.principal,
+		       	t.telephone,
+		       	t.createTime,
+		       	t.radius,
+		       	t.lng,
+		       	t.lat,
+		       	t.vehicles,
+				v.id AS regionId,
+				v.name AS regionName,
+				r.id AS districtId,
+				ifnull(r.name, '全部') AS districtName, 
+				ifnull(r1.id, v.id) AS cityId,
+				ifnull(r1.name, v.name) AS cityName,
+				r2.id AS provinceId,
+				r2.name AS provinceName
+		    FROM
+		        tb_park t
+		    INNER JOIN tb_region v ON t.districtcode = v.id
+		    LEFT JOIN tb_region r ON t.districtcode = r.id AND r.type = 3
+		    LEFT JOIN tb_region r1 ON r1.id = r.parentId AND r1.type = 2
+		    LEFT JOIN tb_region r2 ON r2.id = r1.parentId AND r2.type = 1
+		    <where>
+				<if test="id != null">
+			     AND t.id = #{id}
+				</if>
+				<if test="name != null and name != ''">
+			     AND t.name LIKE CONCAT('%',#{name},'%')
+				</if>
+				<if test="principal != null and principal != ''">
+			     AND t.principal LIKE CONCAT('%',#{principal},'%')
+				</if>
+				<if test="region != null and region.id != null and region.id != ''">
+			     AND t.districtcode = #{region.id}
+			     OR v.parentId = #{region.id}
+			     OR r2.id = #{region.id}
+				</if>
+			</where>
+			ORDER BY t.createTime DESC ) vw
+	</select>
+	
+	<insert id="addPark" parameterType="com.tiamaes.bike.common.bean.information.Park">
+		INSERT INTO tb_park
+		  (id,
+		   name,
+		   address,
+		   principal,
+		   telephone,
+		   districtcode,
+		   radius,
+		   lng,
+		   lat,
+		   createTime)
+		VALUES
+		  (#{id,jdbcType=VARCHAR},
+		   #{name,jdbcType=VARCHAR},
+		   #{address,jdbcType=VARCHAR},
+		   #{principal,jdbcType=VARCHAR},
+		   #{telephone,jdbcType=VARCHAR},
+		   #{region.id,jdbcType=VARCHAR},
+		   #{radius},
+		   #{lng},
+		   #{lat},
+		   #{createTime})
+	</insert>
+	
+	<update id="updatePark" parameterType="com.tiamaes.bike.common.bean.information.Park">
+		UPDATE tb_park
+		   SET name         = #{name,jdbcType=VARCHAR},
+		       address      = #{address,jdbcType=VARCHAR},
+		       principal    = #{principal,jdbcType=VARCHAR},
+		       telephone    = #{telephone,jdbcType=VARCHAR},
+		       districtcode = #{region.id,jdbcType=VARCHAR},
+		       radius       = #{radius},
+		       lng          = #{lng},
+		       lat          = #{lat},
+		       vehicles     = #{vehicles}
+		 WHERE id = #{id}
+	</update>
+	
+	<delete id="deletePark" parameterType="com.tiamaes.bike.common.bean.information.Park">
+		DELETE FROM tb_park WHERE id = #{id}
+	</delete>
+	
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_park t
+		<where>
+			t.name = #{name}
+			<if test="id != null">
+		     AND t.id != #{id}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tb_park'
+	</select>
+	
+	<select id="getAllParks" resultType="com.tiamaes.bike.common.bean.information.Park" resultMap="parkMap">
+		SELECT 
+	        t.id,
+			t.name,
+			t.lng,
+	        t.lat,
+	       	t.radius,
+	       	t.vehicles,
+	       	v.id AS regionId,
+			v.name AS regionName
+	    FROM
+	        tb_park t
+	    INNER JOIN tb_region v ON t.districtcode = v.id
+	</select>
+	
+	<select id="getAroundParks" parameterType="com.tiamaes.bike.common.bean.system.PointVector$Center" resultMap="parkMap">
+		SELECT 
+	        t.id,
+			t.name,
+			t.lng,
+	        t.lat,
+	       	t.radius,
+	       	t.vehicles
+	    FROM
+	        tb_park t
+	    WHERE ABS(t.lng - #{lng}) &lt;= (0.01 * #{rotation}) AND ABS(t.lat - #{lat}) &lt;= (0.01 * #{rotation})
+	</select>
+</mapper>

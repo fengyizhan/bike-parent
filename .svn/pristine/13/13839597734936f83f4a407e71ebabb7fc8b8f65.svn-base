@@ -1,0 +1,25 @@
+ftp:
+  host: 10.80.0.8:2121
+  username: webgis
+  password: webgis
+  filepath: /upload/excel/
+  localpath: /temp/
+download:
+  host: http://192.168.241.165:84/webgis
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.241.192:3306/weblog?useUnicode=true&characterEncoding=utf8
+    username: weblog
+    password: weblog
+    driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    cluster:
+      nodes: 192.168.57.144:7000,192.168.57.144:7001,192.168.57.144:7002
+      password:
+  kafka:
+    brokers: 192.168.57.142:9092
+    zookeepers: 192.168.57.142:2181
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://192.168.241.165:8761/eureka/

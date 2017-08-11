@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.driver.persistence.DriverMapper">
+	<resultMap id="driverMap" type="com.tiamaes.bike.common.bean.information.Driver">
+		<id property="id" column="id"/>
+		<result property="name" column="name"/>
+		<result property="address" column="address"/>
+		<result property="birthday" column="birthday"/>
+		<result property="isMaster" column="isMaster"/>
+		<result property="telephone" column="telephone"/>
+		<result property="examineYear" column="examineYear"/>
+		<result property="createDate" column="createDate"/>
+		<result property="identityCard" column="identityCard"/>
+		<result property="licenseNo" column="licenseNo"/>
+		<result property="licenseType" column="licenseType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="licenseDate" column="licenseDate"/>
+		<result property="invalidDate" column="invalidDate"/>
+		<result property="licenseAgency" column="licenseAgency"/>
+		<result property="supervisePhone" column="supervisePhone"/>
+		<result property="superviseAgency" column="superviseAgency"/>
+		<result property="sex" column="sex" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result column="vehicleCode" property="id"/>
+			<result column="vehicleName" property="name"/>
+		</association>
+	</resultMap>
+	<!-- 根据Id查询驾驶员信息信息 -->
+	<select id="getDriverInfoById" parameterType="String" resultMap="driverMap">
+		<![CDATA[
+		SELECT 	d.id,
+				d.name,
+				d.sex,
+				d.address,
+				d.identityCard,
+				d.telephone,
+				d.isMaster,
+				d.vehicleId,
+				d.licenseNo,
+				d.licenseType,
+				d.licenseAgency,
+				d.licenseDate,
+				d.invalidDate,
+				d.superviseAgency,
+				d.supervisePhone,
+				d.birthday,
+				d.examineYear,
+				d.createDate,
+				v.id				AS vehicleCode,
+				v.name				AS vehicleName
+		  FROM Tb_Driver d 
+		  LEFT JOIN Tb_Vehicle v on d.vehicleId=v.id 
+		WHERE  d.id = #{id}
+		]]>
+	</select>
+	<!-- 查询驾驶员信息列表 -->
+	<select id="getAllDrivers" parameterType="com.tiamaes.bike.common.bean.information.Driver" resultMap="driverMap">
+		SELECT 	d.id,
+				d.name,
+				d.sex,
+				d.address,
+				d.identityCard,
+				d.telephone,
+				d.isMaster,
+				d.vehicleId,
+				d.licenseNo,
+				d.licenseType,
+				d.licenseAgency,
+				d.licenseDate,
+				d.invalidDate,
+				d.superviseAgency,
+				d.supervisePhone,
+				d.birthday,
+				d.examineYear,
+				d.createDate,
+				v.id				AS vehicleCode,
+				v.name				AS vehicleName
+		  FROM Tb_Driver d 
+		  LEFT JOIN Tb_Vehicle v ON d.vehicleId=v.id 
+		<where>
+			<if test="name != null and name != ''">
+		     AND d.name LIKE CONCAT('%',CONCAT(#{name},'%'))
+			</if>
+			<if test="identityCard != null and identityCard != ''">
+		     AND d.identityCard LIKE CONCAT('%',CONCAT(#{identityCard},'%'))
+			</if>
+		</where>
+		ORDER BY d.createDate DESC 
+	</select>
+	<select id="getTotalOfDrivers" parameterType="com.tiamaes.bike.common.bean.information.Driver" resultType="int">
+		SELECT COUNT(1)  
+		  FROM Tb_Driver d 
+		  LEFT JOIN Tb_Vehicle v ON d.vehicleId=v.id 
+		<where>
+			<if test="name != null and name != ''">
+		     AND d.name LIKE CONCAT('%',CONCAT(#{name},'%'))
+			</if>
+			<if test="identityCard != null and identityCard != ''">
+		     AND d.identityCard LIKE CONCAT('%',CONCAT(#{identityCard},'%'))
+			</if>
+		</where>
+	</select>
+	
+	<!-- 保存驾驶员信息 -->
+	<insert id="addDriver" parameterType="com.tiamaes.bike.common.bean.information.Driver">
+		 INSERT INTO Tb_Driver (id,name,sex,address,identityCard,telephone,isMaster,vehicleId,licenseNo,
+						       licenseType,licenseAgency,licenseDate,invalidDate,superviseAgency,
+						       supervisePhone,birthday,examineYear,createDate)
+					  VALUES  (#{id,jdbcType=CHAR},
+					  		   #{name,jdbcType=VARCHAR},
+					  		   #{sex,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						       #{address,jdbcType=VARCHAR},
+						       #{identityCard,jdbcType=VARCHAR},
+						       #{telephone,jdbcType=VARCHAR},
+						       #{isMaster},
+						       #{vehicle.id,jdbcType=CHAR},
+						       #{licenseNo,jdbcType=VARCHAR},
+						       #{licenseType,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						       #{licenseAgency,jdbcType=VARCHAR},
+						       #{licenseDate,jdbcType=DATE},
+						       #{invalidDate,jdbcType=DATE},
+						       #{superviseAgency,jdbcType=VARCHAR},
+						       #{supervisePhone,jdbcType=VARCHAR},
+						       #{birthday,jdbcType=DATE},
+						       #{examineYear,jdbcType=DATE},
+						       NOW())
+	</insert>
+	<!-- 更新驾驶员信息 -->
+	<update id="updateDriver" parameterType="com.tiamaes.bike.common.bean.information.Driver">
+		UPDATE Tb_Driver SET name=#{name,jdbcType=VARCHAR},
+							 sex=#{sex,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+							 address=#{address,jdbcType=VARCHAR},
+							 identityCard=#{identityCard,jdbcType=VARCHAR},
+							 telephone=#{telephone,jdbcType=VARCHAR},
+							 isMaster=#{isMaster},
+							 vehicleId=#{vehicle.id,jdbcType=CHAR},
+							 licenseNo=#{licenseNo,jdbcType=VARCHAR},
+						     licenseType=#{licenseType,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+						     licenseAgency=#{licenseAgency,jdbcType=VARCHAR},
+						     licenseDate=#{licenseDate,jdbcType=DATE},
+						     invalidDate=#{invalidDate,jdbcType=DATE},
+						     superviseAgency=#{superviseAgency,jdbcType=VARCHAR},
+						     supervisePhone=#{supervisePhone,jdbcType=VARCHAR},
+						     birthday=#{birthday,jdbcType=DATE},
+						     examineYear=#{examineYear,jdbcType=DATE}
+					WHERE id=#{id}
+	</update>
+	<!-- 删除驾驶员信息 -->
+	<delete id="deleteDriver" parameterType="com.tiamaes.bike.common.bean.information.Driver">
+		DELETE FROM Tb_Driver WHERE id = #{id}
+	</delete>
+	<!-- 检查驾驶员信息名是否存在 -->
+	<select id="hasExists" parameterType="String" resultType="boolean">
+		<![CDATA[ SELECT COUNT(1) FROM Tb_Driver d WHERE d.name = #{name} ]]> 
+	</select>
+	
+	<!-- 检查驾驶员从业资格证号是否存在 -->
+	<select id="checkLicenseNo" parameterType="String" resultType="boolean">
+		SELECT COUNT(1) FROM Tb_Driver d WHERE d.licenseNo = #{licenseNo}
+	</select>
+	
+	<!-- 检查驾驶员身份证号是否存在 -->
+	<select id="checkIdentityCard" parameterType="String" resultType="boolean">
+		SELECT COUNT(1) FROM Tb_Driver d WHERE d.identityCard = #{identityCard}
+	</select>
+	
+</mapper>

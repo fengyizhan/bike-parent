@@ -1,0 +1,24 @@
+package com.tiamaes.bike.reporter.integrated.borrow.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.BorrowRecord;
+
+public interface BorrowQueryMapper {
+	
+	/**
+	 * 获取借还记录分页数据
+	 * @param parameters
+	 * @return
+	 */
+	List<BorrowRecord> getListOfBorrowRecords(Parameters<BorrowRecord> parameters);
+	
+	/**
+	 * 指定时间段的指定区域的车辆违规信息数据信息
+	 * @param param
+	 * @return
+	 */
+//	List<AlarmRecord> getListOfVehicleAlarm(Map<String, Object> param);
+
+}

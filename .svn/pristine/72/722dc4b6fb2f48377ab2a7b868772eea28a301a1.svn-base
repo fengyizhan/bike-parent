@@ -1,0 +1,934 @@
+package com.tiamaes.bike.common.bean.system;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.Auto;
+import com.tiamaes.bike.common.bean.information.Driver;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 车辆定位信息
+ * @author lsl
+ *
+ */
+@ApiModel(value = "PointVector", description = "车辆定位信息")
+public class PointVector extends Auto implements Serializable {
+	private static final long serialVersionUID = -8071167220890499001L;
+
+	@ApiModelProperty(value="车辆基本信息")
+	private PointVector.Info info;
+	@ApiModelProperty(value="车辆定位信息")
+	private PointVector.Center center;
+
+	public PointVector.Info getInfo() {
+		return info;
+	}
+
+	public void setInfo(PointVector.Info info) {
+		this.info = info;
+	}
+
+	public PointVector.Center getCenter() {
+		return center;
+	}
+
+	public void setCenter(PointVector.Center center) {
+		this.center = center;
+	}
+
+	/**
+	 * 车辆实时信息
+	 * @author Chen
+	 *
+	 */
+	public static class Info {
+		/**
+		 * 最后更新时间
+		 */
+		@ApiModelProperty(value="最后更新时间")
+		private Date date;
+		/**
+		 * 高程
+		 */
+		@ApiModelProperty(value="高程")
+		private int height;
+		/**
+		 * 当前速度
+		 */
+		@ApiModelProperty(value="当前速度")
+		private double speed;
+		/**
+		 * 当前里程
+		 */
+		@ApiModelProperty(value="当前里程")
+		private double odometer;
+		/**
+		 * 当前位置
+		 */
+		@ApiModelProperty(value="当前位置")
+		private String address;
+		/**
+		 * 车辆当前上下线状态
+		 */
+		@ApiModelProperty(value="车辆当前上下线状态")
+		@JsonDeserialize(using=State.Deserializer.class)
+		private State state;
+		/**
+		 * ACC状态
+		 */
+		@ApiModelProperty(value="ACC状态")
+		private Boolean accState;
+		/**
+		 * 举升状态
+		 */
+		@ApiModelProperty(value="举升状态")
+		private Boolean liftingState;
+		/**
+		 * 顶棚状态
+		 */
+		@ApiModelProperty(value="顶棚状态")
+		private Boolean canopyState;
+		/**
+		 * 驾驶车辆的司机
+		 */
+		@ApiModelProperty(value="驾驶车辆的司机")
+		private Driver driver;
+		/**
+		 * 车辆的当天趟次
+		 */
+		@ApiModelProperty(value="车辆的当天趟次")
+		private int dayTrip;
+		/**
+		 * 定位状态(0：未定位， 1：已定位)
+		 */
+		@ApiModelProperty(value="定位状态(0：未定位， 1：已定位)")
+		private Boolean locationState;
+		/**
+		 * 南北纬(0：北纬，1：南纬)
+		 */
+		@ApiModelProperty(value="南北纬(0：北纬，1：南纬)")
+		private Boolean lngState;
+		/**
+		 * 东西经(0：东经，1：西经)
+		 */
+		@ApiModelProperty(value="东西经(0：东经，1：西经)")
+		private Boolean latState;
+		/**
+		 * 是否停运(0：运营，1：停运)
+		 */
+		@ApiModelProperty(value="是否停运(0：运营，1：停运)")
+		private Boolean runState;
+		/**
+		 * 经纬度是否加密(0：未加密，1：已加密)5
+		 */
+		@ApiModelProperty(value="经纬度是否加密(0：未加密，1：已加密)5")
+		private Boolean encryptState;
+		/**
+		 * 车辆载重状态(00：空车；01：半载；10：保留；11：满载)  8-9
+		 */
+		@ApiModelProperty(value="车辆载重状态(00：空车；01：半载；10：保留；11：满载)  8-9")
+		@JsonDeserialize(using = LoadState.Deserializer.class)
+		private LoadState loadState;
+		/**
+		 * 是否断油(0：正常，1：断油)10
+		 */
+		@ApiModelProperty(value="是否断油(0：正常，1：断油)10")
+		private Boolean oilState;
+		/**
+		 * 是否断电(0：正常，1：断电)11
+		 */
+		@ApiModelProperty(value="是否断电(0：正常，1：断电)11")
+		private Boolean electricState;
+		/**
+		 * 是否锁门(0：解锁，1：加锁)12
+		 */
+		@ApiModelProperty(value="是否锁门(0：解锁，1：加锁)12")
+		private Boolean locked;
+		/**
+		 * 0：门 1 关；1：门 1 开（前门）13
+		 */
+		@ApiModelProperty(value="0：门 1 关；1：门 1 开（前门）13")
+		private Boolean door1;
+		/**
+		 * 0：门 2 关；1：门 2 开（中门）14
+		 */
+		@ApiModelProperty(value="0：门 2 关；1：门 2 开（中门）14")
+		private Boolean door2;
+		/**
+		 * 0：门 3 关；1：门 3 开（后门）15
+		 */
+		@ApiModelProperty(value="0：门 3 关；1：门 3 开（后门）15")
+		private Boolean door3;
+		/**
+		 * 0：门 4 关；1：门 4 开（驾驶席门）16
+		 */
+		@ApiModelProperty(value="0：门 4 关；1：门 4 开（驾驶席门）16")
+		private Boolean door4;
+		/**
+		 * 0：门 5 关；1：门 5 开（自定义）17
+		 */
+		@ApiModelProperty(value=" 0：门 5 关；1：门 5 开（自定义）17")
+		private Boolean door5;
+		/**
+		 * 0：未使用 GPS 卫星进行定位；1：使用 GPS 卫星进行定位 18
+		 */
+		@ApiModelProperty(value="0：未使用 GPS 卫星进行定位；1：使用 GPS 卫星进行定位 18")
+		private Boolean gps;
+		/**
+		 * 0：未使用北斗卫星进行定位；1：使用北斗卫星进行定位 19
+		 */
+		@ApiModelProperty(value="0：未使用北斗卫星进行定位；1：使用北斗卫星进行定位 19")
+		private Boolean compass;
+		/**
+		 * 0：未使用 GLONASS 卫星进行定位；1：使用 GLONASS 卫星进行定位 20
+		 */
+		@ApiModelProperty(value="0：未使用 GLONASS 卫星进行定位；1：使用 GLONASS 卫星进行定位 20")
+		private Boolean glonass;
+		/**
+		 * 0：未使用 Galileo 卫星进行定位；1：使用 Galileo 卫星进行定位 21
+		 */
+		@ApiModelProperty(value="0：未使用 Galileo 卫星进行定位；1：使用 Galileo 卫星进行定位 21")
+		private Boolean galileo;
+		/**
+		 * 油量
+		 */
+		@ApiModelProperty(value="油量")
+		private double oilContent;
+		/**
+		 * 行驶记录功能获取的速度
+		 */
+		@ApiModelProperty(value="行驶记录功能获取的速度")
+		private double recordSpeed;
+		/**
+		 * 需要人工确认报警事件的 ID
+		 */
+		@ApiModelProperty(value="需要人工确认报警事件的 ID")
+		private Integer artificialAlarmId;
+		/**
+		 * 近光灯信号
+		 */
+		@ApiModelProperty(value="近光灯信号")
+		private Boolean nearlight;
+		/**
+		 * 远光灯信号
+		 */
+		@ApiModelProperty(value="远光灯信号")
+		private Boolean farlight;
+		/**
+		 * 右转向灯信号
+		 */
+		@ApiModelProperty(value="右转向灯信号")
+		private Boolean rightlight;
+		/**
+		 * 左转向灯信号
+		 */
+		@ApiModelProperty(value="左转向灯信号")
+		private Boolean leftlight;
+		/**
+		 * 制动信号
+		 */
+		@ApiModelProperty(value="制动信号")
+		private Boolean braking;
+		/**
+		 * 倒档信号
+		 */
+		@ApiModelProperty(value="倒档信号")
+		private Boolean reverseGear;
+		/**
+		 * 雾灯信号
+		 */
+		@ApiModelProperty(value="雾灯信号")
+		private Boolean foglight;
+		/**
+		 * 示廓灯
+		 */
+		@ApiModelProperty(value="示廓灯")
+		private Boolean clearanceLamp;
+		/**
+		 * 喇叭信号
+		 */
+		@ApiModelProperty(value="喇叭信号")
+		private Boolean trumpet;
+		/**
+		 * 空调状态
+		 */
+		@ApiModelProperty(value="空调状态")
+		private Boolean airCondition;
+		/**
+		 * 空挡信号
+		 */
+		@ApiModelProperty(value="空挡信号")
+		private Boolean neutralPosition;
+		/**
+		 * 缓速器工作
+		 */
+		@ApiModelProperty(value="缓速器工作")
+		private Boolean retarder;
+		/**
+		 * ABS 工作
+		 */
+		@ApiModelProperty(value="ABS 工作")
+		private Boolean abs;
+		/**
+		 * 加热器工作
+		 */
+		@ApiModelProperty(value="加热器工作")
+		private Boolean heater;
+		/**
+		 * 离合器状态
+		 */
+		@ApiModelProperty(value="离合器状态")
+		private Boolean clutch;
+		/**
+		 * 深度休眠状态
+		 */
+		@ApiModelProperty(value="深度休眠状态")
+		private Boolean deepDormancy;
+		/**
+		 * 休眠状态
+		 */
+		@ApiModelProperty(value="休眠状态")
+		private Boolean dormancy;
+		/**
+		 * 模拟量，bit0-15，AD0；bit16-31，AD1
+		 */
+		@ApiModelProperty(value="模拟量，bit0-15，AD0；bit16-31，AD1")
+		private Double analogQuantityAD1;
+		/**
+		 * 模拟量，bit0-15，AD0；bit16-31，AD1
+		 */
+		@ApiModelProperty(value="模拟量，bit0-15，AD0；bit16-31，AD1")
+		private Double analogQuantityAD0;
+		/**
+		 * BYTE，无线通信网络信号强度
+		 */
+		@ApiModelProperty(value="BYTE，无线通信网络信号强度")
+		private Short wireless;
+		/**
+		 * BYTE，GNSS 定位卫星数
+		 */
+		@ApiModelProperty(value="BYTE，GNSS 定位卫星数")
+		private Short gnssSatellite;
+		/**
+		 * 后续自定义信息长度
+		 */
+		@ApiModelProperty(value="后续自定义信息长度")
+		private Long followUpLength;
+		public String getAddress() {
+			return address;
+		}
+
+		public void setAddress(String address) {
+			this.address = address;
+		}
+
+		public Date getDate() {
+			return date;
+		}
+
+		public void setDate(Date date) {
+			this.date = date;
+		}
+
+		public double getSpeed() {
+			return speed;
+		}
+
+		public void setSpeed(double speed) {
+			this.speed = speed;
+		}
+
+		public double getOdometer() {
+			return odometer;
+		}
+
+		public void setOdometer(double odometer) {
+			this.odometer = odometer;
+		}
+
+		public State getState() {
+			return state;
+		}
+
+		public void setState(State state) {
+			this.state = state;
+		}
+
+		public Boolean getAccState() {
+			return accState;
+		}
+
+		public void setAccState(Boolean accState) {
+			this.accState = accState;
+		}
+
+		public Boolean getLiftingState() {
+			return liftingState;
+		}
+
+		public void setLiftingState(Boolean liftingState) {
+			this.liftingState = liftingState;
+		}
+
+		public Boolean getCanopyState() {
+			return canopyState;
+		}
+
+		public void setCanopyState(Boolean canopyState) {
+			this.canopyState = canopyState;
+		}
+
+		public Driver getDriver() {
+			return driver;
+		}
+
+		public void setDriver(Driver driver) {
+			this.driver = driver;
+		}
+
+		public int getDayTrip() {
+			return dayTrip;
+		}
+
+		public void setDayTrip(int dayTrip) {
+			this.dayTrip = dayTrip;
+		}
+
+		public int getHeight() {
+			return height;
+		}
+
+		public void setHeight(int height) {
+			this.height = height;
+		}
+
+		public Boolean getLocationState() {
+			return locationState;
+		}
+
+		public void setLocationState(Boolean locationState) {
+			this.locationState = locationState;
+		}
+
+		public Boolean getLngState() {
+			return lngState;
+		}
+
+		public void setLngState(Boolean lngState) {
+			this.lngState = lngState;
+		}
+
+		public Boolean getLatState() {
+			return latState;
+		}
+
+		public void setLatState(Boolean latState) {
+			this.latState = latState;
+		}
+
+		public Boolean getRunState() {
+			return runState;
+		}
+
+		public void setRunState(Boolean runState) {
+			this.runState = runState;
+		}
+
+		public Boolean getEncryptState() {
+			return encryptState;
+		}
+
+		public void setEncryptState(Boolean encryptState) {
+			this.encryptState = encryptState;
+		}
+
+		public LoadState getLoadState() {
+			return loadState;
+		}
+
+		public void setLoadState(LoadState loadState) {
+			this.loadState = loadState;
+		}
+
+		public Boolean getOilState() {
+			return oilState;
+		}
+
+		public void setOilState(Boolean oilState) {
+			this.oilState = oilState;
+		}
+
+		public Boolean getElectricState() {
+			return electricState;
+		}
+
+		public void setElectricState(Boolean electricState) {
+			this.electricState = electricState;
+		}
+
+		public Boolean getLocked() {
+			return locked;
+		}
+
+		public void setLocked(Boolean locked) {
+			this.locked = locked;
+		}
+
+		public Boolean getDoor1() {
+			return door1;
+		}
+
+		public void setDoor1(Boolean door1) {
+			this.door1 = door1;
+		}
+
+		public Boolean getDoor2() {
+			return door2;
+		}
+
+		public void setDoor2(Boolean door2) {
+			this.door2 = door2;
+		}
+
+		public Boolean getDoor3() {
+			return door3;
+		}
+
+		public void setDoor3(Boolean door3) {
+			this.door3 = door3;
+		}
+
+		public Boolean getDoor4() {
+			return door4;
+		}
+
+		public void setDoor4(Boolean door4) {
+			this.door4 = door4;
+		}
+
+		public Boolean getDoor5() {
+			return door5;
+		}
+
+		public void setDoor5(Boolean door5) {
+			this.door5 = door5;
+		}
+
+		public Boolean getGps() {
+			return gps;
+		}
+
+		public void setGps(Boolean gps) {
+			this.gps = gps;
+		}
+
+		public Boolean getCompass() {
+			return compass;
+		}
+
+		public void setCompass(Boolean compass) {
+			this.compass = compass;
+		}
+
+		public Boolean getGlonass() {
+			return glonass;
+		}
+
+		public void setGlonass(Boolean glonass) {
+			this.glonass = glonass;
+		}
+
+		public Boolean getGalileo() {
+			return galileo;
+		}
+
+		public void setGalileo(Boolean galileo) {
+			this.galileo = galileo;
+		}
+
+		public double getOilContent() {
+			return oilContent;
+		}
+
+		public void setOilContent(double oilContent) {
+			this.oilContent = oilContent;
+		}
+
+		public double getRecordSpeed() {
+			return recordSpeed;
+		}
+
+		public void setRecordSpeed(double recordSpeed) {
+			this.recordSpeed = recordSpeed;
+		}
+
+		public Integer getArtificialAlarmId() {
+			return artificialAlarmId;
+		}
+
+		public void setArtificialAlarmId(Integer artificialAlarmId) {
+			this.artificialAlarmId = artificialAlarmId;
+		}
+
+		public Boolean getNearlight() {
+			return nearlight;
+		}
+
+		public void setNearlight(Boolean nearlight) {
+			this.nearlight = nearlight;
+		}
+
+		public Boolean getFarlight() {
+			return farlight;
+		}
+
+		public void setFarlight(Boolean farlight) {
+			this.farlight = farlight;
+		}
+
+		public Boolean getRightlight() {
+			return rightlight;
+		}
+
+		public void setRightlight(Boolean rightlight) {
+			this.rightlight = rightlight;
+		}
+
+		public Boolean getLeftlight() {
+			return leftlight;
+		}
+
+		public void setLeftlight(Boolean leftlight) {
+			this.leftlight = leftlight;
+		}
+
+		public Boolean getBraking() {
+			return braking;
+		}
+
+		public void setBraking(Boolean braking) {
+			this.braking = braking;
+		}
+
+		public Boolean getReverseGear() {
+			return reverseGear;
+		}
+
+		public void setReverseGear(Boolean reverseGear) {
+			this.reverseGear = reverseGear;
+		}
+
+		public Boolean getFoglight() {
+			return foglight;
+		}
+
+		public void setFoglight(Boolean foglight) {
+			this.foglight = foglight;
+		}
+
+		public Boolean getClearanceLamp() {
+			return clearanceLamp;
+		}
+
+		public void setClearanceLamp(Boolean clearanceLamp) {
+			this.clearanceLamp = clearanceLamp;
+		}
+
+		public Boolean getTrumpet() {
+			return trumpet;
+		}
+
+		public void setTrumpet(Boolean trumpet) {
+			this.trumpet = trumpet;
+		}
+
+		public Boolean getAirCondition() {
+			return airCondition;
+		}
+
+		public void setAirCondition(Boolean airCondition) {
+			this.airCondition = airCondition;
+		}
+
+		public Boolean getNeutralPosition() {
+			return neutralPosition;
+		}
+
+		public void setNeutralPosition(Boolean neutralPosition) {
+			this.neutralPosition = neutralPosition;
+		}
+
+		public Boolean getRetarder() {
+			return retarder;
+		}
+
+		public void setRetarder(Boolean retarder) {
+			this.retarder = retarder;
+		}
+
+		public Boolean getAbs() {
+			return abs;
+		}
+
+		public void setAbs(Boolean abs) {
+			this.abs = abs;
+		}
+
+		public Boolean getHeater() {
+			return heater;
+		}
+
+		public void setHeater(Boolean heater) {
+			this.heater = heater;
+		}
+
+		public Boolean getClutch() {
+			return clutch;
+		}
+
+		public void setClutch(Boolean clutch) {
+			this.clutch = clutch;
+		}
+
+		public Boolean getDeepDormancy() {
+			return deepDormancy;
+		}
+
+		public void setDeepDormancy(Boolean deepDormancy) {
+			this.deepDormancy = deepDormancy;
+		}
+
+		public Boolean getDormancy() {
+			return dormancy;
+		}
+
+		public void setDormancy(Boolean dormancy) {
+			this.dormancy = dormancy;
+		}
+
+		public Double getAnalogQuantityAD1() {
+			return analogQuantityAD1;
+		}
+
+		public void setAnalogQuantityAD1(Double analogQuantityAD1) {
+			this.analogQuantityAD1 = analogQuantityAD1;
+		}
+
+		public Double getAnalogQuantityAD0() {
+			return analogQuantityAD0;
+		}
+
+		public void setAnalogQuantityAD0(Double analogQuantityAD0) {
+			this.analogQuantityAD0 = analogQuantityAD0;
+		}
+
+		public Short getWireless() {
+			return wireless;
+		}
+
+		public void setWireless(Short wireless) {
+			this.wireless = wireless;
+		}
+
+		public Short getGnssSatellite() {
+			return gnssSatellite;
+		}
+
+		public void setGnssSatellite(Short gnssSatellite) {
+			this.gnssSatellite = gnssSatellite;
+		}
+
+		public Long getFollowUpLength() {
+			return followUpLength;
+		}
+
+		public void setFollowUpLength(Long followUpLength) {
+			this.followUpLength = followUpLength;
+		}
+		
+		@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+		public static enum State implements com.tiamaes.bike.common.Enum<State> {
+			
+			OFFLINE("离线"), ONLINE("在线"), PARKING("停车");
+
+			private String name;
+
+			private State(String name) {
+				this.name = name;
+			}
+
+			@Override
+			@JsonProperty("value")
+			public String getValue() {
+				return name();
+			}
+
+			@Override
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@Override
+			@JsonProperty("index")
+			public int getIndex() {
+				return this.ordinal();
+			}
+
+			@JsonCreator
+			public static State valueOf(@JsonProperty("index") final int index) {
+				State[] values = State.values();
+				if (index >= 0 && index < values.length) {
+					return values[index];
+				}
+				return null;
+			}
+
+			public static class Deserializer extends JsonDeserializer<State> {
+				@Override
+				public State deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+					JsonToken currentToken = jp.getCurrentToken();
+					switch (currentToken) {
+					case VALUE_STRING:
+						String content = jp.getText();
+						if (StringUtils.isNumeric(content)) {
+							return State.valueOf(Integer.valueOf(content));
+						} else if (!StringUtils.startsWith(content, "{")) {
+							return State.valueOf(content.trim());
+						}
+						jp = jp.getCodec().getFactory().createParser(content);
+					case VALUE_NUMBER_INT:
+						return State.valueOf(jp.getIntValue());
+					case START_OBJECT:
+						JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+						if (jsonNode != null && jsonNode.isValueNode()) {
+							content = jsonNode.asText();
+							if (StringUtils.isNotBlank(content)) {
+								return State.valueOf(content.trim());
+							}
+						}
+					default:
+						break;
+					}
+					return null;
+				}
+			}
+		}
+		
+		@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+		public static enum LoadState implements com.tiamaes.bike.common.Enum<LoadState> {
+			//00：空车；01：半载；10：保留；11：满载
+			NOLOAD("空车"), HALFLOAD("半载"), RESERVE("保留"), FULLLOAD("满载");
+
+			private String name;
+
+			LoadState(String name) {
+				this.name = name;
+			}
+
+			@Override
+			@JsonProperty("value")
+			public String getValue() {
+				return name();
+			}
+
+			@Override
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@Override
+			@JsonProperty("index")
+			public int getIndex() {
+				return this.ordinal();
+			}
+
+			@JsonCreator
+			public static LoadState valueOf(@JsonProperty("index") final int index) {
+				LoadState[] roleTypes = LoadState.values();
+				if (index >= 0 && index < roleTypes.length) {
+					return roleTypes[index];
+				}
+				return null;
+			}
+
+			public static class Deserializer extends JsonDeserializer<LoadState> {
+				@Override
+				public LoadState deserialize(JsonParser jp, DeserializationContext ctxt)
+						throws IOException, JsonProcessingException {
+					JsonToken currentToken = jp.getCurrentToken();
+					switch (currentToken) {
+					case VALUE_NUMBER_INT:
+						return LoadState.valueOf(jp.getIntValue());
+					case VALUE_STRING:
+						String text = jp.getText();
+						if (StringUtils.isNotBlank(text)) {
+							return LoadState.valueOf(text.trim().toUpperCase());
+						}
+					case START_OBJECT:
+						JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+						if (jsonNode != null && jsonNode.isValueNode()) {
+							text = jsonNode.asText();
+							if (StringUtils.isNotBlank(text)) {
+								return LoadState.valueOf(text.trim().toUpperCase());
+							}
+						}
+					default:
+						break;
+					}
+					return null;
+				}
+			}
+		}
+
+	};
+
+	public static class Center {
+		private double lng;
+		private double lat;
+
+		private int rotation;
+
+		public double getLng() {
+			return lng;
+		}
+
+		public void setLng(double lng) {
+			this.lng = lng;
+		}
+
+		public double getLat() {
+			return lat;
+		}
+
+		public void setLat(double lat) {
+			this.lat = lat;
+		}
+
+		public int getRotation() {
+			return rotation;
+		}
+
+		public void setRotation(int rotation) {
+			this.rotation = rotation;
+		}
+	};
+	
+}

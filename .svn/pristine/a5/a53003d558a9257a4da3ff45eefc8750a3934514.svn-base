@@ -1,0 +1,322 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DirectionType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DistrictType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DrivingTimeState;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.WarnCode;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message0200;
+import com.tiamaes.bike.common.bean.message.Message8001;
+import com.tiamaes.bike.common.bean.message.Message8203;
+import com.tiamaes.bike.common.bean.message.Message8801;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 位置信息汇报包0x0200
+ * 
+ * @author lsl
+ *
+ */
+@Component
+public class Protocol0200Handler extends ProtocolHandler {
+	
+	private static Logger logger = LogManager.getLogger(Protocol0200Handler.class);
+
+	@Autowired
+	private HandlerServiceInterface handlerService;
+	
+
+	@Override
+	public Message execute(Channel channel, Message request) throws Exception {
+		Message.Header header = request.getHeader();
+		// 位置信息直接把request放入kafka队列里面去
+		String simNo = request.getHeader().getSimNo();
+		Attribute<Vehicle> attribute = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle vehicle = attribute.get();
+		vehicle.setSimCode(simNo);
+		Message0200 message0200 = decodeBody(request, vehicle);
+		
+		handlerService.handle0200(message0200, vehicle);
+		
+		
+		int result = 0;
+		VehicleWarningInfo vehicleWarningStationInfo = message0200.getVehicleStationInfo();
+		if(vehicleWarningStationInfo != null){
+			DistrictType districtType = vehicleWarningStationInfo.getDistrictType();
+			boolean trigger = !(DistrictType.NOSPECLOCA.equals(districtType) || DistrictType.RAILWAY.equals(districtType));
+			if(trigger){
+				//触发拍照,并下发拍照指令
+				Message8801 response8801 = new Message8801(simNo);
+				response8801.setResponseBody();
+				channel.writeAndFlush(response8801);
+				logger.debug("[8801][{}] [{}] The station camera event has been triggered", simNo,header.getSerialNo());
+			}
+			//进出线路和区域发送人工确认报警消息
+			if(!DistrictType.NOSPECLOCA.equals(districtType)){
+				//进出线路
+				if(DistrictType.RAILWAY.equals(districtType)){
+					Message8203 response = new Message8203(simNo);
+					response.setResponseBody(request.getHeader(), 1<<21);
+					channel.writeAndFlush(response);
+					logger.debug("[8203][{}] [{}]  Manually acknowledge the alarm event has been triggered", simNo,header.getSerialNo());
+				}else{
+					//进出区域
+					Message8203 response = new Message8203(simNo);
+					response.setResponseBody(request.getHeader(), 1<<20);
+					channel.writeAndFlush(response);
+					logger.debug("[8203][{}] [{}]  Manually acknowledge the alarm event has been triggered", simNo,header.getSerialNo());
+				}
+			}
+			result = 0;
+		}
+		
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), result);
+		if(logger.isDebugEnabled()){
+			logger.debug("[8001][{}] [{}] Location information has been processed, the result is [{}]", simNo, header.getSerialNo(),result);
+		}
+		return response;
+	}
+
+	public static Message0200 decodeBody(Message request, Vehicle vehicle) throws ParseException {
+		boolean isDebugEnabled = logger.isDebugEnabled();
+		Message.Header header = request.getHeader();
+		String simNo = header.getSimNo();
+		// 位置信息汇报包数据解析
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(request.getBody());
+		// 报警标志
+		long warnSign = buffer.readUnsignedInt();
+		if (isDebugEnabled) {
+			logger.debug("[0200][{}] Location information is being processed, warn code is [{}]", simNo, Long.toUnsignedString(warnSign, 2));
+		}
+		// 状态
+		long vehicleStatusInfosByte = buffer.readUnsignedInt();
+		// 纬度
+		double lat = ((double) buffer.readUnsignedInt()) / 1000000;
+		// 经度
+		double lng = ((double) buffer.readUnsignedInt()) / 1000000;
+		// 高程（海拔高度）
+		int height = buffer.readUnsignedShort();
+		// 速度
+		double speed = buffer.readUnsignedShort();
+		// 方向
+		int rotation = buffer.readUnsignedShort();
+		// 时间(YY-MM-DD-hh-mm-ss)
+		byte[] timeBytes = new byte[6];
+		buffer.readBytes(timeBytes);
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2000 + Integer.parseInt(Integer.toUnsignedString(timeBytes[0], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[1], 16)) - 1,
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[2], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[3], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[4], 16)),
+				Integer.parseInt(Integer.toUnsignedString(timeBytes[5], 16)));
+		Date createTime = calendar.getTime();
+
+		// 获取车辆定位信息并保存
+		PointVector pointVector = new PointVector();
+		PointVector.Center center = new PointVector.Center();
+		center.setLng(lng);
+		center.setLat(lat);
+		center.setRotation(rotation);
+		pointVector.setCenter(center);
+		
+		PointVector.Info info = new PointVector.Info();
+		info.setDate(createTime);
+		info.setHeight(height);
+		info.setSpeed(speed / 10);
+		if(speed<=0){
+			info.setState(State.PARKING);
+		}else{
+			info.setState(State.ONLINE);
+		}
+		// 获取车辆状态信息
+		info.setAccState((vehicleStatusInfosByte & 0x01) == 0x01);
+		info.setLocationState((vehicleStatusInfosByte & 0x02) == 0x02);
+		info.setLngState((vehicleStatusInfosByte & 0x04) == 0x04);
+		info.setLatState((vehicleStatusInfosByte & 0x08) == 0x08);
+		info.setRunState(!((vehicleStatusInfosByte & 0x10) == 0x10));
+		info.setEncryptState((vehicleStatusInfosByte & 0x20) == 0x20);
+		if((vehicleStatusInfosByte & 0x300) == 0x00){
+			info.setLoadState(PointVector.Info.LoadState.NOLOAD);
+		}else if((vehicleStatusInfosByte & 0x300) == 0x100){
+			info.setLoadState(PointVector.Info.LoadState.HALFLOAD);
+		}else if((vehicleStatusInfosByte & 0x300) == 0x200){
+			info.setLoadState(PointVector.Info.LoadState.RESERVE);
+		}else if((vehicleStatusInfosByte & 0x300) == 0x300){
+			info.setLoadState(PointVector.Info.LoadState.FULLLOAD);
+		}
+		info.setOilState((vehicleStatusInfosByte & 0x400) == 0x400);
+		info.setElectricState((vehicleStatusInfosByte & 0x800) == 0x800);
+		info.setLocked((vehicleStatusInfosByte & 0x1000) == 0x1000);
+		info.setDoor1((vehicleStatusInfosByte & 0x2000) == 0x2000);
+		info.setDoor2((vehicleStatusInfosByte & 0x4000) == 0x4000);
+		info.setDoor3((vehicleStatusInfosByte & 0x8000) == 0x8000);
+		info.setDoor4((vehicleStatusInfosByte & 0x10000) == 0x10000);
+		info.setDoor5((vehicleStatusInfosByte & 0x20000) == 0x20000);
+		info.setGps((vehicleStatusInfosByte & 0x40000) == 0x40000);
+		info.setCompass((vehicleStatusInfosByte & 0x80000) == 0x80000);
+		info.setGlonass((vehicleStatusInfosByte & 0x100000) == 0x100000);
+		info.setGalileo((vehicleStatusInfosByte & 0x200000) == 0x200000);
+		
+		// 解析位置附加信息
+		VehicleWarningInfo speedWarning = null;
+		VehicleWarningInfo inoutAreaWarning = null;
+		VehicleWarningInfo traveltimeWarning = null;
+		while (buffer.readableBytes() > 0) {
+			Integer id = null;
+			short additionalId = buffer.readUnsignedByte();
+			short additionalLength = buffer.readUnsignedByte();
+			byte[] additionalBytes = new byte[additionalLength];
+			buffer.readBytes(additionalBytes);
+			CompositeByteBuf additionalBuffer = Unpooled.compositeBuffer();
+			additionalBuffer.writeBytes(additionalBytes);
+			switch (additionalId) {
+			case 0x01:
+				double odometer = ((double) additionalBuffer.readUnsignedInt()) / 10;
+				info.setOdometer(odometer);
+				break;
+			case 0x02:
+				double oilcontent = ((double) additionalBuffer.readUnsignedShort()) / 10;
+				info.setOilContent(oilcontent);
+				break;
+			case 0x03:
+				double recordspeed = ((double) additionalBuffer.readUnsignedShort()) / 10;
+				info.setRecordSpeed(recordspeed);
+				break;
+			case 0x04:
+				//需要人工确认报警事件的 ID，WORD，从 1 开始计数,2位
+				int alarmId = additionalBuffer.readUnsignedShort();
+				info.setArtificialAlarmId(alarmId);
+				break;
+			case 0x11:
+				DistrictType districtType = DistrictType.valueOf(additionalBuffer.readUnsignedByte());
+				speedWarning = new VehicleWarningInfo(vehicle, WarnCode.SPEED, createTime, lng, lat);
+				speedWarning.setDistrictType(districtType);
+				if (!DistrictType.NOSPECLOCA.equals(districtType)) {
+					id = Long.valueOf(additionalBuffer.readUnsignedInt()).intValue();
+					speedWarning.setDistrictId(id);
+				}
+				break;
+			case 0x12:
+				districtType = DistrictType.valueOf(additionalBuffer.readUnsignedByte());
+				id = Long.valueOf(additionalBuffer.readUnsignedInt()).intValue();
+				WarnCode warncode = districtType.equals(DistrictType.RAILWAY)? WarnCode.INOUTROUTE : WarnCode.INOUTAREA;
+				inoutAreaWarning = new VehicleWarningInfo(vehicle, warncode, createTime, lng, lat);
+				inoutAreaWarning.setDistrictType(districtType);
+				inoutAreaWarning.setDistrictId(id);
+				DirectionType directionType = DirectionType.valueOf(additionalBuffer.readUnsignedByte());
+				inoutAreaWarning.setDirectionType(directionType);
+				if (logger.isDebugEnabled()) {
+					logger.debug("[0200][{}] [{}] inoutarea information is being processed, DistrictType is [{}]  DirectionType id [{}] and id is [{}]", simNo, header.getSerialNo(),districtType,directionType, id);
+				}
+				break;
+			case 0x13:
+				traveltimeWarning = new VehicleWarningInfo(vehicle, WarnCode.TRAVELTIMEERR, createTime, lng, lat);
+				traveltimeWarning.setDistrictId(Long.valueOf(additionalBuffer.readUnsignedInt()).intValue());
+				traveltimeWarning.setDrivingTime(additionalBuffer.readUnsignedShort());
+				traveltimeWarning.setDrivingTimeState(DrivingTimeState.valueOf(additionalBuffer.readUnsignedByte()));
+				break;
+			case 0x25:
+				//扩展车辆信号状态位,4位
+				long signalState = buffer.readUnsignedInt();
+				info.setNearlight((signalState & 0x01) == 0x01);
+				info.setFarlight((signalState & 0x02) == 0x02);
+				info.setRightlight((signalState & 0x04) == 0x04);
+				info.setLeftlight((signalState & 0x08) == 0x08);
+				info.setBraking((signalState & 0x10) == 0x10);
+				info.setReverseGear((signalState & 0x20) == 0x20);
+				info.setFoglight((signalState & 0x40) == 0x40);
+				info.setClearanceLamp((signalState & 0x80) == 0x80);
+				info.setTrumpet((signalState & 0x100) == 0x100);
+				info.setAirCondition((signalState & 0x200) == 0x200);
+				info.setNeutralPosition((signalState & 0x400) == 0x400);
+				info.setRetarder((signalState & 0x800) == 0x800);
+				info.setAbs((signalState & 0x1000) == 0x1000);
+				info.setHeater((signalState & 0x2000) == 0x2000);
+				info.setClutch((signalState & 0x4000) == 0x4000);
+				break;
+			case 0x2A:
+				//IO状态位,2位
+				int ioState = buffer.readUnsignedShort();
+				info.setDeepDormancy((ioState & 0x01) == 0x01);
+				info.setDormancy((ioState & 0x02) == 0x02);
+				break;
+			case 0x2B:
+				//模拟量，bit0-15，AD0；bit16-31，AD1,4位
+				info.setAnalogQuantityAD1(((double)additionalBuffer.readUnsignedShort())/100);
+				info.setAnalogQuantityAD0(((double)additionalBuffer.readUnsignedShort())/100);
+				break;
+			case 0x30:
+				//BYTE，无线通信网络信号强度,1位
+				info.setWireless(additionalBuffer.readUnsignedByte());
+				break;
+			case 0x31:
+				//BYTE，GNSS 定位卫星数,1位
+				info.setGnssSatellite(additionalBuffer.readUnsignedByte());
+				break;
+			case 0xE0:
+				//后续自定义信息长度,N位
+				
+				break;
+			}
+
+		}
+		pointVector.setInfo(info);
+		
+		List<VehicleWarningInfo> vehicleWarningInfos = new ArrayList<VehicleWarningInfo>();
+		for(WarnCode warnCode: WarnCode.values()){
+			if(!WarnCode.INOUTAREA.equals(warnCode) && warnCode.warnging(warnSign) && !WarnCode.RESERVE16.equals(warnCode) && !WarnCode.RESERVE17.equals(warnCode)){
+				if (WarnCode.SPEED.equals(warnCode) && speedWarning != null) {
+					vehicleWarningInfos.add(speedWarning);
+				}else if (WarnCode.INOUTROUTE.equals(warnCode)) {
+					if(inoutAreaWarning != null && inoutAreaWarning.getDistrictType().equals(DistrictType.RAILWAY)){
+						vehicleWarningInfos.add(inoutAreaWarning);
+					}
+				}else if (WarnCode.TRAVELTIMEERR.equals(warnCode) && traveltimeWarning != null) {
+					vehicleWarningInfos.add(traveltimeWarning);
+				}else{                                       
+					VehicleWarningInfo warnging = new VehicleWarningInfo(vehicle, warnCode, createTime, lng, lat);
+					vehicleWarningInfos.add(warnging);
+				}
+			}
+		}
+		
+		if (isDebugEnabled && vehicleWarningInfos.size() > 0) {
+			logger.debug("[0200][{}] warning information is being processed:", simNo);
+			for(VehicleWarningInfo warning : vehicleWarningInfos){
+				if(warning.getDirectionType()!=null){
+					logger.debug("[0200][{}] [{}] [{}]", simNo, warning.getWarnCode(),warning.getDirectionType());
+				}else{
+					logger.debug("[0200][{}] [{}]", simNo, warning.getWarnCode());
+				}
+			}
+		}
+		Message0200 message0200 = new Message0200(pointVector,vehicleWarningInfos,inoutAreaWarning);
+
+		return message0200;
+	}
+	
+}

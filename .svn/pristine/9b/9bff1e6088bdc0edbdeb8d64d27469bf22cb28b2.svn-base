@@ -1,0 +1,33 @@
+<div class="wrapper" style="padding-top: 0;position: relative;" ng-controller="MonitorController" ng-cloak>
+	<div ng-show="leftMenu.state" class="sidebar" ng-style="{'height': height - 10,'width':200}" style="background-color: #FFFFFF" >	
+		<div class="content-container" ng-style="{'height': height - 34}">
+			<div class="nano">
+				<div class="overthrow nano-content">
+					<ul id="ztree" class="ztree" style="color: #FFFFFF;"></ul>
+				</div>
+				<div class="nano-pane">
+					<div class="nano-slider"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="width: auto; height: auto; position: absolute;top: 200px;z-index:900;" ng-style="{'left':leftMenu.state?200:1, 'top':height/2 - 33}">
+		<a href="javascript:;" ng-click="leftMenu.switching()"><img ng-src="resources/images/monitor/{{leftMenu.state?'leftnor.png':'rightnor.png'}}" border="0"/></a>
+	</div>
+	<div class="container-fluid" style="padding:0;">
+		<div class="row">
+			<div class="col-md-12">
+				<div id="map" style="position:relative;" ng-style="{'height': height,'width':width - (leftMenu.state?200:0)}"></div>
+				<div class="vehicle-state">
+					<div class="btn-group" role="group" aria-label="...">
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="online"></span>&nbsp;<span>在线：</span><b>100</b></button>
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="offline"></span>&nbsp;<span>离线：</span><b>100</b></button>
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="lowpower"></span>&nbsp;<span>低电量：</span><b>100</b></button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/monitor/dialog.html" style="width: 812px;height: 492px;"></div>
+	<!-- <div dialog="vedio" template-url="module/monitor/vedio.html" class="md-effect-12" style="width:1365px;height:inherit;"></div> -->
+</div>

@@ -1,0 +1,56 @@
+package com.tiamaes.bike.connector.handler;
+
+import java.util.List;
+
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.protocol.utils.Xor;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+
+public class EscapeProtocolDecoder extends ByteToMessageDecoder {
+
+	@Override
+	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		// 将转义字符还原
+		while (in.isReadable()) {
+			short i = in.readUnsignedByte();
+			if (i == 0x7d) {
+				buffer.writeByte(in.readUnsignedByte() == 0x01 ? 0x7d : 0x7e);
+			} else {
+				buffer.writeByte(i);
+			}
+		}
+		buffer.resetReaderIndex();
+		byte[] messageBytes = new byte[buffer.readableBytes()];
+		
+		buffer.readBytes(messageBytes);
+		buffer.resetReaderIndex();
+		if (Xor.check(messageBytes)) {
+			Header header = new Header();
+			header.setId(buffer.readUnsignedShort());
+			int bodyProperties = buffer.readUnsignedShort();
+			header.setChildPackage((bodyProperties >> 13 & 1) == 1);
+			header.setEnableRSA((bodyProperties >> 14 & 1) == 1);
+			header.setLength(bodyProperties & 0x03FF);
+			int terminalId = buffer.readInt();
+			header.setTerminalId(terminalId);
+			header.setTerminalType(Header.Type.values()[buffer.readUnsignedByte()]);
+			header.setSerialNo(buffer.readLong());
+			if(header.isChildPackage()){
+				header.setPacketTotal(buffer.readUnsignedShort());
+				header.setPacketNo(buffer.readUnsignedShort());
+			}
+			byte[] bytes2 = new byte[buffer.readableBytes() - 1];
+			buffer.readBytes(bytes2);
+			Received received = new Received(header, bytes2);
+			out.add(received);
+		}
+	}
+
+}

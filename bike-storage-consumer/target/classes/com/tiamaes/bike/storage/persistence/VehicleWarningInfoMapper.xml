@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.VehicleWarningInfoMapper">
+	<!-- 保存车辆报警信息 -->
+	<insert id="addWarningInfo" parameterType="com.tiamaes.bike.common.bean.connector.VehicleWarningInfo">
+		INSERT INTO tb_bike_warning_info (
+			id,
+			vehicleId,
+			vehicleName,
+			simNo,
+			warnCode,
+			warnContent,
+			<if test="directionType != null">
+			directiontype,
+			</if>
+			lng,
+			lat,
+			createDate
+		) VALUES (
+			#{id},
+			#{vehicle.id},
+			#{vehicle.name},
+			#{vehicle.simNo},
+			#{warnCode.index},
+			#{warnContent},
+			<if test="directionType != null and directionType.index != null">
+			#{directionType.index},
+			</if>
+			#{lng},
+			#{lat},
+			#{createTime}
+		)
+	</insert>
+</mapper>

@@ -1,0 +1,334 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.connector.Device;
+import com.tiamaes.bike.common.bean.system.PointVector;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 车辆信息
+ * @author kangty
+ */
+@ApiModel(value = "Vehicle", description = "车辆信息")
+public class Vehicle extends PointVector implements Device{
+	private static final long serialVersionUID = 5658959177174965120L;
+	
+	@ApiModelProperty(value="SIM号卡")
+	private String simNo;
+	@ApiModelProperty(value="终端类型(入库必需)")
+	private Type type;
+	@ApiModelProperty(value="制造厂家(入库必需)")
+	private Factory factory;
+	@ApiModelProperty(value="鉴权码")
+	private String authentication;
+	@ApiModelProperty(value="软件版本号")
+	private String softwareVersion;
+	@ApiModelProperty(value="硬件版本号")
+	private String hardwareVersion;
+	@ApiModelProperty(value="协议版本号")
+	private String protocolVersion;
+	@ApiModelProperty(value="设备状态")
+	@JsonDeserialize(using = State.Deserializer.class)
+	private State state;
+	@ApiModelProperty(value="是否已经注册")
+	private boolean registered;
+	@ApiModelProperty(value="备注")
+	private String remark;
+	@ApiModelProperty(value="状态信息id(车辆状态信息入库使用)")
+	private String statusInfoId;
+	@ApiModelProperty(value="状态信息入库时间(车辆状态信息入库使用)")
+	private Date statusInfoCreateDate;
+	@ApiModelProperty(value="定位信息id(车辆定位信息入库使用)")
+	private String locationInfoId;
+	@ApiModelProperty(value="定位信息入库时间(车辆定位信息入库使用)")
+	private Date locationInfoCreateDate;
+	@ApiModelProperty(value="借还记录流水号(车辆定位和状态信息入库使用)")
+	private String borrowId;
+	@ApiModelProperty(value="所属集中停放区")
+	private Park park;
+	@ApiModelProperty(value="车辆类型")
+	private VehicleType vehicleType;
+	@ApiModelProperty(value="入库时间")
+	private Date createDate;
+
+	public String getSimNo() {
+		return simNo;
+	}
+
+	public void setSimNo(String simNo) {
+		this.simNo = simNo;
+	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public Factory getFactory() {
+		return factory;
+	}
+
+	public void setFactory(Factory factory) {
+		this.factory = factory;
+	}
+
+	public String getAuthentication() {
+		return authentication;
+	}
+
+	public void setAuthentication(String authentication) {
+		this.authentication = authentication;
+	}
+
+	public String getSoftwareVersion() {
+		return softwareVersion;
+	}
+
+	public void setSoftwareVersion(String softwareVersion) {
+		this.softwareVersion = softwareVersion;
+	}
+
+	public String getHardwareVersion() {
+		return hardwareVersion;
+	}
+
+	public void setHardwareVersion(String hardwareVersion) {
+		this.hardwareVersion = hardwareVersion;
+	}
+
+	public String getProtocolVersion() {
+		return protocolVersion;
+	}
+
+	public void setProtocolVersion(String protocolVersion) {
+		this.protocolVersion = protocolVersion;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public void setRegistered(boolean registered) {
+		this.registered = registered;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getStatusInfoId() {
+		return statusInfoId;
+	}
+
+	public void setStatusInfoId(String statusInfoId) {
+		this.statusInfoId = statusInfoId;
+	}
+
+	public Date getStatusInfoCreateDate() {
+		return statusInfoCreateDate;
+	}
+
+	public void setStatusInfoCreateDate(Date statusInfoCreateDate) {
+		this.statusInfoCreateDate = statusInfoCreateDate;
+	}
+
+	public String getLocationInfoId() {
+		return locationInfoId;
+	}
+
+	public void setLocationInfoId(String locationInfoId) {
+		this.locationInfoId = locationInfoId;
+	}
+
+	public Date getLocationInfoCreateDate() {
+		return locationInfoCreateDate;
+	}
+
+	public void setLocationInfoCreateDate(Date locationInfoCreateDate) {
+		this.locationInfoCreateDate = locationInfoCreateDate;
+	}
+
+	public String getBorrowId() {
+		return borrowId;
+	}
+
+	public void setBorrowId(String borrowId) {
+		this.borrowId = borrowId;
+	}
+
+	public Park getPark() {
+		return park;
+	}
+
+	public void setPark(Park park) {
+		this.park = park;
+	}
+
+	public VehicleType getVehicleType() {
+		return vehicleType;
+	}
+
+	public void setVehicleType(VehicleType vehicleType) {
+		this.vehicleType = vehicleType;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum State implements com.tiamaes.bike.common.Enum<State> {
+
+		NORMAL("正常"), BROKEN("故障");
+
+		private String name;
+
+		private State(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static State valueOf(@JsonProperty("index") final int index) {
+			State[] types = State.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<State> {
+			@Override
+			public State deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return State.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if (StringUtils.isNotBlank(text)) {
+						return State.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if (jsonNode != null && jsonNode.isValueNode()) {
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return State.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+	
+	public static class Type {
+		private String id;
+		private String name;
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+	}
+
+	public static class Factory {
+		private String id;
+		private String name;
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+	@Override
+	public com.tiamaes.bike.common.bean.connector.Device.Type getKind() {
+		return com.tiamaes.bike.common.bean.connector.Device.Type.LOCK;
+	}
+	
+}

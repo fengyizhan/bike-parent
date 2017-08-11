@@ -1,0 +1,50 @@
+package com.tiamaes.bike.reporter.integrated.vehicle.service;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.OnlineRecord;
+import com.tiamaes.bike.reporter.integrated.vehicle.persistence.VehicleQueryMapper;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+@SuppressWarnings("rawtypes")
+public class VehicleQueryService implements VehicleQueryServiceInterface {
+	
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(VehicleQueryService.class);
+	
+	@Resource
+	private VehicleQueryMapper vehicleQueryMapper;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<OnlineRecord> getListOfOnlineRecords(Parameters<OnlineRecord> parameters, Pagination<OnlineRecord> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		List<OnlineRecord> onlineRecords = vehicleQueryMapper.getListOfOnlineRecords(parameters);
+		return onlineRecords;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfOnlineRecords(Parameters<OnlineRecord> parameters) {
+		return vehicleQueryMapper.getTotalOfOnlineRecords(parameters);
+	}
+
+	@Override
+	public int getOnlineCountByTime(Parameters parameters) {
+		return vehicleQueryMapper.getOnlineCountByTime(parameters);
+	}
+}

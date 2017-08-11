@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    primary:
+      url: jdbc:mysql://192.168.241.192:3306/bikelog?useUnicode=true&characterEncoding=utf8
+      username: bikelog
+      password: bikelog
+      driver-class-name: com.mysql.jdbc.Driver
+    second:
+      url: jdbc:mysql://192.168.241.192:3306/bike?useUnicode=true&characterEncoding=utf8
+      username: bike
+      password: bike
+      driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    cluster:
+      nodes: 192.168.57.249:7000,192.168.57.249:7001,192.168.57.249:7002
+      password:
+  kafka:
+    brokers: 192.168.57.249:9092
+    zookeepers: 192.168.57.249:2181
+  data:
+    mongodb:
+      host: 192.168.240.221
+      port: 27018
+      database: webgis
+      username: webgis
+      password: tmkjzgb123
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://192.168.57.249:8761/eureka/

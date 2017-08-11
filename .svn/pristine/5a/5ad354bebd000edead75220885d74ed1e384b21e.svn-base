@@ -1,0 +1,103 @@
+package com.tiamaes.bike.storage.service;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.storage.persistence.DriverSigninInfoMapper;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class DriverSigninInfoService implements DriverSigninInfoServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(DriverSigninInfoService.class);
+	
+	@Resource
+	private DriverSigninInfoMapper driverSigninInfoMapper;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, User> userOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Vehicle> vehicleOperator;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public String addDriverSigninInfo(DriverSigninInfo userSigninInfo) throws Exception {
+		Assert.notNull(userSigninInfo, "司机插拔卡记录不能为空");
+		Assert.notNull(userSigninInfo.getVehicle(), "车辆信息不能为空");
+		String id = userSigninInfo.getVehicle().getId();
+		Assert.notNull(id, "车辆id不能为空");
+		// 通过id查询redis返回对应的车辆实体
+		Vehicle target = vehicleService.getVehicleById(id);
+		DriverSigninInfo.State state = userSigninInfo.getState();
+		User user = null;
+		if(state == DriverSigninInfo.State.IN){
+			if(userSigninInfo.getResult() == DriverSigninInfo.Result.SUCCESS){
+				String userId = null;//stringOperator.get(RedisKey.DRIVERS_LICENSENO, userSigninInfo.getUser().getLicenseNo());
+				if (StringUtils.isBlank(userId)) {
+					user = userSigninInfo.getUser();
+				} else {
+					user = userOperator.get(RedisKey.DRIVERS, userId);
+				}
+			}
+		}else if(state == DriverSigninInfo.State.OUT){
+			user = userOperator.get(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id);
+		}
+		String userSigninInfoId = null;
+		if (user != null) {
+			if(state == DriverSigninInfo.State.IN){
+				//插卡则保存当前司机到缓存中
+				userOperator.put(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id, user);
+				// 生成插拔卡记录id
+				userSigninInfoId = UUIDGenerator.getUUID();
+				// 将id存入redis中
+				stringOperator.put(RedisKey.SIGNINOUT_ID, id, userSigninInfoId);
+				userSigninInfo.setId(userSigninInfoId);
+			}else if(state == DriverSigninInfo.State.OUT){
+				//插卡则保存当前司机到缓存中
+				userOperator.delete(RedisKey.VEHICLES_DRIVERS_VEHICLEID, id);
+				userSigninInfo.setUser(user);
+				// 从redis中获取进出场记录id
+				userSigninInfoId = stringOperator.get(RedisKey.SIGNINOUT_ID, id);
+				// id不存在
+				if (StringUtils.isBlank(userSigninInfoId)) {
+					userSigninInfoId = UUIDGenerator.getUUID();
+				}
+				// 删除id
+				stringOperator.delete(RedisKey.SIGNINOUT_ID, id);
+				userSigninInfo.setId(userSigninInfoId);
+			}
+		} else {
+			return null;
+		}
+		userSigninInfo.setVehicle(target);
+		
+		driverSigninInfoMapper.addDriverSigninInfo(userSigninInfo);
+		
+		return userSigninInfoId;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteDriverSigninInfo(String id) {
+		driverSigninInfoMapper.deleteDriverSigninInfo(id);
+	}
+}

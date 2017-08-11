@@ -1,0 +1,10 @@
+package com.tiamaes.bike.connector.service;
+
+/**
+ * 鉴权相关业务
+ * @author fyz
+ *
+ */
+public interface AuthenticationServiceInterface {
+	public String getCode();
+}

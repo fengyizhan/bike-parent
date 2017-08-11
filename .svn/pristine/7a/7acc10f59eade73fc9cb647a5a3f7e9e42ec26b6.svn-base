@@ -1,0 +1,250 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="form-group" hidden="true">
+						<div ng-if="dialog.editabled">
+							<input type="text" class="form-control input-sm" name="id" ng-model="dialog.data.id">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">车牌号码</label>
+						<div class="col-sm-4" ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+							<input type="text" class="form-control input-sm" name="name"
+								ng-model="dialog.data.name" placeholder="请输入车牌号" required="true"
+								ui-validate-async="{alreadyExists: 'dialog.validateName($modelValue)'}"
+								ng-model-options="{debounce: 100}" ng-readonly="!dialog.carNoEditabled" maxlength="10">
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">车牌颜色</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.plateColor" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择车牌颜色">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.plateColors track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.plateColor.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属公司</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.company" theme="bootstrap" title="{{$select.selected.name}}" on-select="dialog.selectCompany($item)" required="true">
+									<ui-select-match placeholder="选择所属公司">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.companys track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.company.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属车队</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.department" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择所属车队">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.departments track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.department.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">车辆状态</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.runStatus" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择车辆状态">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.runStatuses track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.runStatus.name"
+									 class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">物料类型</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.useType" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择物料类型">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.useTypes track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.useType.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属行业</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.industryType" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择所属行业">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.industryTypes track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.industryType.name"
+									 class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">车辆类型</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.vehicleType" theme="bootstrap" title="{{$select.selected.name}}" required="true">
+									<ui-select-match placeholder="选择车辆类型">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.vehicleTypes track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.vehicleType.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						</div>
+						<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属省</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.province" theme="bootstrap" title="{{$select.selected.name}}" on-select="dialog.selectProvince($item)" >
+									<ui-select-match placeholder="选择所属省">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.provinces track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.province.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属市</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.city" theme="bootstrap" title="{{$select.selected.name}}" on-select="dialog.selectCity($item)" >
+									<ui-select-match placeholder="选择所属市">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.citys track by $index" ng-required="true">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.city.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">所属县/区</label>
+						<div class="col-sm-4">
+							<div ng-if="dialog.editabled">
+								<ui-select ng-model="dialog.data.property.region" theme="bootstrap" title="{{$select.selected.name}}" >
+									<ui-select-match placeholder="选择所属县/区">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.countys track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+							<p ng-if="!dialog.editabled">
+								<input type="text" ng-model="dialog.data.property.region.name" class="form-control input-sm" readonly="readonly"/>
+							</p>
+						</div>
+						
+						<label class="col-sm-2 control-label" style="font-weight: normal;">经营许可</label>
+						<div class="col-sm-4" ng-class="">
+							<input type="text" class="form-control input-sm" name="operPermit" ng-model="dialog.data.property.operPermit" 
+									ng-readonly="!dialog.editabled" placeholder="请输入经营许可" maxlength="40">
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-2 control-label" style="font-weight: normal;">装载量</label>
+						<div class="col-sm-4">
+							<div class="input-group input-group-sm" ng-class="{'has-error': form.loadCube.$invalid, 'has-success':form.loadCube.$valid}">
+								<input type="text" class="form-control input-sm" name="loadCube" ng-model="dialog.data.property.loadCube" 
+								ng-readonly="!dialog.editabled" placeholder="请输入装载量" required="true">
+								 <div class="input-group-addon">m³</div>
+							 </div>
+						</div>
+						
+						<label class="col-sm-2 control-label" style="font-weight: normal;">发动机号</label>
+						<div class="col-sm-4" ng-class="">
+							<input type="text" class="form-control input-sm" name="motorId"  maxlength="40"
+							ng-model="dialog.data.property.motorId" ng-readonly="!dialog.editabled" placeholder="请输入发动机号">
+						</div>
+					</div>
+					<div class="form-group">
+						<div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">服务开始时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.property.startDate"
+										is-open="dialog.startDate.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										 ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.startDate.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+						</div>
+						<div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">服务结束时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.property.endDate"
+										is-open="dialog.endDate.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										 ng-required="true" readonly="readonly"/>
+									 <span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.endDate.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="form-group">
+					
+						<label class="col-sm-2 control-label" style="font-weight: normal;">备注</label>
+						<div class="col-sm-10" ng-class="">
+							<textarea type="text" class="form-control input-sm" name="remark" onchange="if(value.length>10) value = value.substr(0,10)"
+								ng-model="dialog.data.remark" ng-readonly="!dialog.editabled"  placeholder="请输入备注" rows="3">
+							</textarea>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

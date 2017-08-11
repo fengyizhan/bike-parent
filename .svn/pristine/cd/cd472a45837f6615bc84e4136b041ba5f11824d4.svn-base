@@ -1,0 +1,14 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+/**
+ * 停车点车辆信息包
+ * 
+ * @author Chen
+ */
+public class Received0200 extends Received {
+
+	public Received0200(Header header, byte[] bytes) {
+		super(header, bytes);
+	}
+	
+}

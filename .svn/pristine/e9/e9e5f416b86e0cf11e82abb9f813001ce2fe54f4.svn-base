@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.wallet.information.walletUser.persistence.WalletUserMapper">
+	<resultMap id="walletUserMap" type="com.tiamaes.bike.common.bean.wallet.WalletUser">
+		<id property="username" column="username"/>
+		<result property="balance" column="balance"/>
+		<result property="deposit" column="deposit"/>
+	</resultMap>
+	
+	<select id="getWalletUserByUsername" parameterType="String" resultMap="walletUserMap">
+		SELECT t.username, t.balance,t.deposit FROM tw_driver t WHERE t.username = #{username}
+	</select>
+	
+	<insert id="addWalletUser" parameterType="com.tiamaes.bike.common.bean.wallet.WalletUser">
+		INSERT INTO tw_driver
+		(username,
+		 balance,deposit)
+		VALUES
+		(#{username},
+		 #{balance},
+		 #{deposit})
+	</insert>
+	
+	<update id="updateWalletUser" parameterType="com.tiamaes.bike.common.bean.wallet.WalletUser">
+		UPDATE tw_driver
+			SET balance = #{balance},
+			deposit = #{deposit}
+			WHERE username = #{username}
+	</update>
+	
+	<delete id="deleteWalletUser" parameterType="com.tiamaes.bike.common.bean.wallet.WalletUser">
+		DELETE FROM tw_driver WHERE username = #{username}
+	</delete>
+</mapper>

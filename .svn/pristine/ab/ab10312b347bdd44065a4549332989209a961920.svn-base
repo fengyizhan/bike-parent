@@ -1,0 +1,189 @@
+package com.tiamaes.bike.api.information.route.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.project.service.ProjectServiceInterface;
+import com.tiamaes.bike.api.information.route.service.RouteServiceInterface;
+import com.tiamaes.bike.common.bean.information.ReportValue;
+import com.tiamaes.bike.common.bean.information.Route;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/route")
+@Api(tags = {"route"}, description = "线路信息管理")
+public class RouteController {
+	private static Logger logger = LogManager.getLogger(RouteController.class);
+	@Resource
+	private RouteServiceInterface routeService;
+	@Resource
+	private ProjectServiceInterface projectService;
+	
+	/**
+	 * 页面初始化报警值方法
+	 * @return
+	 */
+	@RequestMapping(value = "/initReportValue", method = RequestMethod.GET)
+	@ApiOperation(value = "报警值列表", notes = "页面初始化报警值方法")
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("reportValues", ReportValue.values());
+		return result;
+	}
+	
+	/**
+	 * 页面展示线路列表信息
+	 * @param route
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "线路列表", notes = "页面展示线路列表信息")
+	@ApiImplicitParam(name = "route", value = "线路实体", required = true, dataType = "Route")
+	public @ResponseBody PageInfo<Route> page(@RequestBody Route route, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Route> pagination = new Pagination<Route>(number, pageSize);
+		List<Route> list = routeService.getListOfRoutes(route, pagination);
+		return new PageInfo<Route>(list);
+	}
+	
+	/**
+	 * 验证线路名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET, produces = {"application/json" })
+	@ApiOperation(value = "验证线路", notes = "验证线路名字是否存在")
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<Integer> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("state", routeService.checkRouteName(id, name));
+		return result;
+	}
+	
+	/**
+	 * 根据id获取线路信息
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "线路信息", notes = "根据id获取线路信息",response=Route.class)
+	public @ResponseBody Route get(@PathVariable("id")Integer id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Route route = routeService.getRouteById(id);
+		return route;
+	}
+	
+	/**
+	 * 新增线路信息
+	 * @param route
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "新增线路", notes = "新增线路信息",response=Route.class)
+	@ApiImplicitParam(name = "route", value = "线路实体", required = true, dataType = "Route")
+	public @ResponseBody Route add(@RequestBody Route route, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(route.toString());
+		}
+		int routeId = routeService.getId();
+		route.setId(routeId);
+		route = routeService.addRoute(route);
+		return route;
+	}
+	
+	/**
+	 * 更新线路信息
+	 * @param route
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "更新线路", notes = "更新线路信息",response=Route.class)
+	@ApiImplicitParam(name = "route", value = "线路实体", required = true, dataType = "Route")
+	public @ResponseBody Route update(@RequestBody Route route, @PathVariable("id")Integer id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(route.toString());
+		}
+		route.setId(id);
+		route = routeService.updateRoute(route);
+		return route;
+	}
+	
+	/**
+	 * 删除线路信息
+	 * @param id
+	 * @param operator
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	@ApiOperation(value = "删除线路", notes = "删除线路信息")
+	public @ResponseBody void delete(@PathVariable("id")Integer id, @CurrentUser User operator) {
+		if(id != null){
+			if(logger.isDebugEnabled()){	
+				logger.debug(id);
+			}
+			int total = projectService.getTotalUseOfRoute(id);
+			if (total > 0) {
+				throw new IllegalArgumentException("存在与此路线关联的工程,请先解除关联再删除!");
+			}
+			Route route = routeService.getRouteById(id);
+			routeService.deleteRoute(route);
+		}
+	}
+	
+	/**
+	 * 获取线路下拉列表
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/getPullList", method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "线路下拉列表", notes = "获取线路下拉列表")
+	public @ResponseBody Map<String, Object> getPullList(@CurrentUser User operator) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("routes", routeService.getRoutes());
+		return result;
+	}
+	
+	/**
+	 * 根据开始场区id和结束场区id获取路线
+	 * @param beginId
+	 * @param endId
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/list/{beginId}/{endId}", method = RequestMethod.GET, produces = {"application/json" })
+	@ApiOperation(value = "根据厂区获取路线", notes = "根据开始场区id和结束场区id获取路线")
+	public @ResponseBody Map<String, Object> getRoutesByBeginAndEnd(@PathVariable("beginId")Integer beginId, @PathVariable("endId")Integer endId, @CurrentUser User operator) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("routes", routeService.getRoutesByBeginAndEnd(beginId, endId));
+		return result;
+	}
+	
+}

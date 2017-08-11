@@ -1,0 +1,75 @@
+package com.tiamaes.bike.config;
+
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.tiamaes.bike.alipay.config.AlipayConfig;
+
+@Configuration
+public class SystemConfig {
+	
+	@ConfigurationProperties(prefix="pay")
+	public class PayProperties implements InitializingBean 
+	{
+		public String getPartner() {
+			return partner;
+		}
+		public void setPartner(String partner) {
+			this.partner = partner;
+		}
+		public String getSeller_id() {
+			return seller_id;
+		}
+		public void setSeller_id(String seller_id) {
+			this.seller_id = seller_id;
+		}
+		public String getPrivate_key() {
+			return private_key;
+		}
+		public void setPrivate_key(String private_key) {
+			this.private_key = private_key;
+		}
+		public String getCallback_url() {
+			return callback_url;
+		}
+		public void setCallback_url(String callback_url) {
+			this.callback_url = callback_url;
+		}
+		public String getAppid() {
+			return appid;
+		}
+		public void setAppid(String appid) {
+			this.appid = appid;
+		}
+		public String getPublic_key() {
+			return public_key;
+		}
+		public void setPublic_key(String public_key) {
+			this.public_key = public_key;
+		}
+		private String partner;
+		private String seller_id;
+		private String private_key;
+		private String callback_url;
+		private String appid;
+		private String public_key;
+		@Override
+		public void afterPropertiesSet() throws Exception {
+			System.out.println("================ 初始化支付宝账户信息 =================start");
+			AlipayConfig.partner=this.getPartner();
+			AlipayConfig.private_key=this.getPrivate_key();
+			AlipayConfig.seller_id=this.getSeller_id();
+			AlipayConfig.callback_url=this.getCallback_url();
+			AlipayConfig.appid=this.getAppid();
+			AlipayConfig.ali_public_key=this.getPublic_key();
+			System.out.println("================ 初始化支付宝账户信息 =================end");
+		}
+	}
+	@Bean
+	public PayProperties payProperties()
+	{
+		return new PayProperties();
+	}
+}

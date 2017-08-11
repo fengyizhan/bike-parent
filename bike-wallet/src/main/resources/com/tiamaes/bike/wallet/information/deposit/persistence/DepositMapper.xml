@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.wallet.information.deposit.persistence.DepositMapper">
+	<resultMap id="depositMap" type="com.tiamaes.bike.common.bean.wallet.Deposit">
+		<id property="id" column="id"/>
+		<result property="username" column="username"/>
+		<result property="deposit" column="deposit"/>
+		<result property="style" column="style" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createDate" column="createDate"/>
+	</resultMap>
+	
+	<select id="getDepositById" parameterType="int" resultMap="depositMap">
+		SELECT t.id, t.username, t.deposit, t.style, t.type, t.createDate FROM tw_deposit t WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfDeposits" parameterType="com.tiamaes.bike.common.bean.wallet.Deposit" resultMap="depositMap">
+		SELECT t.id, t.username, t.deposit, t.style, t.type, t.createDate FROM tw_deposit t 
+		<where>
+			<if test="id != null">
+		     AND t.id = #{id} 
+			</if>
+			<if test="username != null and username.trim() != ''">
+		     AND t.username LIKE CONCAT('%',#{username},'%')
+			</if>
+			<if test="style != null and style.index != null">
+		     AND t.style = #{style.index} 
+			</if>
+			<if test="type != null and type.index != null">
+		     AND t.type = #{type.index} 
+			</if>
+			<if test="startTime != null">
+		     AND t.createDate &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createDate
+			</if>
+		</where>
+	</select>
+	
+	<insert id="addDeposit" parameterType="com.tiamaes.bike.common.bean.wallet.Deposit">
+		INSERT INTO tw_deposit
+		(id,
+		 username,
+		 deposit,
+		 style,
+		 type,
+		 createDate)
+		VALUES
+		(#{id},
+		 #{username},
+		 #{deposit},
+		 #{style.index},
+		 #{type.index},
+		 #{createDate})
+	</insert>
+	
+	<update id="updateDeposit" parameterType="com.tiamaes.bike.common.bean.wallet.Deposit">
+		UPDATE tw_deposit
+			SET username   = #{username},
+			    deposit    = #{deposit},
+				style      = #{style.index},
+				type       = #{type.index}
+			WHERE id = #{id}
+	</update>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tw_deposit'
+	</select>
+	
+</mapper>

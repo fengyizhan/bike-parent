@@ -1,0 +1,165 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.connector.VehicleStatusInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 车辆定位记录
+ * @author kangty
+ */
+@ApiModel(value = "LocationRecord", description = "车辆定位记录实体")
+public class LocationRecord implements Serializable {
+	private static final long serialVersionUID = -4746062426923582077L;
+	/**
+	 * 日志编号
+	 */
+	@ApiModelProperty(value="日志编号")
+	private String id;
+	/**
+	 * 车辆信息(公司编号，公司名称，车队编号，车队名称，车辆编号，车牌号，SIM卡号)
+	 */
+	@ApiModelProperty(value="车辆信息")
+	private Vehicle vehicle;
+	/**
+	 * 定位时间
+	 */
+	@ApiModelProperty(value="定位时间")
+	private Date createTime;
+	/**
+	 * 查询条件（开始时间）
+	 */
+	@ApiModelProperty(value="查询条件(开始时间)")
+	private Date startTime;
+	/**
+	 * 查询条件（结束时间）
+	 */
+	@ApiModelProperty(value="查询条件(结束时间)")
+	private Date endTime;
+	/**
+	 * 经度
+	 */
+	@ApiModelProperty(value="经度")
+	private double lng;
+	/**
+	 * 纬度
+	 */
+	@ApiModelProperty(value="纬度")
+	private double lat;
+	/**
+	 * 高程
+	 */
+	@ApiModelProperty(value="高程")
+	private int height;
+	/**
+	 * 速度
+	 */
+	@ApiModelProperty(value="速度")
+	private double speed;
+	/**
+	 * 方向
+	 */
+	@ApiModelProperty(value="方向")
+	private int direction;
+	/**
+	 * 车辆状态信息
+	 */
+	@ApiModelProperty(value="车辆状态")
+	private VehicleStatusInfo vehicleStatusInfo;
+	/**
+	 * 车辆报警信息
+	 */
+	@ApiModelProperty(value="车辆报警信息")
+	private List<VehicleWarningInfo> vehicleWarningInfos;
+	/**
+	 * 车辆进出场信息
+	 */
+	@ApiModelProperty(value="车辆进出场信息")
+	private VehicleWarningInfo vehicleStationInfo;
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+	public Date getCreateTime() {
+		return createTime;
+	}
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	public Date getStartTime() {
+		return startTime;
+	}
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+	public Date getEndTime() {
+		return endTime;
+	}
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+	public double getLng() {
+		return lng;
+	}
+	public void setLng(double lng) {
+		this.lng = lng;
+	}
+	public double getLat() {
+		return lat;
+	}
+	public void setLat(double lat) {
+		this.lat = lat;
+	}
+	public int getHeight() {
+		return height;
+	}
+	public void setHeight(int height) {
+		this.height = height;
+	}
+	public double getSpeed() {
+		return speed;
+	}
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+	public int getDirection() {
+		return direction;
+	}
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}
+	public VehicleStatusInfo getVehicleStatusInfo() {
+		return vehicleStatusInfo;
+	}
+	public void setVehicleStatusInfo(VehicleStatusInfo vehicleStatusInfo) {
+		this.vehicleStatusInfo = vehicleStatusInfo;
+	}
+	public List<VehicleWarningInfo> getVehicleWarningInfos() {
+		return vehicleWarningInfos;
+	}
+	public void setVehicleWarningInfos(List<VehicleWarningInfo> vehicleWarningInfos) {
+		this.vehicleWarningInfos = vehicleWarningInfos;
+	}
+	public VehicleWarningInfo getVehicleStationInfo() {
+		return vehicleStationInfo;
+	}
+	public void setVehicleStationInfo(VehicleWarningInfo vehicleStationInfo) {
+		this.vehicleStationInfo = vehicleStationInfo;
+	}
+
+}

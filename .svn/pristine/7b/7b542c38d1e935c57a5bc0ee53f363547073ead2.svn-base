@@ -1,0 +1,186 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<ul class="wizard_steps">
+					<li>
+					  <a id="step-1" class="selected">
+						<span class="step_no">信息<br>完善</span>
+					  </a>
+					</li>
+					<li>
+					  <a id="step-2" class="disabled">
+						<span class="step_no">地图<br>绘制</span>
+					  </a>
+					</li>
+				  </ul>
+				<div class="row" id="msgDiv">
+					<div class="col-sm-12">
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">场区名称</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+									<input type="text" class="form-control input-sm" name="name" ng-maxlength="15"
+										ui-validate-async="{alreadyExists: 'dialog.validateName($modelValue)'}" 
+										ng-model="dialog.data.name" ng-readonly="!dialog.editabled" placeholder="请输入场区名称" required="true">
+									</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">场区类型</label>
+							<div class="col-sm-4">
+								<div>
+									<ui-select ng-model="dialog.data.type" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled">
+										<ui-select-match placeholder="请选择类型">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in dialog.types track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;"><span style="letter-spacing:.5em;">责</span><span style="letter-spacing:.5em;">任</span>人</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.principal.$invalid, 'has-success':form.principal.$valid}">
+									<input type="text" class="form-control input-sm" name="principal" ng-model="dialog.data.principal" ng-readonly="!dialog.editabled" placeholder="请输入负责人姓名" ng-maxlength="15" required="true">
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">联系电话</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.telephone.$invalid, 'has-success':form.telephone.$valid}">
+									<input type="text" class="form-control input-sm" name="telephone" 
+										ui-validate-async="{phone: 'dialog.validatePhone($modelValue)'}"
+										ng-model="dialog.data.telephone" ng-readonly="!dialog.editabled" 
+										placeholder="请输入联系电话" ng-minlength="11" ng-maxlength="13" required="true">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">生效时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.startTime"
+										is-open="dialog.start.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										max-date="dialog.data.endTime" ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-click="dialog.editabled && dialog.start.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">失效时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.endTime"
+										is-open="dialog.end.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+										min-date="dialog.data.startTime" ng-required="true" readonly="readonly"/>
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-click="dialog.editabled && dialog.end.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">延迟报警</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.delayValue.$invalid, 'has-success':form.delayValue.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+										name="delayValue" ng-model="dialog.data.delayValue" maxlength="9" 
+										ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}"
+										ng-readonly="!dialog.editabled" placeholder="请输入延迟报警阀值">
+							        <div class="input-group-addon">秒</div>
+							    </div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">限速阀值</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.limitSpeedValue.$invalid, 'has-success':form.limitSpeedValue.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+										name="limitSpeedValue" ng-model="dialog.data.limitSpeedValue" maxlength="9" 
+										ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}"
+										ng-readonly="!dialog.editabled" placeholder="请输入限速阀值">
+							        <div class="input-group-addon">km/h</div>
+							    </div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">总土方数</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm" ng-class="{'has-error': form.earthWork.$invalid, 'has-success':form.earthWork.$valid}">
+									<input type="text" style="width:100%;" class="form-control input-sm" 
+										name="earthWork" ng-model="dialog.data.earthWork" maxlength="9" 
+										ui-validate-async="{isNum: 'dialog.isNum($modelValue, $event)'}"
+										ng-readonly="!dialog.editabled" placeholder="请输入总土方数">
+							        <div class="input-group-addon">万m³</div>
+							    </div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">行政区划代码</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.districtCode.$invalid, 'has-success':form.districtCode.$valid}">
+									<input type="text" class="form-control input-sm" 
+										name="districtCode" ng-model="dialog.data.districtCode" maxlength="6" 
+										ui-validate-async="{isNum: 'dialog.isNum($modelValue)'}"
+										ng-readonly="!dialog.editabled" placeholder="请输入行政区划代码" required="true">
+							    </div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">场区地址</label>
+							<div class="col-sm-10">
+								<div ng-class="{'has-error': form.address.$invalid, 'has-success':form.address.$valid}" style="width:100%;">
+									<input type="text" class="form-control input-sm" 
+										style="width:100%;" name="address" ng-maxlength="66" 
+										ng-model="dialog.data.address" ng-readonly="!dialog.editabled" 
+										placeholder="请输入场区地址" required="true">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">施工单位</label>
+							<div class="col-sm-10">
+								<div ng-class="{'has-error': form.unit.$invalid, 'has-success':form.unit.$valid}" style="width:100%;">
+									<input type="text" class="form-control input-sm" 
+										style="width:100%;" name="unit" ng-maxlength="50" 
+										ng-model="dialog.data.unit" ng-readonly="!dialog.editabled" 
+										placeholder="请输入施工单位" required="true">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">报警设置</label>
+							<div class="col-sm-10">
+								<div ng-if="dialog.editabled">
+									<label style="font-weight: normal;" ng-repeat="item in dialog.reportMethods">
+										<input type="checkbox" icheck name="channel" title="item.name" label-width="280" ng-model="item.selected">
+									</label>
+								</div>
+								<ul class="list-group" ng-if="!dialog.editabled">
+									<li style="width:286px;float:left;border:0;padding:7px 0;" class="list-group-item" ng-repeat="item in dialog.reportMethods" ng-if="item.selected" ng-bind="item.name"></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" id="mapDiv" style="display:none">
+					<div class="col-sm-12" ng-class="{'has-error': form.paths.$invalid, 'has-success':form.paths.$valid}">
+						<div id="1474160923584" style="width:100%;height:424px;border-radius:0;border-width: 2px;" class="form-control"></div>
+						<input type="hidden" name="paths" ng-model="dialog.data.paths" required="true">
+						<input type="hidden" name="radius" ng-model="dialog.data.radius">
+						<input type="hidden" name="areaType" ng-model="dialog.data.areaType">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-step btn-flat" id="preBtn" type="button" ng-click="dialog.pre()">上一步</button>
+			<button class="btn btn-step btn-flat" id="nextBtn" type="button" ng-click="dialog.next()">下一步</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

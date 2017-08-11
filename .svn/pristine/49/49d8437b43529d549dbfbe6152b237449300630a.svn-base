@@ -1,0 +1,286 @@
+package com.tiamaes.bike.api.information.project.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.project.service.ProjectServiceInterface;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/project")
+@Api(tags = {"project"}, description = "工程信息管理")
+public class ProjectController {
+	private static Logger logger = LogManager.getLogger(ProjectController.class);
+	@Resource
+	private ProjectServiceInterface projectService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	
+	/**
+	 * 页面展示工程列表信息
+	 * @param project
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "工程列表", notes = "分页获取全部工程信息")
+	@ApiImplicitParam(name = "project", value = "司机实体", required = true, dataType = "Project")
+	public @ResponseBody PageInfo<Project> page(@RequestBody Project project, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Project> pagination = new Pagination<Project>(number, pageSize);
+		List<Project> list = projectService.getListOfProjects(project, pagination);
+		return new PageInfo<Project>(list);
+	}
+	
+	/**
+	 * 验证工程名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET, produces = {"application/json" })
+	@ApiOperation(value = "验证工程名称", notes = "验证工程名字是否存在")
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("state", projectService.checkProjectName(id, name));
+		return result;
+	}
+	
+	/**
+	 * 根据id获取工程信息
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "工程信息", notes = "根据id获取工程信息",response=Project.class)
+	public @ResponseBody Project get(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Project project = projectService.getProjectById(id);
+		return project;
+	}
+	
+	/**
+	 * 新增工程信息
+	 * @param Project
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "增加工程", notes = "新增工程信息",response=Project.class)
+	@ApiImplicitParam(name = "project", value = "工程实体", required = true, dataType = "Project")
+	public @ResponseBody Project add(@RequestBody Project project, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(project.toString());
+		}
+		project.setId(UUIDGenerator.getUUID());
+		project = projectService.addProject(project);
+		return project;
+	}
+	
+	/**
+	 * 更新工程信息
+	 * @param Project
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "更新工程", notes = "更新工程信息",response=Project.class)
+	@ApiImplicitParam(name = "project", value = "工程实体", required = true, dataType = "Project")
+	public @ResponseBody Project update(@RequestBody Project project, @PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(project.toString());
+		}
+		project.setId(id);
+		project = projectService.updateProject(project);
+		return project;
+	}
+	
+	/**
+	 * 删除工程信息
+	 * @param id
+	 * @param operator
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	@ApiOperation(value = "删除工程", notes = "删除工程信息",response=Project.class)
+	public @ResponseBody void delete(@PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(id);
+		}
+		if(StringUtils.isNotBlank(id)){
+			Project project = projectService.getProjectById(id);
+			projectService.deleteProject(project);
+		}
+	}
+	
+	/**
+	 * 获取工程下拉列表
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/pullList/{projectId}", method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "工程列表", notes = "获取工程下拉列表")
+	public @ResponseBody Map<String, Object> getPullList(@PathVariable("projectId")String projectId, @CurrentUser User operator) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("projects", projectService.getProjects(projectId));
+		return result;
+	}
+	
+	/**
+	 * 车辆信息对话框显示列表
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/pageDialogAnother/{number:\\d+}","/pageDialogAnother/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "工程车辆", notes = "车辆信息对话框显示列表（不在当前工程中的车辆）")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public @ResponseBody PageInfo<Vehicle> pageDialogAnother(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Vehicle> pagination = new Pagination<Vehicle>(number, pageSize);
+		Parameters<Vehicle> parameters = new Parameters<Vehicle>();
+		parameters.setUser(operator);
+		parameters.setModel(vehicle);
+		List<Vehicle> list = null;//vehicleService.getListOfVehiclesAnother(parameters, pagination);
+		return new PageInfo<Vehicle>(list);
+	}
+	
+	/**
+	 * 车辆信息对话框显示列表
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/pageDialog/{number:\\d+}","/pageDialog/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "工程车辆", notes = "车辆信息对话框显示列表（在当前工程中的车辆）")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public @ResponseBody PageInfo<Vehicle> pageDialog(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Vehicle> pagination = new Pagination<Vehicle>(number, pageSize);
+		Parameters<Vehicle> parameters = new Parameters<Vehicle>();
+		parameters.setUser(operator);
+		parameters.setModel(vehicle);
+		List<Vehicle> list = null;//vehicleService.getListOfVehiclesP(parameters, pagination);
+		return new PageInfo<Vehicle>(list);
+	}
+	
+	/**
+	 * 车辆全选(新增)
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/checkAllAdd", method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "车辆全选(新增)", notes = "车辆全选(新增)")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public @ResponseBody List<String> checkAllAdd(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		Parameters<Vehicle> parameters = new Parameters<Vehicle>();
+		parameters.setUser(operator);
+		parameters.setModel(vehicle);
+		List<Vehicle> vehicles = null;//vehicleService.getListOfVehiclesAnother(parameters);
+		List<String> ids = new ArrayList<String>();
+		for(Vehicle b : vehicles){
+			ids.add(b.getId());
+		}
+		return ids;
+	}
+	
+	/**
+	 * 车辆全选(移除)
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/checkAllRemove", method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "车辆全选(移除)", notes = "车辆全选(移除)")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public @ResponseBody List<String> checkAllRemove(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		Parameters<Vehicle> parameters = new Parameters<Vehicle>();
+		parameters.setUser(operator);
+		parameters.setModel(vehicle);
+		List<Vehicle> vehicles = null;//vehicleService.getListOfVehiclesP(parameters);
+		List<String> ids = new ArrayList<String>();
+		for(Vehicle b : vehicles){
+			ids.add(b.getId());
+		}
+		return ids;
+	}
+	
+	/**
+	 * 删除工程车辆
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 */
+	@RequestMapping(value = "/vehiclesDeletion", method = RequestMethod.POST, produces = {"application/json" })
+	@ApiOperation(value = "删除工程车辆", notes = "删除工程车辆")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public void vehicleDeletion(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+//		List<ProjectVehicle> projectVehicles = vehicle.getProjectVehicles();
+//		if (projectVehicles != null && projectVehicles.size() > 0) {
+//			projectService.deleteProjectVehicle(vehicle.getProjectVehicles().get(0).getProjectId(), 
+//					projectVehicles);
+//		} else {
+//			return;
+//		}
+	}
+	
+	/**
+	 * 添加工程车辆
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 */
+	@RequestMapping(value = "/vehiclesAddition", method = RequestMethod.POST, produces = {"application/json" })
+	@ApiOperation(value = "添加工程车辆", notes = "添加工程车辆")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public void vehiclesAddition(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+//		List<ProjectVehicle> projectVehicles = vehicle.getProjectVehicles();
+//		if (projectVehicles != null && projectVehicles.size() > 0) {
+//			projectService.deleteProjectVehicle(null, vehicle.getProjectVehicles());
+//			projectService.addProjectVehicle(vehicle.getProjectVehicles());
+//		} else {
+//			return;
+//		}
+	}
+	
+}

@@ -1,0 +1,195 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.project.service.ProjectService;
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.information.ProjectRoute;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * 工程信息管理接口实现类的单元测试
+ * @author kangty
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class ProjectServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(ProjectServiceTest.class);
+	
+	@Autowired
+	private ProjectService service;
+	
+	@Autowired
+	@Qualifier("jsonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void addProject() throws Exception {
+		String id = "c0fc5ed7db7a4537a1963217684d2f6f";
+		Project project = new Project();
+		project.setId(id);
+		project.setName("大学路工程");
+		project.setAddress("大学路与中原路交叉口向北500米");
+		project.setUnit("河南一建");
+		Calendar curr = Calendar.getInstance();
+		project.setStartTime(curr.getTime());
+		curr.set(Calendar.YEAR,curr.get(Calendar.YEAR)+1);
+		project.setEndTime(curr.getTime());
+		Station beginStation = new Station();
+		beginStation.setId(1);
+		beginStation.setName("大学北路建筑工地");
+		project.setBeginStation(beginStation);
+		Station endStation = new Station();
+		endStation.setId(2);
+		endStation.setName("中原东路消纳场");
+		project.setEndStation(endStation);
+		project.setPrincipal("张三");
+		project.setTelephone("13213794682");
+		List<ProjectRoute> projectRoutes = new ArrayList<ProjectRoute>();
+		ProjectRoute pr1 = new ProjectRoute();
+		pr1.setProjectId(id);
+		pr1.setRouteId(1000001);
+		projectRoutes.add(pr1);
+		ProjectRoute pr2 = new ProjectRoute();
+		pr2.setProjectId(id);
+		pr2.setRouteId(1000002);
+		projectRoutes.add(pr2);
+		project.setProjectRoutes(projectRoutes);
+		service.addProject(project);
+		
+		Project result = service.getProjectById(id);
+		Assert.assertNotNull(result);
+		Assert.assertEquals(id, result.getId());
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(result));
+	}
+	
+	@Test
+	public void getListOfProjects() throws Exception {
+		int number = 1;
+		Project project = new Project();
+		int total = service.getTotalOfProjects(project);
+		Pagination<Project> pagination = new Pagination<Project>(number, total);
+		List<Project> projectList = service.getListOfProjects(project, pagination);
+		Assert.assertNotNull(projectList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(projectList));
+	}
+	
+	@Test
+	public void updateProject() {
+		String id = "c0fc5ed7db7a4537a1963217684d2f6f";
+		Project project = service.getProjectById(id);
+		String name = "大学路工程1";
+		project.setName(name);
+		List<ProjectRoute> projectRoutes = new ArrayList<ProjectRoute>();
+		ProjectRoute pr1 = new ProjectRoute();
+		pr1.setProjectId(id);
+		pr1.setRouteId(1000001);
+		projectRoutes.add(pr1);
+		ProjectRoute pr2 = new ProjectRoute();
+		pr2.setProjectId(id);
+		pr2.setRouteId(1000002);
+		projectRoutes.add(pr2);
+		project.setProjectRoutes(projectRoutes);
+		service.updateProject(project);
+		Project result = service.getProjectById(id);
+		Assert.assertEquals(name, result.getName());
+	}
+	
+	@Test
+	@Ignore
+	public void checkName() {
+		String id = "c0fc5ed7db7a4537a1963217684d2f6f";
+//		Optional<String> optional = Optional.ofNullable(null);
+		Optional<String> optional = Optional.of(id);
+		Boolean result = service.checkProjectName(optional, "大学路工程");
+//		Assert.assertTrue(result);
+		Assert.assertFalse(result);
+	}
+	
+	@Test
+	public void deleteProject() {
+		String id = "c0fc5ed7db7a4537a1963217684d2f6f";
+		Project result = service.getProjectById(id);
+		service.deleteProject(result);
+		result = service.getProjectById(id);
+		Assert.assertNull(result);
+	}
+	
+	@Test
+	public void getProjects() throws Exception {
+		String id = "c0fc5ed7db7a4537a1963217684d2f6f";
+//		List<Project> projects = service.getProjects();
+		List<Project> projects = service.getProjects(id);
+		Assert.assertNotNull(projects);
+		logger.debug(jacksonObjectMapper.writeValueAsString(projects));
+	}
+
+	public static void main(String[] args) {
+		String id = UUIDGenerator.getUUID();
+		System.out.println("this test should use id: " + id);
+	}
+	
+	@Test
+	public void deleteProjectV() throws Exception{
+		List<ProjectVehicle> projectVehicles = new ArrayList<ProjectVehicle>();
+		ProjectVehicle projectVehicle = new ProjectVehicle();
+		projectVehicle.setProjectId("feb6a0e2e87043e88a897282ef99f09a");
+		projectVehicle.setVehicleId("ebc47b5b5237493ba4c4c6e53441ea3f");
+		projectVehicles.add(projectVehicle);
+		
+		service.deleteProjectVehicle(null, projectVehicles);
+	}
+
+	@Test
+	public void addProjectV() throws Exception{
+		List<ProjectVehicle> projectVehicles = new ArrayList<ProjectVehicle>();
+		ProjectVehicle projectVehicle = new ProjectVehicle();
+		projectVehicle.setProjectId("feb6a0e2e87043e88a897282ef99f09a");
+		projectVehicle.setVehicleId("ebc47b5b5237493ba4c4c6e53441ea3f");
+		projectVehicles.add(projectVehicle);
+		
+		service.addProjectVehicle(projectVehicles);;
+	}
+	
+	@Test
+	public void getTotalUseOfStation() throws Exception {
+		int total = service.getTotalUseOfStation(1);
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+	@Test
+	public void getTotalUseOfRoute() throws Exception {
+		int total = service.getTotalUseOfRoute(1000001);
+		logger.debug(jacksonObjectMapper.writeValueAsString(total));
+	}
+	
+}

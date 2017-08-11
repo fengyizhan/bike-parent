@@ -1,0 +1,172 @@
+package com.tiamaes.bike.api.information.department.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.department.service.CompanyServiceInterface;
+import com.tiamaes.bike.api.information.department.service.DepartmentServiceInterface;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/company")
+@Api(tags = {"company"}, description = "公司信息管理")
+public class CompanyController {
+	private static Logger logger = LogManager.getLogger(CompanyController.class);
+	@Resource
+	private CompanyServiceInterface companyService;
+	@Resource
+	private DepartmentServiceInterface departmentService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	
+	/**
+	 * 页面展示公司列表信息
+	 * @param company
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "公司列表", notes = "分页获取全部公司信息")
+	@ApiImplicitParam(name = "company", value = "公司实体", required = true, dataType = "Company")
+	public @ResponseBody PageInfo<Company> page(@RequestBody Company company, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Company> pagination = new Pagination<Company>(number, pageSize);
+		//封装参数
+		Parameters<Company> parameters = new Parameters<Company>();
+		parameters.setUser(operator);
+		parameters.setModel(company);
+		List<Company> list = companyService.getListOfCompanys(parameters, pagination);
+		return new PageInfo<Company>(list);
+	}
+	
+	/**
+	 * 验证公司名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET, produces = {"application/json" })
+	@ApiOperation(value = "校验名称", notes = "验证公司名字是否存在")
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("state", companyService.checkCompanyName(id, name));
+		return result;
+	}
+	
+	/**
+	 * 根据id获取公司信息
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "获取公司信息", notes = "根据id获取公司信息",response=Company.class)
+	public @ResponseBody Company get(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Company company = companyService.getCompanyById(id);
+		return company;
+	}
+	
+	/**
+	 * 新增公司信息
+	 * @param company
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "增加公司", notes = "新增公司信息",response=Company.class)
+	@ApiImplicitParam(name = "company", value = "公司实体", required = true, dataType = "Company")
+	public @ResponseBody Company add(@RequestBody Company company, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(company.toString());
+		}
+		company.setId(UUIDGenerator.getUUID());
+		company = companyService.addCompany(company);
+		return company;
+	}
+	
+	/**
+	 * 更新公司信息
+	 * @param company
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "修改公司", notes = "修改公司信息",response=Company.class)
+	@ApiImplicitParam(name = "company", value = "公司实体", required = true, dataType = "Company")
+	public @ResponseBody Company update(@RequestBody Company company, @PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(company.toString());
+		}
+		company.setId(id);
+		company = companyService.updateCompany(company);
+		return company;
+	}
+	
+	/**
+	 * 删除公司信息
+	 * @param id
+	 * @param operator
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	@ApiOperation(value = "删除公司", notes = "删除公司信息")
+	public @ResponseBody void delete(@PathVariable("id")String id, @CurrentUser User operator) {
+		if(StringUtils.isNotBlank(id)){	
+			if(logger.isDebugEnabled()){	
+				logger.debug(id);
+			}
+			int total = departmentService.getTotalUseOfCompany(id);
+			if (total > 0) {
+				throw new IllegalArgumentException("存在与此公司关联的部门,请先解除关联再删除!");
+			}
+			total = 0;//vehicleService.getTotalUseOfCompany(id);
+			if (total > 0) {
+				throw new IllegalArgumentException("存在与此公司关联的车辆,请先解除关联再删除!");
+			}
+			Company company = companyService.getCompanyById(id);
+			companyService.deleteCompany(company);
+		}
+	}
+	
+	/**
+	 * 获取所有公司列表，用于下拉菜单生成
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/list", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "公司下拉列表", notes = "获取所有公司列表，用于下拉菜单生成")
+	public @ResponseBody List<Company> list(@CurrentUser User operator) {
+		return companyService.getCompanys();
+	}
+	
+}

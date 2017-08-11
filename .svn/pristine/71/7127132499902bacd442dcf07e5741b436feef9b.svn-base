@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.wallet.information.recharge.persistence.RechargeMapper">
+	<resultMap id="rechargeMap" type="com.tiamaes.bike.common.bean.wallet.Recharge">
+		<id property="id" column="id"/>
+		<result property="username" column="username"/>
+		<result property="money" column="money"/>
+		<result property="balance" column="balance"/>
+		<result property="style" column="style" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createTime" column="createTime"/>
+	</resultMap>
+	
+	<select id="getRechargeById" parameterType="int" resultMap="rechargeMap">
+		SELECT t.id, t.username, t.money, t.balance, t.style, t.createTime FROM tw_recharge t WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfRechargesByUsername" parameterType="com.tiamaes.bike.common.bean.wallet.Recharge" resultMap="rechargeMap">
+		SELECT t.id, t.username, t.money, t.balance, t.style, t.createTime FROM tw_recharge t 
+		<where>
+			t.username = #{username}
+			<if test="id != null">
+		     AND t.id = #{id} 
+			</if>
+			<if test="style != null and style.index != null">
+		     AND t.style = #{style.index} 
+			</if>
+			<if test="startTime != null">
+		     AND t.createTime >= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} >= t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select>
+	
+	<select id="getListOfRecharges" parameterType="com.tiamaes.bike.common.bean.wallet.Recharge" resultMap="rechargeMap">
+		SELECT t.id, t.username, t.money, t.balance, t.style, t.createTime FROM tw_recharge t 
+		<where>
+			<if test="id != null">
+		     AND t.id = #{id} 
+			</if>
+			<if test="username != null and username.trim() != ''">
+		     AND t.username LIKE CONCAT('%',#{username},'%')
+			</if>
+			<if test="style != null and style.index != null">
+		     AND t.style = #{style.index} 
+			</if>
+			<if test="startTime != null">
+		     AND t.createTime &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select>
+	
+	<insert id="addRecharge" parameterType="com.tiamaes.bike.common.bean.wallet.Recharge">
+		INSERT INTO tw_recharge
+		(id,
+		 username,
+		 money,
+		 style,
+		 createTime)
+		VALUES
+		(#{id},
+		 #{username},
+		 #{money},
+		 #{style.index},
+		 #{createTime})
+	</insert>
+	
+	<update id="updateRecharge" parameterType="com.tiamaes.bike.common.bean.wallet.Recharge">
+		UPDATE tw_recharge
+			SET username   = #{username},
+			    money      = #{money},
+				style      = #{style.index},
+				balance    = #{balance}
+			WHERE id = #{id}
+	</update>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tw_recharge'
+	</select>
+	
+</mapper>

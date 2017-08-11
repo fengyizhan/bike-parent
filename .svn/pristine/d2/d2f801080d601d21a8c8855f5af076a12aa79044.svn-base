@@ -1,0 +1,36 @@
+package com.tiamaes.bike.api.information.project.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+
+public interface ProjectVehicleMapper {
+	
+	/**
+	 * 新增项目工程车辆信息
+	 * @param projectVehicles
+	 */
+	void addProjectVehicles(@Param("projectVehicles")List<ProjectVehicle> projectVehicles);
+
+	/**
+	 * 删除项目工程车辆信息
+	 * @param projectId
+	 * @param projectVehicles
+	 */
+	void deleteProjectVehicles(@Param("projectId")String projectId, @Param("projectVehicles")List<ProjectVehicle> projectVehicles);
+	
+	/**
+	 * 根据车辆id查询工程id
+	 * @param projectVehicles
+	 * @return
+	 */
+	List<String> findByVehicles(@Param("projectVehicles") List<ProjectVehicle> projectVehicles);
+	/**
+	 * 根据工程id查询该工程下所有的车辆
+	 * @param projectId
+	 * @return
+	 */
+	List<ProjectVehicle> findVehiclesByPId(String projectId);
+}

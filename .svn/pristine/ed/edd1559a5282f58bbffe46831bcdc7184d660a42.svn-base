@@ -1,0 +1,33 @@
+package com.tiamaes.bike.reporter.integrated.trips.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.TripRecord;
+import com.tiamaes.mybatis.Pagination;
+
+@SuppressWarnings("rawtypes")
+public interface TripsQueryServiceInterface {
+	
+	/**
+	 * 获取车辆上下线记录分页数据
+	 * @param tripRecord
+	 * @param pagination
+	 * @return
+	 */
+	List<TripRecord> getListOfTripRecords(Parameters<TripRecord> parameters, Pagination<TripRecord> pagination);
+	
+	/**
+	 * 获取车辆上下线记录总记录数
+	 * @param tripRecord
+	 * @return
+	 */
+	int getTotalOfTripRecords(Parameters<TripRecord> parameters);
+	
+	/**
+	 * 根据时间段统计趟次
+	 * @param parameters
+	 * @return
+	 */
+	TripRecord getTotalByTime(Parameters parameters);
+}

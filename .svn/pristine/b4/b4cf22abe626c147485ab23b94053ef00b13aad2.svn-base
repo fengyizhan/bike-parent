@@ -1,0 +1,219 @@
+package com.tiamaes.bike.service;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.TestConstant;
+import com.tiamaes.bike.common.bean.connector.command.Command;
+import com.tiamaes.bike.common.bean.connector.command.DialCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.MonitorCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.TextCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand.TurnPoint;
+import com.tiamaes.bike.connector.service.CommandServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class CommandServiceTest extends TestConstant {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(CommandServiceTest.class);
+	@Autowired
+	private CommandServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void deleteCommandTest() {
+		Command command = new Command();
+		command.setId("1e07bf34dd284da6bb3ae20c6891ad08");
+		service.deleteCommand(command);
+	}
+	
+	@Test
+	@Ignore
+	public void sendTextCommandTest() throws Exception {
+		TextCommand textCommand = new TextCommand();
+		textCommand.setMessageInfo("前方道路拥堵,请提前绕道");
+		textCommand.setSimNo(simNo);
+		service.sendCommand(textCommand);
+	}
+	
+	@Test
+	@Ignore
+	public void sendDialCommandTest() throws Exception {
+		DialCommand dialCommand = new DialCommand();
+		dialCommand.setTelNo("18538317749");
+		dialCommand.setSimNo(simNo);
+		service.sendCommand(dialCommand);
+	}
+	
+	@Test
+	@Ignore
+	public void sendMonitorCommandTest() throws Exception {
+		MonitorCommand monitorCommand = new MonitorCommand();
+		monitorCommand.setTelNo("18538317749");
+		monitorCommand.setSimNo(simNo);
+		service.sendCommand(monitorCommand);
+	}
+	
+	@Test
+	@Ignore
+	public void sendPolygonAddCommandTest() throws Exception {
+		PolygonAddCommand polygonAddCommand1 = new PolygonAddCommand();
+		polygonAddCommand1.setId("aac4c8c6dc5c4041bd69d430ae8fec28");
+		polygonAddCommand1.setSimNo(simNo);
+		polygonAddCommand1.setRegionId(4);
+		polygonAddCommand1.setStartTime(new Date(1210176000000l));
+		polygonAddCommand1.setEndTime(new Date(1509984000000l));
+		polygonAddCommand1.setMaxSpeed((short) 60);
+		polygonAddCommand1.setVertexCount(5);
+		List<PolygonAddCommand.VertexProperty> vertexPropertys1 = new ArrayList<PolygonAddCommand.VertexProperty>();
+		PolygonAddCommand.VertexProperty vertexProperty1 = new PolygonAddCommand.VertexProperty();
+		vertexProperty1.setLng(113.651961);
+		vertexProperty1.setLat(34.757826);
+		vertexPropertys1.add(vertexProperty1);
+		PolygonAddCommand.VertexProperty vertexProperty2 = new PolygonAddCommand.VertexProperty();
+		vertexProperty2.setLng(113.655483);
+		vertexProperty2.setLat(34.758419);
+		vertexPropertys1.add(vertexProperty2);
+		PolygonAddCommand.VertexProperty vertexProperty3 = new PolygonAddCommand.VertexProperty();
+		vertexProperty3.setLng(113.655986);
+		vertexProperty3.setLat(34.759843);
+		vertexPropertys1.add(vertexProperty3);
+		PolygonAddCommand.VertexProperty vertexProperty4 = new PolygonAddCommand.VertexProperty();
+		vertexProperty4.setLng(113.654692);
+		vertexProperty4.setLat(34.759902);
+		vertexPropertys1.add(vertexProperty4);
+		PolygonAddCommand.VertexProperty vertexProperty5 = new PolygonAddCommand.VertexProperty();
+		vertexProperty5.setLng(113.654441);
+		vertexProperty5.setLat(34.759309);
+		vertexPropertys1.add(vertexProperty5);
+		polygonAddCommand1.setVertexPropertys(vertexPropertys1);
+		service.sendCommand(polygonAddCommand1);
+		PolygonAddCommand polygonAddCommand2 = new PolygonAddCommand();
+		polygonAddCommand2.setId("14cbd08e391e40329327f02e99591c75");
+		polygonAddCommand2.setSimNo(simNo);
+		polygonAddCommand2.setRegionId(5);
+		polygonAddCommand2.setStartTime(new Date(1207065600000l));
+		polygonAddCommand2.setEndTime(new Date(1509984000000l));
+		polygonAddCommand2.setMaxSpeed((short) 60);
+		polygonAddCommand2.setVertexCount(5);
+		List<PolygonAddCommand.VertexProperty> vertexPropertys2 = new ArrayList<PolygonAddCommand.VertexProperty>();
+		PolygonAddCommand.VertexProperty vertexProperty6 = new PolygonAddCommand.VertexProperty();
+		vertexProperty6.setLng(113.640607);
+		vertexProperty6.setLat(34.756996);
+		vertexPropertys2.add(vertexProperty6);
+		PolygonAddCommand.VertexProperty vertexProperty7 = new PolygonAddCommand.VertexProperty();
+		vertexProperty7.setLng(113.642727);
+		vertexProperty7.setLat(34.756432);
+		vertexPropertys2.add(vertexProperty7);
+		PolygonAddCommand.VertexProperty vertexProperty8 = new PolygonAddCommand.VertexProperty();
+		vertexProperty8.setLng(113.640212);
+		vertexProperty8.setLat(34.755305);
+		vertexPropertys2.add(vertexProperty8);
+		PolygonAddCommand.VertexProperty vertexProperty9 = new PolygonAddCommand.VertexProperty();
+		vertexProperty9.setLng(113.638199);
+		vertexProperty9.setLat(34.755157);
+		vertexPropertys2.add(vertexProperty9);
+		PolygonAddCommand.VertexProperty vertexProperty10 = new PolygonAddCommand.VertexProperty();
+		vertexProperty10.setLng(113.63899);
+		vertexProperty10.setLat(34.755631);
+		vertexPropertys2.add(vertexProperty10);
+		polygonAddCommand2.setVertexPropertys(vertexPropertys2);
+		service.sendCommand(polygonAddCommand2);
+	}
+	
+	@Test
+	@Ignore
+	public void sendPolygonDelCommandTest() throws Exception {
+		PolygonDelCommand polygonDelCommand = new PolygonDelCommand();
+		polygonDelCommand.setId("82e658bbfb724d1e8dd6ea1e8206809e");
+		polygonDelCommand.setSimNo(simNo);
+		List<Integer> polygonIds = new ArrayList<Integer>();
+		polygonIds.add(4);
+		polygonIds.add(5);
+		polygonDelCommand.setPolygonIds(polygonIds);
+		service.sendCommand(polygonDelCommand);
+	}
+	
+	@Test
+	@Ignore
+	public void sendLineAddCommandTest() throws Exception {
+		LineAddCommand lineAddCommand = new LineAddCommand();
+		lineAddCommand.setId("7e9ac84fdcda4dc7af13ea670d4cd10f");
+		lineAddCommand.setSimNo(simNo);
+		lineAddCommand.setLineId(1000004);
+		lineAddCommand.setStartTime(new Date(1207756800000l));
+		lineAddCommand.setEndTime(new Date(1509984000000l));
+		lineAddCommand.setPointCount((short) 1);
+		List<TurnPoint> turnPoints = new ArrayList<TurnPoint>();
+		TurnPoint turnPoint1 = new TurnPoint();
+		turnPoint1.setPointId(20);
+		turnPoint1.setSectionId(0);
+		turnPoint1.setLng(113.642799);
+		turnPoint1.setLat(34.756402);
+		turnPoint1.setSectionWidth(10);
+		turnPoint1.setMaxSpeed((short) 60);
+		turnPoint1.setOverSpeedS(0);
+		TurnPoint turnPoint2 = new TurnPoint();
+		turnPoint2.setPointId(21);
+		turnPoint2.setSectionId(0);
+		turnPoint2.setLng(113.651961);
+		turnPoint2.setLat(34.757767);
+		turnPoint2.setSectionWidth(10);
+		turnPoint2.setMaxSpeed((short) 60);
+		turnPoint2.setOverSpeedS(0);
+		TurnPoint turnPoint3 = new TurnPoint();
+		turnPoint3.setPointId(22);
+		turnPoint3.setSectionId(0);
+		turnPoint3.setLng(113.652249);
+		turnPoint3.setLat(34.757826);
+		turnPoint3.setSectionWidth(10);
+		turnPoint3.setMaxSpeed((short) 60);
+		turnPoint3.setOverSpeedS(0);
+		turnPoints.add(turnPoint1);
+		turnPoints.add(turnPoint2);
+		turnPoints.add(turnPoint3);
+		lineAddCommand.setTurnPoints(turnPoints);
+		service.sendCommand(lineAddCommand);
+	}
+	
+	@Test
+	@Ignore
+	public void sendLineDelCommandTest() throws Exception {
+		LineDelCommand lineDelCommand = new LineDelCommand();
+		lineDelCommand.setId("611bca0bfe724b449f9635c5ad740874");
+		lineDelCommand.setSimNo(simNo);
+		List<Integer> lineIds = new ArrayList<Integer>();
+		lineIds.add(1000004);
+		lineDelCommand.setLineIds(lineIds);
+		service.sendCommand(lineDelCommand);
+	}
+
+}

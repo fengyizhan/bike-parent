@@ -1,0 +1,312 @@
+package com.tiamaes.bike.wallet.information.pay.controller;
+
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.alipay.config.AlipayConfig;
+import com.tiamaes.bike.alipay.util.AlipayNotify;
+import com.tiamaes.bike.alipay.util.MD5;
+import com.tiamaes.bike.common.bean.Result;
+import com.tiamaes.bike.common.bean.pay.PayRecharge;
+import com.tiamaes.bike.wallet.information.pay.service.PayRechargeServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/payrecharge")
+@Api(tags = {"payrecharge"}, description = "用户支付充值记录管理")
+public class PayRechargeController {
+	
+	private static Logger logger = LogManager.getLogger(PayRechargeController.class);
+	@Resource
+	private PayRechargeServiceInterface payRechargeService;
+	
+	/**
+	 * 用户充值方式下拉列表
+	 * @return
+	 */
+	@ApiOperation(value = "用户充值方式列表初始化", notes = "用户充值方式下拉列表初始化")
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<>();
+		result.put("styles", PayRecharge.Style.values());
+		return result;
+	}
+	
+	/**
+	 * 根据用户名获取用户充值记录信息
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "用户线上支付充值记录列表", notes = "根据用户名获取用户充值记录列表")
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<PayRecharge> get(@RequestBody PayRecharge payRecharge, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(payRecharge.getUsername());
+		}
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 10 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<PayRecharge> pagination = new Pagination<>(number, pageSize);
+		List<PayRecharge> recharges = payRechargeService.getListOfPayRechargesByUsername(payRecharge, pagination);
+		return new PageInfo<PayRecharge>(recharges);
+	}
+	
+	/**
+	 * 新增用户充值信息
+	 * @param recharge
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "新增用户线上支付充值信息", notes = "新增用户线上支付充值信息",response = PayRecharge.class)
+	@ApiImplicitParam(name = "payRecharge", value = "用户线上支付充值实体", required = true, dataType = "PayRecharge")
+	@RequestMapping(method = RequestMethod.PUT)
+	public @ResponseBody PayRecharge add(@RequestBody PayRecharge payRecharge, @CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(payRecharge.toString());
+		}
+		payRecharge.setId(payRechargeService.getId());
+		payRecharge.setCreateTime(new Date());
+		payRecharge = payRechargeService.addPayRecharge(payRecharge);
+		return payRecharge;
+	}
+	
+	/**
+	 * 更新用户充值信息
+	 * @param payRecharge
+	 * @param username
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新用户线上支付充值记录", notes = "更新用户线上支付充值记录",response = PayRecharge.class)
+	@ApiImplicitParam(name = "payRecharge", value = "用户线上支付充值实体", required = true, dataType = "PayRecharge")
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	public @ResponseBody PayRecharge update(@RequestBody PayRecharge payRecharge, @PathVariable("id")Integer id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(payRecharge.toString());
+		}
+		payRecharge.setId(id);
+		payRecharge = payRechargeService.updatePayRecharge(payRecharge);
+		return payRecharge;
+	}
+	
+	
+	/**
+	 * 生成线上支付充值订单信息
+	 * @param style 支付方式
+	 * @param money 金额
+	 */
+	@RequestMapping(value = "/generateOrderInfo/{style}/{money}", method = RequestMethod.POST, produces = { "application/json" })
+	@ApiOperation(value = "生成线上支付充值订单信息", notes = "生成线上支付充值订单信息")
+	public @ResponseBody Result generateOrderInfo(@PathVariable("style") Integer style,@PathVariable("money") String money,@CurrentUser User currentUser,HttpServletRequest request) {
+		Result result=new Result();
+		//0:支付宝，1:微信
+		//Assert.notNull(currentUser,"当前操作人不能为空");
+		if(currentUser==null)
+		{
+			currentUser=new User();
+			currentUser.setUsername("18037507761");
+		}
+		Assert.notNull(style,"支付方式不能为空");
+		Assert.notNull(money,"支付金额不能为空");
+		result.setSuccess(true);
+		String payRechargeId=String.valueOf(payRechargeService.getId());
+		String username=currentUser.getUsername();
+		//本地业务自定义订单号，用于标示逻辑意义
+		String out_trade_no="BIKE_"+style+"_PAY_"+payRechargeId;
+		StringBuffer sBuffer=new StringBuffer();
+		// 商品详情
+		//sBuffer.append( "body=" + "\"" + "车票购买" + "\"");
+		// 参数编码， 固定值
+		sBuffer.append( "_input_charset=\"utf-8\"");
+		// 服务器异步通知页面路径
+		sBuffer.append( "&notify_url=" + "\"" + AlipayConfig.callback_url + "\"");
+		// 商户网站唯一订单号
+		sBuffer.append( "&out_trade_no=" + "\"" + out_trade_no + "\"");
+        // 签约合作者身份ID
+		sBuffer.append("&partner=" + "\"" + AlipayConfig.partner + "\"");
+		// 支付类型， 固定值
+		sBuffer.append( "&payment_type=\"1\"");
+		
+		try {
+			String passback_params=URLEncoder.encode(username, AlipayConfig.input_charset);
+			// 自定义参数，用于传递到回调中使用
+			sBuffer.append( "&passback_params=\""+passback_params+"\"");
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.info("generateOrderInfo 方法 passback_params参数异常："+e.getMessage());
+		}
+        // 支付宝处理完请求后，当前页面跳转到商户指定页面的路径，可空
+		//sBuffer.append( "&return_url=\"m.alipay.com\"");
+        // 签约卖家支付宝账号
+		sBuffer.append("&seller_id=" + "\"" + AlipayConfig.seller_id + "\"");
+		// 服务接口名称， 固定值
+		sBuffer.append( "&service=\"mobile.securitypay.pay\"");
+        // 商品名称
+		sBuffer.append( "&subject=" + "\"" + "共享单车钱包充值" + "\"");
+        // 商品金额
+		sBuffer.append( "&total_fee=" + "\"" + money + "\"");
+        // 设置未付款交易的超时时间
+        // 默认30分钟，一旦超时，该笔交易就会自动被关闭。
+        // 取值范围：1m～15d。
+        // m-分钟，h-小时，d-天，1c-当天（无论交易何时创建，都在0点关闭）。
+        // 该参数数值不接受小数点，如1.5h，可转换为90m。
+		//sBuffer.append( "&it_b_pay=\"30m\"");
+        String orderInfo=sBuffer.toString();
+        String privateKeyString=AlipayConfig.private_key;
+        String signString=MD5.sign(orderInfo, privateKeyString,"UTF-8");
+		sBuffer.append("&sign=\"" + signString + "\"&" + "sign_type=\"MD5\"");
+		logger.info("===============支付宝订单支付生成："+orderInfo);
+		result.getData().put("orderinfo",orderInfo);
+		return result;
+	}
+	
+	/**
+	 * 付款成功,回调地址
+	 */
+	@RequestMapping(value = "/online/payCallback")
+	public void payCallback(HttpServletRequest request,HttpServletResponse response)
+	{
+		Result result=new Result();
+		result.setMessage("支付回调处理成功");
+		result.setSuccess(true);
+		Map dataMap=result.getData();
+		// 商户订单号/批次号
+		String out_trade_no = request.getParameter("out_trade_no");
+		// 支付宝交易号
+		String trade_no = request.getParameter("trade_no");
+		// 交易状态
+		String trade_status = request.getParameter("trade_status");
+		//付款金额
+		String total_fee=request.getParameter("total_fee");
+		//自定义参数，用于传递到回调中使用
+		String passback_params=request.getParameter("passback_params");
+		Assert.notNull(out_trade_no,"【线上支付充值订单编号】不能为空");
+		Assert.notNull(trade_no,"【支付宝单号】不能为空");
+		Assert.notNull(trade_status,"【支付宝支付状态】不能为空");
+		try {
+			/*
+			 *  校验回调方，传递的参数是否真实有效*/
+			Map<String, String> params = new HashMap<String, String>();
+			Map<?, ?> requestParams = request.getParameterMap();
+			for (Iterator<?> iter = requestParams.keySet().iterator(); iter
+					.hasNext();) {
+				String name = (String) iter.next();
+				String[] values = (String[]) requestParams.get(name);
+				String valueStr = "";
+				for (int i = 0; i < values.length; i++) {
+					valueStr = (i == values.length - 1) ? valueStr + values[i]
+							: valueStr + values[i] + ",";
+				}
+				params.put(name, valueStr);
+			}
+			// 支付安全可靠校验
+			boolean verify_result = AlipayNotify.verify(params);
+			//boolean verify_result= (out_trade_no!=null&&out_trade_no.indexOf("TMKJ")>0);
+			logger.info("============支付宝回调payCallback trade_status:"+trade_status+",out_trade_no:"+out_trade_no+",trade_no:"+trade_no+",verify_result:"+verify_result);
+			// 若支付校验成功
+			if (verify_result) 
+			{//经过验证后，确定了当前回调方，的确是安全可靠，而非模拟或者伪造的；才可以执行数据库相关操作
+				//线上支付充值订单号规则：BIKE_支付方式(0:支付宝,1:微信)_PAY_流水号(pay_recharge表流水号)
+				String payOrderInfos[]=out_trade_no.split("_");
+				Integer pay_style=Integer.valueOf(payOrderInfos[2]);
+				PayRecharge.Style payStyle=PayRecharge.Style.valueOf(pay_style);
+				Integer pay_id=Integer.valueOf(payOrderInfos[3]);
+				PayRecharge payRechargeRecord=payRechargeService.getPayRechargeById(pay_id);
+				float money=Float.valueOf(total_fee);
+				//充值人名称（手机号码）
+				String username="";
+				try {
+					String passback_params_value=URLDecoder.decode(passback_params, AlipayConfig.input_charset);
+					// 自定义参数，用于传递到回调中使用
+					String[] passback_params_valueArray=passback_params_value.split(":");
+					username=passback_params_valueArray[0];
+				} catch (Exception e) {
+					e.printStackTrace();
+					logger.error("passback_params参数异常："+e.getMessage());
+				}
+				if(payRechargeRecord==null||payRechargeRecord.getId()==0)
+				{//如果不存在【本地数据库线上支付记录存根】，插入
+					PayRecharge newPayRechargeRecord=new PayRecharge();
+					newPayRechargeRecord.setCreateTime(new Date());
+					newPayRechargeRecord.setMoney(money);
+					newPayRechargeRecord.setUsername(username);
+					newPayRechargeRecord.setStyle(payStyle);
+					newPayRechargeRecord.setResult(trade_status);
+					newPayRechargeRecord.setResultCode(1);
+					newPayRechargeRecord.setTradeNo(trade_no);
+				}else
+				{//如果是已经存在，更新为最新的状态
+					payRechargeRecord.setResult(trade_status);
+					payRechargeRecord.setResultCode(1);
+					payRechargeRecord.setTradeNo(trade_no);
+					//支付成功后的业务操作
+					payRechargeService.updatePayRecharge(payRechargeRecord);
+				}
+			} else {
+				//如果回调方是，经过确认后，非安全可靠的，不执行
+				result.setMessage("支付回调【信息校验】失败!");
+				result.setSuccess(false);
+				logger.error("支付回调【信息校验】失败!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.setMessage("支付回调处理发生异常!");
+			result.setSuccess(false);
+			logger.error("支付回调处理发生异常!"+e.getMessage());
+		}
+		/**
+		 * 	@author fyz
+		 *  关键点说明：
+		 * 	必须保证服务器异步通知页面（notify_url）上无任何字符，如空格、HTML标签、开发系统自带抛出的异常提示信息等；
+			支付宝是用POST方式发送通知信息，因此该页面中获取参数的方式，如：request.Form(“out_trade_no”)、$_POST[‘out_trade_no’]；
+			支付宝主动发起通知，该方式才会被启用；
+			只有在支付宝的交易管理中存在该笔交易，且发生了交易状态的改变，支付宝才会通过该方式发起服务器通知（即时到账交易状态为“等待买家付款”的状态默认是不会发送通知的）；
+			服务器间的交互，不像页面跳转同步通知可以在页面上显示出来，这种交互方式是不可见的；
+			第一次交易状态改变（即时到账中此时交易状态是交易完成）时，不仅会返回同步处理结果，而且服务器异步通知页面也会收到支付宝发来的处理结果通知；
+			程序执行完后必须打印输出“success”（不包含引号）。如果商户反馈给支付宝的字符不是success这7个字符，支付宝服务器会不断重发通知，直到超过24小时22分钟。一般情况下，25小时以内完成8次通知（通知的间隔频率一般是：4m,10m,10m,1h,2h,6h,15h）；
+			程序执行完成后，该页面不能执行页面跳转。如果执行页面跳转，支付宝会收不到success字符，会被支付宝服务器判定为该页面程序运行出现异常，而重发处理结果通知；
+			cookies、session等在此页面会失效，即无法获取这些数据；
+			该方式的调试与运行必须在服务器上，即互联网上能访问；
+			该方式的作用主要防止订单丢失，即页面跳转同步通知没有处理订单更新，它则去处理；
+			当商户收到服务器异步通知并打印出success时，服务器异步通知参数notify_id才会失效。也就是说在支付宝发送同一条异步通知时（包含商户并未成功打印出success导致支付宝重发数次通知），服务器异步通知参数notify_id是不变的。
+		 */
+		try {
+			if(result.getSuccess())
+			{
+				response.getWriter().write("success");
+			}else
+			{
+				response.getWriter().write("error");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+}

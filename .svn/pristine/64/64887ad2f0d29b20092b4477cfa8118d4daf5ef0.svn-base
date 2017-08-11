@@ -1,0 +1,87 @@
+package com.tiamaes.bike.api.information.route.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.tiamaes.bike.common.bean.information.Route;
+import com.tiamaes.mybatis.Pagination;
+
+public interface RouteServiceInterface {
+
+	/**
+	 * 根据Id查询线路详情
+	 * @param id
+	 * @return
+	 */
+	Route getRouteById(int id);
+	
+	/**
+	 * 查询注册线路列表
+	 * @param route
+	 * @param pagination 
+	 * @return
+	 */
+	List<Route> getListOfRoutes(Route route, Pagination<Route> pagination);
+	
+	/**
+	 * 查询注册线路数
+	 * @param route
+	 * @return
+	 */
+	int getTotalOfRoutes(Route route);
+	
+	/**
+	 * 新增线路信息
+	 * @param route
+	 * @return
+	 */
+	Route addRoute(Route route);
+	
+	/**
+	 * 更新线路信息
+	 * @param route
+	 * @return
+	 */
+	Route updateRoute(Route route);
+	
+	/**
+	 * 删除线路信息
+	 * @param route
+	 */
+	void deleteRoute(Route route);
+	
+	/**
+	 * 检查线路名是否已经存在
+	 * @param id 
+	 * @param name
+	 * @return
+	 */
+	boolean checkRouteName(Optional<Integer> id, String name);
+	
+	/**
+	 * 获取所有线路列表，用于下拉菜单生成
+	 * @return
+	 */
+	List<Route> getRoutes();
+
+	/**
+	 * 根据开始场区id和结束场区id获取路线
+	 * @param beginId
+	 * @param endId
+	 * @return
+	 */
+	List<Route> getRoutesByBeginAndEnd(Integer beginId, Integer endId);
+	
+	/**
+	 * 获取主键id
+	 * @return
+	 */
+	Integer getId();
+
+	/**
+	 * 根据场区id获取场区和路线的关联数
+	 * @param id
+	 * @return
+	 */
+	int getTotalUseOfStation(Integer id);
+}

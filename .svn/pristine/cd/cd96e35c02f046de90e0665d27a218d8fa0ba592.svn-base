@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.241.192:3306/wallet?useUnicode=true&characterEncoding=utf8
+    username: wallet
+    password: wallet
+    driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    cluster:
+      nodes: 192.168.57.144:7000,192.168.57.144:7001,192.168.57.144:7002
+      password:
+  kafka:
+    broker-list: zk1.icms.com:9092,zk2.icms.com:9092,zk3.icms.com:9092
+    zookeeper-address: zk1.icms.com:2181,zk2.icms.com:2181,zk3.icms.com:2181
+  data:
+    mongodb:
+      host: 192.168.240.221
+      port: 27018
+      database: bike
+      username: bike
+      password: tmkjzgb123
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://192.168.241.165:8761/eureka/

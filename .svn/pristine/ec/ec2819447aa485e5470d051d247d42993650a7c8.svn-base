@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    primary:
+      url: jdbc:mysql://192.168.241.192:3306/weblog?useUnicode=true&characterEncoding=utf8
+      username: weblog
+      password: weblog
+      driver-class-name: com.mysql.jdbc.Driver
+    second:
+      url: jdbc:mysql://192.168.241.192:3306/webgis?useUnicode=true&characterEncoding=utf8
+      username: webgis
+      password: webgis
+      driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    cluster:
+      nodes: 192.168.57.144:7000,192.168.57.144:7001,192.168.57.144:7002
+      password:
+  kafka:
+    broker-list: zk1.icms.com:9092,zk2.icms.com:9092,zk3.icms.com:9092
+    zookeeper-address: zk1.icms.com:2181,zk2.icms.com:2181,zk3.icms.com:2181
+  data:
+    mongodb:
+      host: 192.168.240.221
+      port: 27018
+      database: webgis
+      username: webgis
+      password: tmkjzgb123
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://192.168.241.165:8761/eureka/

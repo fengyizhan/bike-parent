@@ -1,0 +1,170 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.util.Date;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.tiamaes.bike.common.bean.system.User;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 借车记录 
+ * @author kangty
+ */
+@ApiModel(value = "BorrowRecord", description = "借车记录实体")
+public class BorrowRecord extends Export {
+
+	private static final long serialVersionUID = -8518802372029577477L;
+	
+	public BorrowRecord() {
+		
+	}
+	
+	public BorrowRecord(Vehicle vehicle, Park startPark, Park endPark, User user, 
+			Date startTime, Date endTime, double kilometers, double cost) {
+		this.setId(UUIDGenerator.getUUID());
+		this.setVehicle(vehicle);
+		this.setStartPark(startPark);
+		this.setEndPark(endPark);
+		this.setUser(user);
+		this.setStartTime(startTime);
+		this.setEndTime(endTime);
+		this.setKilometers(kilometers);
+		this.setCost(cost);
+		this.setCreateDate(new Date());
+	}
+	
+	@ApiModelProperty(value="日志编号")
+	private String id;
+	@ApiModelProperty(value="所借车辆")
+	private Vehicle vehicle;
+	@ApiModelProperty(value="出发借车停放区")
+	private Park startPark;
+	@ApiModelProperty(value="目的借车停放区")
+	private Park endPark;
+	@ApiModelProperty(value="借车人")
+	private User user;
+	@ApiModelProperty(value="开始时间")
+	private Date startTime;
+	@ApiModelProperty(value="结束时间")
+	private Date endTime;
+	@ApiModelProperty(value="总计时间")
+	private String countTime;
+	@ApiModelProperty(value="公里数")
+	private double kilometers;
+	@ApiModelProperty(value="花费")
+	private double cost;
+	@ApiModelProperty(value="类型(0: App, 1: IC卡)")
+	@JsonDeserialize(using = Type.Deserializer.class)
+	private Type type;
+	@ApiModelProperty(value="记录入库时间")
+	private Date createDate;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public Park getStartPark() {
+		return startPark;
+	}
+
+	public void setStartPark(Park startPark) {
+		this.startPark = startPark;
+	}
+
+	public Park getEndPark() {
+		return endPark;
+	}
+
+	public void setEndPark(Park endPark) {
+		this.endPark = endPark;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	public String getCountTime() {
+		return countTime;
+	}
+
+	public void setCountTime(String countTime) {
+		this.countTime = countTime;
+	}
+
+	public double getKilometers() {
+		return kilometers;
+	}
+
+	public void setKilometers(double kilometers) {
+		this.kilometers = kilometers;
+	}
+
+	public double getCost() {
+		return cost;
+	}
+
+	public void setCost(double cost) {
+		this.cost = cost;
+	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

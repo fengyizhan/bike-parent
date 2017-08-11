@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.rate.persistence.RateMapper">
+	<resultMap id="rateMap" type="com.tiamaes.bike.common.bean.information.Rate">
+		<id column="id" property="id"/>
+		<result property="stageTime" column="stageTime"/>
+		<result property="stagePrice" column="stagePrice"/>
+		<result property="stageLevel" column="stageLevel"/>
+		<result property="createTime" column="createTime"/>
+	</resultMap>
+	
+	<select id="getRateById" parameterType="String" resultMap="rateMap">
+		SELECT t.id,
+		       t.stageTime,
+		       t.stagePrice,
+		       t.stageLevel,
+		       t.createTime
+		FROM tb_rate t
+			WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfRates" parameterType="com.tiamaes.bike.common.bean.information.Rate" resultMap="rateMap">
+		SELECT t.id,
+		       t.stageTime,
+		       t.stagePrice,
+		       t.stageLevel,
+		       t.createTime
+		  FROM tb_rate t
+		<where>
+			<if test="stageLevel != null">
+		     AND t.stageLevel = #{stageLevel}
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select>
+	
+	<insert id="addRate" parameterType="com.tiamaes.bike.common.bean.information.Rate">
+		INSERT INTO tb_rate
+		  (id,
+		   stageTime,
+		   stagePrice,
+		   stageLevel,
+		   createTime)
+		VALUES
+		  (#{id,jdbcType=VARCHAR},
+		   #{stageTime},
+		   #{stagePrice},
+		   #{stageLevel},
+		   #{createTime})
+	</insert>
+	
+	<update id="updateRate" parameterType="com.tiamaes.bike.common.bean.information.Rate">
+		UPDATE tb_rate
+		   SET stageTime  = #{stageTime},
+		       stagePrice = #{stagePrice},
+		       stageLevel = #{stageLevel}
+		 WHERE id = #{id}
+	</update>
+	
+	<delete id="deleteRate" parameterType="com.tiamaes.bike.common.bean.information.Rate">
+		DELETE FROM tb_rate WHERE id = #{id}
+	</delete>
+	
+	<select id="hasExists" resultType="boolean">
+		SELECT COUNT(1) FROM tb_rate t
+		<where>
+			t.stageLevel = #{stageLevel}
+			<if test="id != null">
+		     AND t.id != #{id}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getListOfRateLevels" resultType="Integer">
+		SELECT stageLevel FROM tb_rate t ORDER BY stageLevel
+	</select>
+</mapper>

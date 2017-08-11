@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.information.persistence.ProjectMapper">
+
+	<!-- 根据厂区查询出工程id -->
+	<select id="getByStation" resultType="String">
+		SELECT ID FROM TB_PROJECT WHERE beginStation = #{beginStation} AND endStation = #{endStation}
+	</select>
+</mapper>

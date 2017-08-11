@@ -1,0 +1,184 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<div class="row">
+					<fieldset>
+						<legend>司机信息</legend>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">司机姓名</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+								<input type="text" class="form-control input-sm" name="name"
+									ng-model="dialog.data.name" ng-readonly="!dialog.editabled" maxlength="40" placeholder="请输入驾驶员姓名" required="true">
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">准驾车型</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.licenseType.$invalid, 'has-success':form.licenseType.$valid}">
+									<ui-select ng-model="dialog.data.licenseType" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled">
+										<ui-select-match placeholder="选择准驾车型">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in dialog.licenseTypes track by $index">
+											<span ng-bind="item.name"></span>
+										</ui-select-choices>
+									</ui-select>
+									<input type="hidden" name="licenseType" required="ture" ng-model="dialog.data.licenseType">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">驾驶车辆</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.vehicle.$invalid, 'has-success':form.vehicle.$valid}">
+									<ui-select ng-model="dialog.data.vehicle" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled">
+										<ui-select-match placeholder="输入车牌号模糊搜索">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in dialog.vehicles track by $index" 
+											refresh="dialog.validateName($select.search)" refresh-delay="0">
+											<span ng-bind="item.name"></span>
+										</ui-select-choices>
+									</ui-select>
+									<input type="hidden" name="vehicle" required="ture" ng-model="dialog.data.vehicle">
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">性别</label>
+							<div class="col-sm-4">
+								<ui-select ng-model="dialog.data.sex" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled">
+									<ui-select-match placeholder="选择性别">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.driverSexs track by $index">
+										<span ng-bind="item.name"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">联系电话</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.telephone.$invalid, 'has-success':form.telephone.$valid}">
+								<input type="text" class="form-control input-sm" name="telephone"
+									ng-model="dialog.data.telephone" ng-readonly="!dialog.editabled" 
+									placeholder="请输入联系电话" ng-minlength="11" maxlength="11" required="true">
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">身份证号</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.identityCard.$invalid, 'has-success':form.identityCard.$valid}">
+								<input type="text" class="form-control input-sm" name="identityCard"
+									ng-model="dialog.data.identityCard"
+									ui-validate-async="{alreadyExists: 'dialog.validateIdentityCard($modelValue)'}"
+									ng-model-options="{debounce: 100}" 
+									ng-readonly="!dialog.editabled" placeholder="请输入身份证号" maxlength="20" required="true">
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">现居住地</label>
+							<div class="col-sm-4" ng-class="">
+								<input type="text" class="form-control input-sm" name="address"
+									ng-model="dialog.data.address" ng-readonly="!dialog.editabled" maxlength="180" placeholder="请输入地址">
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">是否主驾</label>
+							<div class="col-sm-4">
+								<ui-select ng-model="dialog.data.isMaster" theme="bootstrap" title="{{$select.selected?'是':'否'}}" ng-disabled="!dialog.editabled">
+									<ui-select-match placeholder="选择是否主驾驶">{{$select.selected?'是':'否'}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in [false,true] track by $index">
+										<span ng-bind="item?'是':'否'"></span>
+									</ui-select-choices>
+								</ui-select>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">出生日期</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.birthday"
+										is-open="dialog.birthday.opened" uib-datepicker-popup="yyyy-MM-dd" startingDay="1"
+										ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.birthday.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight:normal;">审检日期</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.examineYear"
+										is-open="dialog.examineYear.opened" uib-datepicker-popup="yyyy-MM-dd" startingDay="1"
+										ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.examineYear.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+						</div>
+					</fieldset>
+				</div>
+				<div class="row">
+					<fieldset>
+						<legend>从业资格证</legend>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">资格证号</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.licenseNo.$invalid, 'has-success':form.licenseNo.$valid}">
+								<input type="text" class="form-control input-sm" name="licenseNo"
+									ng-model="dialog.data.licenseNo" 
+									ui-validate-async="{alreadyExists: 'dialog.validateLicenseNo($modelValue)'}"
+									ng-model-options="{debounce: 100}" 
+									ng-readonly="!dialog.editabled" placeholder="请输入从业资格证号" maxlength="40">
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">发证机构</label>
+							<div class="col-sm-4">
+								<input type="text" class="form-control input-sm" name="licenseAgency"
+									ng-model="dialog.data.licenseAgency" maxlength="180" ng-readonly="!dialog.editabled" placeholder="请输入发证机构">
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">发证时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.licenseDate"
+										is-open="dialog.licenseDate.opened" uib-datepicker-popup="yyyy-MM-dd" startingDay="1"
+										ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.licenseDate.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">过期时间</label>
+							<div class="col-sm-4">
+								<div class="input-group input-group-sm">
+									<input type="text" class="form-control" ng-model="dialog.data.invalidDate"
+										is-open="dialog.invalidDate.opened" uib-datepicker-popup="yyyy-MM-dd" startingDay="1"
+										ng-required="true" readonly="readonly" />
+									<span class="input-group-btn">
+										<button type="button" class="btn btn-default" ng-disabled="!dialog.editabled" ng-click="dialog.invalidDate.open($event)">
+											<i class="glyphicon glyphicon-calendar"></i>
+										</button>
+									</span> 
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">监管机构</label>
+							<div class="col-sm-4">
+								<input type="text" class="form-control input-sm" name="monitorOrg"
+									ng-model="dialog.data.superviseAgency" maxlength="180" ng-readonly="!dialog.editabled" placeholder="请输入监管机构">
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">监督电话</label>
+							<div class="col-sm-4">
+								<input type="text" class="form-control input-sm" name="monitorPhone"
+									ng-model="dialog.data.supervisePhone" maxlength="20" ng-readonly="!dialog.editabled" placeholder="请输入监督电话">
+							</div>
+						</div>
+					</fieldset>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

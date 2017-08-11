@@ -1,0 +1,6 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+public interface CommandHandler {
+	
+	void issuedCommand(Object command);
+}

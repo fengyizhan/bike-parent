@@ -1,0 +1,26 @@
+package com.tiamaes.bike.reporter.integrated.driver.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.DriverCardRecord;
+import com.tiamaes.mybatis.Pagination;
+
+public interface DriverCardRecordServiceInterface {
+	
+	/**
+	 * 获取司机插拔卡记录分页数据
+	 * @param driverCardRecord
+	 * @param pagination
+	 * @return
+	 */
+	List<DriverCardRecord> getListOfDriverCardRecords(Parameters<DriverCardRecord> parameters, Pagination<DriverCardRecord> pagination);
+	
+	/**
+	 * 获取司机插拔卡记录总记录数
+	 * @param driverCardRecord
+	 * @return
+	 */
+	int getTotalOfDriverCardRecords(Parameters<DriverCardRecord> parameters);
+
+}

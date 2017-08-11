@@ -1,0 +1,26 @@
+package com.tiamaes.bike.reporter.integrated.photo.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.PhotoRecord;
+import com.tiamaes.mybatis.Pagination;
+
+public interface PhotoRecordServiceInterface {
+	
+	/**
+	 * 获取设备拍照记录分页数据
+	 * @param photoRecord
+	 * @param pagination
+	 * @return
+	 */
+	List<PhotoRecord> getListOfPhotoRecords(Parameters<PhotoRecord> parameters, Pagination<PhotoRecord> pagination);
+	
+	/**
+	 * 获取设备拍照记录总记录数
+	 * @param photoRecord
+	 * @return
+	 */
+	int getTotalOfPhotoRecords(Parameters<PhotoRecord> parameters);
+
+}

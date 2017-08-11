@@ -1,0 +1,48 @@
+package com.tiamaes.bike.connector.listener;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.command.Command;
+import com.tiamaes.bike.connector.protocol.handler.command.CommandHandler;
+
+@Component
+public class Listener {
+	private static Logger logger = LogManager.getLogger(Listener.class);
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	@Autowired
+	private ApplicationContext applicationContext;
+	
+	@KafkaListener(id = "listen1", topics = "com.tiamaes.bike.common.bean.command.Command", containerFactory = "kafkaStringListenerContainerFactory")
+	public void listen1(@Payload String context,
+			@Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
+		try {
+			Command command = (Command)objectMapper.readValue(context, Object.class);
+			if(command != null){
+				String beanName = getBeanName(command.getClass()) + "Handler";
+				@SuppressWarnings("unchecked")
+				CommandHandler<Command> handler = applicationContext.getBean(beanName, CommandHandler.class);
+				handler.execute(command);
+			}
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+	}
+	
+	private static String getBeanName(Class<? extends Command> clazz){
+		char chars[] = clazz.getSimpleName().toCharArray();
+	    chars[0] = Character.toLowerCase(chars[0]);
+	    return new String(chars);
+	}
+}

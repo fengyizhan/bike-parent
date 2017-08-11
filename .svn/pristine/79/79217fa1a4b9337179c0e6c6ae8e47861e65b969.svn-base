@@ -1,0 +1,16 @@
+package com.tiamaes.bike.exporter.integrated.driver.service;
+
+import java.io.File;
+
+import com.tiamaes.bike.common.bean.integrated.DriverCardRecord;
+
+public interface DriverCardRecordServiceInterface {
+	
+	/**
+	 * 导出司机插拔卡记录列表
+	 * @param driverCardRecord
+	 * @throws Exception
+	 */
+	File exportExcelOfDriverCardRecords(DriverCardRecord driverCardRecord)  throws Exception;
+
+}

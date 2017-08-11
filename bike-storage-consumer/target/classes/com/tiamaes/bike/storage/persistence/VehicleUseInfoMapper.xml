@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.VehicleUseInfoMapper">
+	<!-- 保存终端信息 -->
+	<insert id="addVehicleUseInfo" parameterType="com.tiamaes.bike.common.bean.integrated.ParkVehicleUseRecord">
+		INSERT INTO tb_park_bike_use_info (
+			id,
+			parkId,
+			parkName,
+			bikeId,
+			bikeName,
+			simNo,
+			username,
+			icCardNumber,
+			useType,
+			kilometers,
+			cost,
+			type,
+			createDate
+		) VALUES (
+			#{id},
+			#{park.id},
+			#{park.name},
+			#{vehicle.id},
+			#{vehicle.name},
+			#{vehicle.simNo},
+			#{user.username},
+			#{user.icCardNumber},
+			#{useType.index},
+			#{kilometers},
+			#{cost},
+			#{type.index},
+			#{createDate}
+		)
+	</insert>
+	
+	<delete id="deleteVehicleUseInfo" parameterType="String">
+  		DELETE FROM tb_park_bike_use_info WHERE id = #{id}
+  	</delete>
+</mapper>

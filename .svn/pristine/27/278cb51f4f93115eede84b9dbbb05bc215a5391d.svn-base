@@ -1,0 +1,115 @@
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('RegionController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/
+			var Company = $resource("api/information/company/:id", { "id" : "@id"}, {
+				init : { method : 'GET',responseType: "json", url : 'api/information/company/init'},
+				validateCompanyname : {method : 'GET', url : 'api/information/company/checkname/:name/:id'},
+				get : { method : 'GET'},
+				save : { method : 'PUT'},
+				remove : { method : 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			$scope.searchForm = {
+				data:{},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "公司信息详情";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			};
+			$scope.add = function(parentId){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.title = "新增公司信息";
+				$scope.dialog.data = {};
+				$scope.dialog.show();
+				
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					Company.save($scope.dialog.data,function(response){
+						$scope.pagination.unshift(response);
+                    });
+					$scope.dialog.close();
+				};
+			}
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "修改公司信息";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+				
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					Company.save($scope.dialog.data, function(response){
+						$scope.pagination.refresh(response);
+                    }, function(response){
+                    	$scope.$confrim.init(response).show();
+                    });
+					$scope.dialog.close();
+				};
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该公司信息?',callback:function(){
+					Company.remove({"id":target.id},function(response){
+						if (response.state == undefined) {
+							$scope.pagination.remove(target);
+						} else {
+							$scope.$confrim.init({title:'警告',type:'warning',content : response.message}).show();
+						}
+                    });
+				}}).show();
+			};
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				dialog.validateCompanyname = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Company.validateCompanyname({"id": dialog.data.id, "name": name}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				dialog.validatePhone = function(phone){
+					return $q(function(resolve, reject) {
+						if (phone === undefined) {
+							reject();
+						} else {
+							var isPhone = /^([0-9]{3,4}-)?[0-9]{7,8}$/;
+						    var isMob=/^((\+?86)|(\(\+86\)))?(13[012356789][0-9]{8}|15[012356789][0-9]{8}|18[02356789][0-9]{8}|147[0-9]{8}|1349[0-9]{7})$/;
+						    if(isMob.test(phone)||isPhone.test(phone)){
+						    	resolve();
+						    } else {
+						    	reject();
+						    }
+						}
+					});
+				};
+				dialog.validateLicenseNo = function(licenseNo){
+					return $q(function(resolve, reject) {
+						if (licenseNo === undefined) {
+							reject();
+						} else if (!isNaN(licenseNo)) {
+					    	resolve();
+						} else {
+							reject();
+						}
+					});
+				};
+			});
+		}]);
+	});
+})(window.angular);

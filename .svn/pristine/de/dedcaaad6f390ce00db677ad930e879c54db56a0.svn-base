@@ -1,0 +1,30 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import java.text.ParseException;
+import java.util.Date;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.junit.Test;
+
+public class Received0108Test {
+	@Test
+	public void test() throws DecoderException, ParseException{
+
+		Header header = new Header();
+		header.setId(0x0003);
+		header.setLength(0);
+		header.setChildPackage(false);
+		header.setEnableRSA(false);
+		header.setTerminalId(100000);
+		header.setTerminalType(Header.Type.LOCK);
+		header.setSerialNo(new Date().getTime());
+		String s="170302134902111213";
+		byte[] bytes1=Hex.decodeHex(s.toCharArray());
+		Received0180 received0180=new Received0180(header,bytes1);
+		
+		System.out.println(received0180.getBody().getLockTime());
+		System.out.println(received0180.getBody().getTimecheckcode());
+		
+	}
+}

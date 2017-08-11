@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.reporter.information.project.persistence.ProjectVehicleMapper">
+	<resultMap id="projectVehicleMap" type="com.tiamaes.bike.common.bean.information.ProjectVehicle">
+		<id column="projectId" property="projectId"/>
+		<id column="vehicleId" property="vehicleId"/>
+	</resultMap>
+	
+	<!-- 根据工程id返回车辆ids -->
+	<select id="findVehiclesByPId" parameterType="String"  resultMap="projectVehicleMap">
+		SELECT  projectId,
+				vehicleId
+				FROM Tb_Project_Vehicle 
+				<where>
+					projectId = #{projectId}
+	    		</where>
+	</select>
+</mapper>

@@ -1,0 +1,590 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.tiamaes.bike.common.bean.system.PointVector;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 车辆信息
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Vehicle", description = "车辆信息")
+public class Vehicle extends PointVector {
+	private static final long serialVersionUID = 5658959177174965120L;
+	
+	/**
+	 * 所属公司
+	 */
+	@ApiModelProperty(value="所属公司")
+	private Company company;
+	/**
+	 * 所属部门(车队)
+	 */
+	@ApiModelProperty(value="所属部门(车队)")
+	private Department department;
+	/**
+	 * 终端
+	 */
+	@ApiModelProperty(value="终端")
+	private Terminal terminal;
+	/**
+	 * 车牌颜色
+	 */
+	@ApiModelProperty(value="车牌颜色")
+	@JsonDeserialize(using = PlateColor.Deserializer.class)
+	private PlateColor plateColor;
+	/**
+	 * 基本属性(车辆本身的不常改变的属性)
+	 */
+	@ApiModelProperty(value="基本属性(车辆本身的不常改变的属性)")
+	private Property property;
+	/**
+	 * 是否已经注册
+	 */
+	@ApiModelProperty(value="是否已经注册")
+	private boolean registered;
+	/**
+	 * 备注
+	 */
+	@ApiModelProperty(value="备注")
+	private String remark;
+	
+	/**
+	 * 车辆所属工程
+	 */
+	@ApiModelProperty(value="车辆所属工程")
+	private Project project;
+	
+	/**
+	 * 临时参数(工程车辆查询时使用)
+	 */
+	@ApiModelProperty(value="临时参数(工程车辆查询时使用)")
+	private Project param;
+	
+	/**
+	 * 状态信息id(车辆状态信息入库使用)
+	 */
+	@ApiModelProperty(value="状态信息id(车辆状态信息入库使用)")
+	private String statusInfoId;
+	
+	/**
+	 * 定位信息id(车辆定位信息入库使用)
+	 */
+	@ApiModelProperty(value="定位信息id(车辆定位信息入库使用)")
+	private String locationInfoId;
+	
+	/**
+	 * 工程车辆关系
+	 */
+	@ApiModelProperty(value="工程车辆关系")
+	private List<ProjectVehicle> projectVehicles;
+	
+	public Company getCompany() {
+		return company;
+	}
+
+	public void setCompany(Company company) {
+		this.company = company;
+	}
+
+	public Department getDepartment() {
+		return department;
+	}
+
+	public void setDepartment(Department department) {
+		this.department = department;
+	}
+
+
+	public Terminal getTerminal() {
+		return terminal;
+	}
+
+	public void setTerminal(Terminal terminal) {
+		this.terminal = terminal;
+	}
+	
+	public PlateColor getPlateColor() {
+		return plateColor;
+	}
+
+	public void setPlateColor(PlateColor plateColor) {
+		this.plateColor = plateColor;
+	}
+
+	public Property getProperty() {
+		return property;
+	}
+
+	public void setProperty(Property property) {
+		this.property = property;
+	}
+	
+	public Boolean getRegistered() {
+		return registered;
+	}
+
+	public void setRegistered(Boolean registered) {
+		this.registered = registered;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public Project getProject() {
+		return project;
+	}
+
+	public void setProject(Project project) {
+		this.project = project;
+	}
+
+	public List<ProjectVehicle> getProjectVehicles() {
+		return projectVehicles;
+	}
+
+	public void setProjectVehicles(List<ProjectVehicle> projectVehicles) {
+		this.projectVehicles = projectVehicles;
+	}
+
+	public Project getParam() {
+		return param;
+	}
+
+	public void setParam(Project param) {
+		this.param = param;
+	}
+	
+	public String getStatusInfoId() {
+		return statusInfoId;
+	}
+
+	public void setStatusInfoId(String statusInfoId) {
+		this.statusInfoId = statusInfoId;
+	}
+
+	public String getLocationInfoId() {
+		return locationInfoId;
+	}
+
+	public void setLocationInfoId(String locationInfoId) {
+		this.locationInfoId = locationInfoId;
+	}
+
+
+
+
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum PlateColor implements com.tiamaes.bike.common.Enum<PlateColor> {
+
+		NONE("未上牌"), BLUE("蓝色"), YELLOW("黄色"), BLACK("黑色"), WRITE("白色"), OTHER("其他");
+
+		private String name;
+
+		PlateColor(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static PlateColor valueOf(@JsonProperty("index") final int index) {
+			PlateColor[] roleTypes = PlateColor.values();
+			if (index > 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<PlateColor> {
+			@Override
+			public PlateColor deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return PlateColor.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return PlateColor.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return PlateColor.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+
+	public static class Property {
+		/**
+		 * 车籍地(所属省)
+		 */
+		@ApiModelProperty(value="车籍地(所属省)")
+		private Region province;
+		/**
+		 * 车籍地(所属市)
+		 */
+		@ApiModelProperty(value="车籍地(所属市)")
+		private Region city;
+		/**
+		 * 车籍地(所属县)
+		 */
+		@ApiModelProperty(value="车籍地(所属县)")
+		private Region region;
+		/**
+		 * 发动机号(发动机编号)
+		 */
+		@ApiModelProperty(value="发动机号(发动机编号)")
+		private String motorId;
+		/**
+		 * 服务开始时间
+		 */
+		@ApiModelProperty(value="服务开始时间")
+		private Date startDate;
+		/**
+		 * 服务结束时间
+		 */
+		@ApiModelProperty(value="服务结束时间")
+		private Date endDate;
+		/**
+		 * 设备入网日期
+		 */
+		@ApiModelProperty(value="设备入网日期")
+		private Date installDate;
+		/**
+		 * 经营许可
+		 */
+		@ApiModelProperty(value="经营许可")
+		private String operPermit;
+		/**
+		 * 注册时间
+		 */
+		@ApiModelProperty(value="注册时间")
+		private Date createDate;
+		/**
+		 * 物料类型
+		 */
+		@ApiModelProperty(value="物料类型")
+		@JsonDeserialize(using = Property.UseType.Deserializer.class)
+		private UseType useType;
+		/**
+		 * 运营状态
+		 */
+		@ApiModelProperty(value="运营状态")
+		@JsonDeserialize(using = Property.RunStatus.Deserializer.class)
+		private RunStatus runStatus;
+		/**
+		 * 所属行业(id,名称name)
+		 */
+		@ApiModelProperty(value="所属行业(id,名称name)")
+		private IndustryType industryType;
+		/**
+		 * 车辆类型(id,名称name)
+		 */
+		@ApiModelProperty(value="车辆类型(id,名称name)")
+		private VehicleType vehicleType;
+		/**
+		 * 装载量(立方数)
+		 */
+		@ApiModelProperty(value="装载量(立方数)(新增时必填, 查询时可不填)")
+		private double loadCube;
+
+
+		public Region getProvince() {
+			return province;
+		}
+
+		public void setProvince(Region province) {
+			this.province = province;
+		}
+
+		public Region getCity() {
+			return city;
+		}
+
+		public void setCity(Region city) {
+			this.city = city;
+		}
+
+		public Region getRegion() {
+			return region;
+		}
+
+		public void setRegion(Region region) {
+			this.region = region;
+		}
+
+		public Date getInstallDate() {
+			return installDate;
+		}
+
+		public void setInstallDate(Date installDate) {
+			this.installDate = installDate;
+		}
+
+		public Date getStartDate() {
+			return startDate;
+		}
+
+		public void setStartDate(Date startDate) {
+			this.startDate = startDate;
+		}
+
+		public Date getEndDate() {
+			return endDate;
+		}
+
+		public void setEndDate(Date endDate) {
+			this.endDate = endDate;
+		}
+
+		public String getOperPermit() {
+			return operPermit;
+		}
+
+		public void setOperPermit(String operPermit) {
+			this.operPermit = operPermit;
+		}
+
+		public String getMotorId() {
+			return motorId;
+		}
+
+		public void setMotorId(String motorId) {
+			this.motorId = motorId;
+		}
+
+		public Date getCreateDate() {
+			return createDate;
+		}
+
+		public void setCreateDate(Date createDate) {
+			this.createDate = createDate;
+		}
+
+		public UseType getUseType() {
+			return useType;
+		}
+
+		public void setUseType(UseType useType) {
+			this.useType = useType;
+		}
+
+		public RunStatus getRunStatus() {
+			return runStatus;
+		}
+
+		public void setRunStatus(RunStatus runStatus) {
+			this.runStatus = runStatus;
+		}
+
+		public IndustryType getIndustryType() {
+			return industryType;
+		}
+
+		public void setIndustryType(IndustryType industryType) {
+			this.industryType = industryType;
+		}
+
+		public VehicleType getVehicleType() {
+			return vehicleType;
+		}
+
+		public void setVehicleType(VehicleType vehicleType) {
+			this.vehicleType = vehicleType;
+		}
+		
+		public double getLoadCube() {
+			return loadCube;
+		}
+
+		public void setLoadCube(double loadCube) {
+			this.loadCube = loadCube;
+		}
+
+
+		@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+		public static enum UseType implements com.tiamaes.bike.common.Enum<UseType> {
+
+			ZHATU("渣土"), LIQING("沥青");
+
+			private String name;
+
+			UseType(String name) {
+				this.name = name;
+			}
+
+			@Override
+			@JsonProperty("value")
+			public String getValue() {
+				return name();
+			}
+
+			@Override
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@Override
+			@JsonProperty("index")
+			public int getIndex() {
+				return this.ordinal();
+			}
+
+			@JsonCreator
+			public static UseType valueOf(@JsonProperty("index") final int index) {
+				UseType[] types = UseType.values();
+				if (index > 0 && index < types.length) {
+					return types[index];
+				}
+				return null;
+			}
+
+			public static class Deserializer extends JsonDeserializer<UseType> {
+				@Override
+				public UseType deserialize(JsonParser jp, DeserializationContext ctxt)
+						throws IOException, JsonProcessingException {
+					JsonToken currentToken = jp.getCurrentToken();
+					switch (currentToken) {
+					case VALUE_NUMBER_INT:
+						return UseType.valueOf(jp.getIntValue());
+					case VALUE_STRING:
+						String text = jp.getText();
+						if (StringUtils.isNotBlank(text)) {
+							return UseType.valueOf(text.trim().toUpperCase());
+						}
+					case START_OBJECT:
+						JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+						if (jsonNode != null && jsonNode.isValueNode()) {
+							text = jsonNode.asText();
+							if (StringUtils.isNotBlank(text)) {
+								return UseType.valueOf(text.trim().toUpperCase());
+							}
+						}
+					default:
+						break;
+					}
+					return null;
+				}
+			}
+
+		}
+
+		@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+		public static enum RunStatus implements com.tiamaes.bike.common.Enum<RunStatus> {
+			ABORT("报废"), STOP("停运"), MAINTAIN("维修"), NORMAL("正常");
+
+			private String name;
+
+			RunStatus(String name) {
+				this.name = name;
+			}
+
+			@Override
+			@JsonProperty("value")
+			public String getValue() {
+				return name();
+			}
+
+			@Override
+			@JsonProperty("name")
+			public String getName() {
+				return this.name;
+			}
+
+			@Override
+			@JsonProperty("index")
+			public int getIndex() {
+				return this.ordinal();
+			}
+
+			@JsonCreator
+			public static RunStatus valueOf(@JsonProperty("index") final int index) {
+				RunStatus[] types = RunStatus.values();
+				if (index > 0 && index < types.length) {
+					return types[index];
+				}
+				return null;
+			}
+
+			public static class Deserializer extends JsonDeserializer<RunStatus> {
+				@Override
+				public RunStatus deserialize(JsonParser jp, DeserializationContext ctxt)
+						throws IOException, JsonProcessingException {
+					JsonToken currentToken = jp.getCurrentToken();
+					switch (currentToken) {
+					case VALUE_NUMBER_INT:
+						return RunStatus.valueOf(jp.getIntValue());
+					case VALUE_STRING:
+						String text = jp.getText();
+						if (StringUtils.isNotBlank(text)) {
+							return RunStatus.valueOf(text.trim().toUpperCase());
+						}
+					case START_OBJECT:
+						JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+						if (jsonNode != null && jsonNode.isValueNode()) {
+							text = jsonNode.asText();
+							if (StringUtils.isNotBlank(text)) {
+								return RunStatus.valueOf(text.trim().toUpperCase());
+							}
+						}
+					default:
+						break;
+					}
+					return null;
+				}
+			}
+		}
+	}
+}

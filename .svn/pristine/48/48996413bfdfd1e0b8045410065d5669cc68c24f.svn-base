@@ -1,0 +1,55 @@
+package com.tiamaes.bike.common.bean.message;
+
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+
+import com.tiamaes.bike.common.bean.connector.command.PolygonDelCommand;
+
+/**
+ * 删除多边形区域 
+ * @author waibao001
+ *
+ */
+public class Message8605 extends Message {
+
+	private static final long serialVersionUID = -1384037959775909259L;
+
+	public Message8605(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8605);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+
+	public Message8605(PolygonDelCommand polygonDelCommand) throws Exception {
+		Header headernow = new Header();
+		headernow.setId(0x8605);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(polygonDelCommand.getSimNo());
+		this.setHeader(headernow);
+		this.setResponseBody(polygonDelCommand);
+	}
+
+	/**
+	 * 生成并放入置多边形区域实体
+	 * @param polygon
+	 * @throws Exception
+	 */
+	public void setResponseBody(PolygonDelCommand polygonDel) throws Exception {
+		StringBuffer bufferStr = new StringBuffer();
+		List<Integer> polygonIds = polygonDel.getPolygonIds();
+		//区域id
+		bufferStr.append(String.format("%02X", polygonDel.getPolygonIds().size()));
+		for (Integer polygonId : polygonIds) {
+			bufferStr.append(String.format("%08X", polygonId));
+		}
+		
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		
+		this.setBody(responseBody);
+	}
+}

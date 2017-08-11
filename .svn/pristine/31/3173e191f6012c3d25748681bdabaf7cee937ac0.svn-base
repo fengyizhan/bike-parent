@@ -1,0 +1,16 @@
+package com.tiamaes.bike.connector.persistence;
+
+import com.tiamaes.bike.common.bean.information.Vehicle;
+
+/**
+ * @author lsl
+ *
+ */
+public interface VehicleMapper {
+
+	/**
+	 * 更新车辆
+	 * @param vehicle
+	 */
+	void updateVehicle(Vehicle vehicle);
+}

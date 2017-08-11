@@ -1,0 +1,84 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+
+/**
+ * 下发终端升级包
+ * 
+ * @author Chen
+ */
+public class Message8009 extends Message {
+
+	private Body body;
+
+	public Message8009(Header header, Result result) {
+		Header _header = new Header();
+		_header.setId(0x8001);
+		_header.setChildPackage(header.isChildPackage());
+		_header.setEnableRSA(header.isEnableRSA());
+		_header.setTerminalId(header.getTerminalId());
+
+		Body _body = new Body();
+		_body.setMessageId(_header.getId());
+		_body.setSerialNo(_header.getSerialNo());
+		_body.setResult(result);
+		this.setHeader(_header);
+		this.setBody(_body);
+		this.setBytes(_body.getBytes());
+	}
+
+	public Body getBody() {
+		return body;
+	}
+
+	public void setBody(Body body) {
+		this.body = body;
+	}
+
+	public class Body {
+		private int messageId;
+		private long serialNo;
+		private Result result;
+
+		public int getMessageId() {
+			return messageId;
+		}
+
+		public void setMessageId(int messageId) {
+			this.messageId = messageId;
+		}
+
+		public long getSerialNo() {
+			return serialNo;
+		}
+
+		public void setSerialNo(long serialNo) {
+			this.serialNo = serialNo;
+		}
+
+		public Result getResult() {
+			return result;
+		}
+
+		public void setResult(Result result) {
+			this.result = result;
+		}
+
+		public byte[] getBytes() {
+			StringBuffer bufferStr = new StringBuffer();
+			bufferStr.append(String.format("%08X", serialNo));
+			bufferStr.append(String.format("%04X", messageId));
+			bufferStr.append(String.format("%02X", result.ordinal()));
+			try {
+				return Hex.decodeHex(bufferStr.toString().toCharArray());
+			} catch (DecoderException e) {
+				return null;
+			}
+		}
+	}
+
+	public enum Result {
+		SUCCESS, FAILURE, ERROR, NOT_SUPPORTED, ACKNOWLEDGED;
+	}
+}

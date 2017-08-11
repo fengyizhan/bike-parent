@@ -1,0 +1,229 @@
+package com.tiamaes.bike.api.information.terminal.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.dictionary.service.DictionaryServiceInterface;
+import com.tiamaes.bike.api.information.terminal.service.TerminalServiceInterface;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/terminal")
+@Api(tags = {"terminal"}, description = "终端信息管理")
+public class TerminalController {
+	
+	private static Logger logger = LogManager.getLogger(TerminalController.class);
+	@Resource
+	private TerminalServiceInterface terminalService;
+	@Resource
+	private DictionaryServiceInterface dictionaryService; 
+	
+	/**
+	 * 列表页面初始化 设备状态下拉菜单
+	 * @return
+	 */	
+	@RequestMapping(value = "/init", method = RequestMethod.GET, produces = { "application/json" })
+	@ApiOperation(value = "设备状态和生产厂家", notes = "列表页面初始化 设备状态和生产厂家下拉菜单")
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<String,Object>();
+		//设备状态
+		Terminal.State[] states= Terminal.State.values();
+		//生产厂家
+		List<Terminal.Factory> factories= dictionaryService.getListOfFactories();
+		
+		result.put("terminalStates", states);
+		result.put("factories", factories);
+		
+		return result;
+	}
+	
+	/**
+	 * 分页查询列表数据
+	 * @param terminal
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "终端列表", notes = "分页查询终端列表数据")
+	@ApiImplicitParam(name = "terminal", value = "终端实体", required = true, dataType = "Terminal")
+	public @ResponseBody PageInfo<Terminal> page(@RequestBody Terminal terminal, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Terminal> pagination = new Pagination<Terminal>(number, pageSize);
+		List<Terminal> list = terminalService.getAllTerminals(terminal, pagination);
+		return new PageInfo<Terminal>(list);
+	}
+	
+	
+	/**
+	 * 验证终端编号是否已经存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET)
+	@ApiOperation(value = "验证终端编号", notes = "验证终端编号是否已经存在")
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		//如果值存在，就返回true
+		if(StringUtils.isBlank(name)){
+			result.put("state", true);
+		}else{
+			//校验终端编号
+			boolean flag = checkName(name);
+			
+			if(!flag){
+				result.put("state", true);
+			}else if(name.length()!=7){
+				result.put("state", true);
+			}else{
+				result.put("state", terminalService.checkTerminalName(name));
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取终端详情
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {"application/json" })
+	@ApiOperation(value = "终端详情", notes = "获取终端详情",response=Terminal.class)
+	public @ResponseBody Terminal get(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Terminal terminal = terminalService.getTerminalById(id);
+		return terminal;
+	}
+	
+	/**
+	 * 新增终端信息
+	 * @param terminal
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "新增终端信息", notes = "新增终端信息",response=Terminal.class)
+	@ApiImplicitParam(name = "terminal", value = "终端实体", required = true, dataType = "Terminal")
+	public @ResponseBody Terminal add(@RequestBody Terminal terminal,@CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(terminal.toString());
+		}
+		
+		String id = setKey(terminal);
+		//设置主键
+		terminal.setId(id);
+		
+		terminal = terminalService.addTerminal(terminal);
+		
+		return terminal;
+	}
+	
+	/**
+	 * 终端信息更新
+	 * @param terminal
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "更新终端信息", notes = "更新终端信息",response=Terminal.class)
+	@ApiImplicitParam(name = "terminal", value = "终端实体", required = true, dataType = "Terminal")
+	public @ResponseBody Terminal update(@RequestBody Terminal terminal, @PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(terminal.toString());
+		}
+		terminal.setId(id);
+		terminal = terminalService.updateTerminal(terminal);
+		return terminal;
+	}
+	
+	/**
+	 * 删除终端信息
+	 * @param id
+	 * @param operator
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	@ApiOperation(value = "删除终端信息", notes = "删除终端信息")
+	public @ResponseBody void delete(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(StringUtils.isNotBlank(id)){
+			if(logger.isDebugEnabled()){	
+				logger.debug(id);
+			}
+			Terminal terminal = terminalService.getTerminalById(id);
+			terminalService.deleteTerminal(terminal);
+		}
+	}
+	
+	
+	
+	/**
+	 * 制造商ID转byte+终端型号ID转byte+终端ID转BYTE然后把这一个大的byte转成16进制字符串
+	 * @param terminal
+	 * @return
+	 */
+	private String setKey(Terminal terminal){
+		Assert.notNull(terminal,"终端信息不能为空！");
+		Assert.notNull(terminal.getFactory(),"终端制造商不能为空！");
+		Assert.notNull(terminal.getType(),"终端类型不能为空！");
+		Assert.notNull(terminal.getName(),"终端号不能为空！");
+		
+		String factoryId = terminal.getFactory().getId();
+		String terminalTypeId = terminal.getType().getId();
+		String terminalName=terminal.getName();
+		
+		byte[] factoryIdBytes = factoryId.getBytes();
+		byte[] terminalTypeIdBytes = terminalTypeId.getBytes();
+		byte[] terminalIdBytes = terminalName.getBytes();
+		//以生产商id,终端类型id,终端编号,分别转成数组再转成16进制字符串，作为主键
+		byte[] bytes = new byte[0];
+		bytes = ArrayUtils.addAll(bytes, factoryIdBytes);
+		bytes = ArrayUtils.addAll(bytes, terminalTypeIdBytes);
+		bytes = ArrayUtils.addAll(bytes, new byte[20 - terminalTypeIdBytes.length]);
+		bytes = ArrayUtils.addAll(bytes, terminalIdBytes);
+		return Hex.toHexString(bytes);
+	}
+	
+	/**
+	 * 校验终端编号 为字母或数字，或字母数字组合
+	 * @param str
+	 * @return
+	 */
+	 private boolean checkName(String str){
+	   String regEx="^[A-Za-z0-9_]+$";
+	   Pattern p=Pattern.compile(regEx);
+	   Matcher m=p.matcher(str);
+	   return m.matches();
+	 }
+}

@@ -1,0 +1,136 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.IOException;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 行政区划实体类
+ * @author kangtianyu
+ */
+@ApiModel(value = "Region", description = "行政区划实体类")
+public class Region {
+	@ApiModelProperty(value="行政区划编码(入库必需)")
+	private String id;
+	@ApiModelProperty(value="行政区划名(入库必需)")
+	private String name;
+	@ApiModelProperty(value="上级行政区划(入库必需)")
+	private String parentId;
+	@ApiModelProperty(value="行政区划级别(入库必需)")
+	@JsonDeserialize(using = Type.Deserializer.class)
+	private Type type;
+	@ApiModelProperty(value="是否有效(入库必需, 1为有效)")
+	private Integer state;
+	
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getParentId() {
+		return parentId;
+	}
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
+	}
+	public Type getType() {
+		return type;
+	}
+	public void setType(Type type) {
+		this.type = type;
+	}
+	public Integer getState() {
+		return state;
+	}
+	public void setState(Integer state) {
+		this.state = state;
+	}
+	
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Type implements com.tiamaes.bike.common.Enum<Type> {
+
+		COUNTRY("国家"), PROVINCE("省"), CITY("市"), DISTRICT("区县");
+
+		private String name;
+
+		Type(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+
+		@JsonCreator
+		public static Type valueOf(@JsonProperty("index") final int index) {
+			Type[] roleTypes = Type.values();
+			if (index > 0 && index < roleTypes.length) {
+				return roleTypes[index];
+			}
+			return null;
+		}
+
+		public static class Deserializer extends JsonDeserializer<Type> {
+			@Override
+			public Type deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Type.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return Type.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Type.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+	}
+}

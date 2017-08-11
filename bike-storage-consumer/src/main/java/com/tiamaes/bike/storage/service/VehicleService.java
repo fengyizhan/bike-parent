@@ -1,0 +1,27 @@
+package com.tiamaes.bike.storage.service;
+
+import javax.annotation.Resource;
+
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class VehicleService implements VehicleServiceInterface {
+
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Vehicle> vehicleOperator;
+	
+	@Override
+	public Vehicle getVehicleById(String id) {
+		Assert.notNull(id, "车辆id不能为空!");
+		Vehicle vehicle = vehicleOperator.get(RedisKey.VEHICLES, id);
+		return vehicle;
+	}
+}

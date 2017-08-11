@@ -1,0 +1,62 @@
+package com.tiamaes.bike.common.bean.message;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+
+/**
+ * 定位包
+ * 
+ * @author lsl
+ *
+ */
+public class Message0200 extends Message {
+
+	private static final long serialVersionUID = 1804396132297347701L;
+
+	public Message0200(PointVector pointVector, List<VehicleWarningInfo> vehicleWarningInfos,
+			VehicleWarningInfo vehicleStationInfo) {
+		setPointVector(pointVector);
+		setVehicleWarningInfos(vehicleWarningInfos);
+		setVehicleStationInfo(vehicleStationInfo);
+	}
+
+	/**
+	 * 车辆定位信息
+	 */
+	private PointVector pointVector;
+	/**
+	 * 车辆报警信息
+	 */
+	private List<VehicleWarningInfo> vehicleWarningInfos;
+	/**
+	 * 车辆进出场信息
+	 */
+	private VehicleWarningInfo vehicleStationInfo;
+
+	public PointVector getPointVector() {
+		return pointVector;
+	}
+
+	public void setPointVector(PointVector pointVector) {
+		this.pointVector = pointVector;
+	}
+
+	public List<VehicleWarningInfo> getVehicleWarningInfos() {
+		return vehicleWarningInfos;
+	}
+
+	public void setVehicleWarningInfos(List<VehicleWarningInfo> vehicleWarningInfos) {
+		this.vehicleWarningInfos = vehicleWarningInfos;
+	}
+
+	public VehicleWarningInfo getVehicleStationInfo() {
+		return vehicleStationInfo;
+	}
+
+	public void setVehicleStationInfo(VehicleWarningInfo vehicleStationInfo) {
+		this.vehicleStationInfo = vehicleStationInfo;
+	}
+
+}

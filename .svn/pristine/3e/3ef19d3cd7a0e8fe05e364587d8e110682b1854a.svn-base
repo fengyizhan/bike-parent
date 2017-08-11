@@ -1,0 +1,56 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.Serializable;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 工程项目车辆关系
+ * @author kangty
+ *
+ */
+@ApiModel(value = "ProjectVehicle", description = "工程项目车辆关系")
+public class ProjectVehicle implements Serializable {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2156672616040826755L;
+
+	/**
+	 * 项目id
+	 */
+	@ApiModelProperty(value="项目id")
+	private String projectId;
+	
+	/**
+	 * 车辆id
+	 */
+	@ApiModelProperty(value="车辆id")
+	private String vehicleId;
+
+	public String getProjectId() {
+		return projectId;
+	}
+
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+
+	public String getVehicleId() {
+		return vehicleId;
+	}
+
+	public void setVehicleId(String vehicleId) {
+		this.vehicleId = vehicleId;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

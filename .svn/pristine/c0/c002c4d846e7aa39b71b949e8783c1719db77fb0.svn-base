@@ -1,0 +1,150 @@
+package com.tiamaes.bike.api;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.terminal.service.TerminalServiceInterface;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Terminal.State;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * 终端信息service单元测试
+ * @author waibao001
+ *
+ */
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class TerminalServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(TerminalServiceTest.class);
+	
+	@Autowired
+	private TerminalServiceInterface terminalservice;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", terminalservice);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void addTerminalTest() throws Exception{
+	
+		String id = "e4b59e81050d4f35858101441fd6221d";
+		Terminal _terminal = new Terminal();
+		_terminal.setId(id);
+		_terminal.setAuthentication(UUIDGenerator.getUUID().toUpperCase());
+		_terminal.setName("1000005");
+		_terminal.setSimNo("13780000002");
+		_terminal.setState(State.NORMAL);
+		_terminal.setCreateDate(new Date());
+		_terminal.setSoftwareVersion("V10730");
+		_terminal.setHardwareVersion("H10730");
+		_terminal.setRemark("终端不错！");
+		
+		Terminal.Factory factory = new Terminal.Factory();
+		factory.setId("10001");
+		factory.setName("博实结科技有限公司");
+		_terminal.setFactory(factory);
+		
+		Terminal.Type type = new Terminal.Type();
+		type.setId("80000000");
+		type.setName("JT808-V10729");
+		_terminal.setType(type);
+		
+		terminalservice.addTerminal(_terminal);
+		
+		Terminal actual = terminalservice.getTerminalById(id);
+		Assert.assertNotNull(actual);
+		Assert.assertEquals(id, actual.getId());
+		
+		logger.debug(jacksonObjectMapper.writeValueAsString(actual));
+	}
+	
+	@Test
+	public void updateTerminalTest() throws Exception{
+		String id = "e4b59e81050d4f35858101441fd6221d";
+		String simNo = "13780000003";
+		Terminal expected = terminalservice.getTerminalById(id);
+		expected.setSimNo(simNo);;
+		terminalservice.updateTerminal(expected);
+		
+		Terminal actual = terminalservice.getTerminalById(id);
+		Assert.assertEquals(simNo, actual.getSimNo());
+	}
+	
+	@Test
+	public void getTerminalByIdTest() throws Exception{
+		String id = "e4b59e81050d4f35858101441fd6221d";
+		
+		Terminal expected = terminalservice.getTerminalById(id);
+		
+		Assert.assertEquals(id, expected.getId());
+	}
+	
+	
+	@Test
+	public void getAllTerminalsTest() throws Exception{
+		int number = 1;
+		Terminal terminal = new Terminal();
+		int total = terminalservice.getTotalOfTerminals(terminal);
+		Pagination<Terminal> pagination = new Pagination<Terminal>(number, total);
+		List<Terminal> terminalList = terminalservice.getAllTerminals(terminal, pagination);
+		Assert.assertNotNull(terminalList);
+		logger.debug(jacksonObjectMapper.writeValueAsString(terminalList));
+	}
+	
+	@Test
+	public void checkTerminalNameTest() throws Exception{
+		String id = "e4b59e81050d4f35858101441fd6221d";
+		
+		Terminal expected = terminalservice.getTerminalById(id);
+		
+		Assert.assertTrue(terminalservice.checkTerminalName(expected.getName()));
+		
+	}
+	
+	@Test
+	public void deleteTerminalTest() throws Exception{
+		String id = "e4b59e81050d4f35858101441fd6221d";
+		
+		Terminal expected = terminalservice.getTerminalById(id);
+		
+		Assert.assertNotNull(expected);
+		
+		terminalservice.deleteTerminal(expected);
+		
+		Terminal actual = terminalservice.getTerminalById(id);
+		
+		Assert.assertNull(actual);
+	}
+	
+	@Test
+	public void getTerminalBySimNo()throws Exception{
+		String simNo = "018963201564";
+		
+		Terminal actual = terminalservice.getTerminalBySimNo(simNo);
+		
+		Assert.assertEquals(simNo, actual.getSimNo());
+	}
+}

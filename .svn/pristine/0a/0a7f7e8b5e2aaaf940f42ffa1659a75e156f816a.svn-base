@@ -1,0 +1,111 @@
+<div class="md-content">
+	<form action="#" name="form" method="post" autocomplete="off" class="form-horizontal" enctype="application/json" novalidate>
+		<div class="index-modal-header">
+			<h6 ng-bind="dialog.title"></h6>
+			<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+		</div>
+		<div class="modal-body">
+			<div class="container-fluid">
+				<ul class="wizard_steps">
+					<li>
+					  <a id="step-1" class="selected">
+						<span class="step_no">信息<br>完善</span>
+					  </a>
+					</li>
+					<li>
+					  <a id="step-2" class="disabled">
+						<span class="step_no">地图<br>绘制</span>
+					  </a>
+					</li>
+				  </ul>
+				<div class="row" id="msgDiv">
+					<div class="col-sm-12">
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">停放区名称</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.name.$invalid, 'has-success':form.name.$valid}">
+									<input type="text" class="form-control input-sm" name="name" ng-maxlength="15"
+										ui-validate-async="{alreadyExists: 'dialog.validateName($modelValue)'}" 
+										ng-model="dialog.data.name" ng-readonly="!dialog.editabled" 
+										placeholder="请输入停放区名称" required="true">
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">停放区地址</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.address.$invalid, 'has-success':form.address.$valid}">
+									<input type="text" class="form-control input-sm" name="address" ng-maxlength="66"
+										ng-model="dialog.data.address" ng-readonly="!dialog.editabled" 
+										placeholder="请输入停放区地址" required="true">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;"><span style="letter-spacing:.5em;">责</span><span style="letter-spacing:.5em;">任</span>人</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.principal.$invalid, 'has-success':form.principal.$valid}">
+									<input type="text" class="form-control input-sm" name="principal" 
+										ng-model="dialog.data.principal" ng-readonly="!dialog.editabled" 
+										placeholder="请输入负责人姓名" ng-maxlength="15" required="true">
+								</div>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">联系电话</label>
+							<div class="col-sm-4">
+								<div ng-class="{'has-error': form.telephone.$invalid, 'has-success':form.telephone.$valid}">
+									<input type="text" class="form-control input-sm" name="telephone" 
+										ui-validate-async="{phone: 'dialog.validatePhone($modelValue)'}"
+										ng-model="dialog.data.telephone" ng-readonly="!dialog.editabled" 
+										placeholder="请输入联系电话" ng-minlength="11" ng-maxlength="13" required="true">
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">所属省</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.province.$invalid, 'has-success':form.province.$valid}">
+								<ui-select ng-model="dialog.data.property.province" name="province" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled" on-select="dialog.selectProvince($item)" required="true">
+									<ui-select-match placeholder="请选择所属省">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.provinces track by $index">
+										<div ng-bind-html="item.name"></div>
+									</ui-select-choices> 
+								</ui-select>
+							</div>
+							<label class="col-sm-2 control-label" style="font-weight: normal;">所属市</label>
+							<div class="col-sm-4" ng-class="{'has-error': form.city.$invalid, 'has-success':form.city.$valid}">
+								<ui-select ng-model="dialog.data.property.city" name="city" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled" on-select="dialog.selectCity($item)">
+									<ui-select-match placeholder="请选择所属市">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.cities track by $index">
+										<div ng-bind-html="item.name"></div>
+									</ui-select-choices> 
+								</ui-select>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="font-weight: normal;">所属区/县</label>
+							<div class="col-sm-4">
+								<ui-select ng-model="dialog.data.property.district" name="district" theme="bootstrap" title="{{$select.selected.name}}" ng-disabled="!dialog.editabled">
+									<ui-select-match placeholder="请选择所属区/县">{{$select.selected.name}}</ui-select-match>
+									<ui-select-choices position="down" repeat="item in dialog.districts track by $index">
+										<div ng-bind-html="item.name"></div>
+									</ui-select-choices> 
+								</ui-select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" id="mapDiv" style="display:none">
+					<div class="col-sm-12" ng-class="{'has-error': form.paths.$invalid, 'has-success':form.paths.$valid}">
+						<div id="1474160923584" style="width:100%;height:424px;border-radius:0;border-width: 2px;" class="form-control"></div>
+						<input type="hidden" name="paths" ng-model="dialog.data.lng" required="true">
+						<input type="hidden" name="paths" ng-model="dialog.data.lat" required="true">
+						<input type="hidden" name="radius" ng-model="dialog.data.radius">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-default btn-flat md-close" data-dismiss="modal" type="button">取消</button>
+			<button class="btn btn-step btn-flat" id="preBtn" type="button" ng-click="dialog.pre()">上一步</button>
+			<button class="btn btn-step btn-flat" id="nextBtn" type="button" ng-click="dialog.next()">下一步</button>
+			<button class="btn btn-primary btn-flat" type="button" ng-click="dialog.submit($event)" ng-disabled="form.$invalid" ng-if="dialog.editabled">确定</button>
+		</div>
+	</form>
+</div>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.project.persistence.ProjectRouteMapper">
+	<resultMap id="projectRouteMap" type="com.tiamaes.bike.common.bean.information.ProjectRoute">
+		<id column="projectId" property="projectId"/>
+		<id column="routeId" property="routeId"/>
+		<association property="route" javaType="com.tiamaes.bike.common.bean.information.Route">
+	        <id property="id" column="routeId"/>
+	        <result property="name" column="routeName"/>
+	        <association property="paths" column="routeId" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+	</resultMap>
+
+	<!-- 根据工程id获取线路集 -->
+	<select id="getProjectByProjectId" parameterType="String" resultMap="projectRouteMap">
+		SELECT t.projectId,
+		       t.routeId,
+		       v.name AS routeName
+		  FROM tb_project_route t
+		  INNER JOIN tb_route v ON t.routeId = v.id
+		WHERE t.projectId = #{projectId}
+	</select>
+
+	<!-- 批量保存工程线路信息 -->
+	<insert id="addProjectRoutes">
+		INSERT INTO tb_project_route
+		  (projectId,
+		   routeId)
+    VALUES
+		  <foreach collection="projectRoutes" item="item" separator="," >
+		  (#{projectId}, #{item.routeId})
+		  </foreach>
+	</insert>
+	<!-- 删除工程线路信息 -->
+	<delete id="deleteProjectRoutes" parameterType="String">
+		DELETE FROM tb_project_route WHERE projectId = #{projectId}
+	</delete>
+
+	<!-- 根据线路id获取线路与工程的关联数 -->
+	<select id="getTotalUseOfRoute" parameterType="Integer" resultType="int">
+		SELECT COUNT(1) FROM tb_project_route WHERE routeId = #{id}
+	</select>
+
+	<!-- 根据线路获取与线路相关的工程-->
+	<select id="getProjectByRoute" parameterType="com.tiamaes.bike.common.bean.information.Route" resultType="String">
+		SELECT projectId FROM tb_project_route WHERE routeId = #{id}
+	</select>
+</mapper>

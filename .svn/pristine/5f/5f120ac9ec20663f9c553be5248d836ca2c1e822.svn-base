@@ -1,0 +1,42 @@
+package com.tiamaes.bike.connector;
+
+import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import com.tiamaes.bike.common.bean.information.Park;
+
+/**
+ * 【停车区信息】 webservice远程调用存根
+ * @author fyz
+ *
+ */
+@FeignClient("bike-api")
+public interface ParkServiceInterface {
+	/**
+	 * 停车区信息添加
+	 * @param park
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, value = "/api/information/park")
+	Park addPark(@RequestBody Park park);
+	/**
+	 * 停车区信息更新
+	 * @param vehicle
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, value = "/api/information/park/{id}")
+	Park updatePark(@RequestBody Park park, @PathVariable("id")String id);
+	
+	/**
+	 * 停车区信息获取
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/api/information/park/{id}")
+	Park getParkById(@PathVariable("id")String id);
+}

@@ -1,0 +1,123 @@
+package com.tiamaes.bike.connector;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.TestConstant;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.WarnCode;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+
+
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class KafkaDemoTest extends TestConstant {
+	private static Logger logger = LogManager.getLogger(KafkaDemoTest.class);
+	
+	@Autowired
+	@Qualifier("kafkaTemplate")
+	private KafkaTemplate<String, String> kafkaTemplate;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate<String, String> not found...", kafkaTemplate);
+	}
+	
+	@Test
+	@Ignore
+	public void test() throws Exception {
+		double[] points = { 113.514733, 34.842724, 113.514135, 34.841568, 113.514035, 34.841367, 113.513129, 34.839597,
+				113.513099, 34.839547, 113.513099, 34.839546, 113.51574, 34.838654, 113.51589, 34.838606, 113.516678,
+				34.838333, 113.517306, 34.838109, 113.520789, 34.836832, 113.521838, 34.836537, 113.523926, 34.835794,
+				113.524905, 34.835466, 113.525795, 34.835167, 113.527255, 34.834677, 113.527355, 34.834637, 113.529206,
+				34.834184, 113.531047, 34.833827, 113.533431, 34.833735, 113.534504, 34.833697, 113.536088, 34.833665,
+				113.53689, 34.833658, 113.53712, 34.833656, 113.53712, 34.833654, 113.53708, 34.831945, 113.53707,
+				34.831905, 113.53704, 34.831675, 113.53702, 34.831515, 113.53692, 34.830706, 113.536568, 34.828019,
+				113.536548, 34.82788, 113.536518, 34.82771, 113.536487, 34.82743, 113.536427, 34.826971, 113.536115,
+				34.824583, 113.535622, 34.820827, 113.535612, 34.820737, 113.53545, 34.819528, 113.53542, 34.819328,
+				113.535339, 34.818419, 113.535299, 34.818029, 113.535218, 34.81713, 113.535277, 34.815359, 113.535446,
+				34.814077, 113.535466, 34.813917, 113.535566, 34.813936, 113.535565, 34.813935, 113.535775, 34.813933,
+				113.536166, 34.81393, 113.539356, 34.813918, 113.542126, 34.813904, 113.5429, 34.813894, 113.544014,
+				34.813889, 113.547279, 34.81386, 113.547752, 34.813863, 113.547953, 34.81385, 113.548535, 34.81384,
+				113.548978, 34.813833, 113.550707, 34.813814, 113.551129, 34.813807, 113.551179, 34.813806, 113.551652,
+				34.813798, 113.552898, 34.813777, 113.553351, 34.813759, 113.553773, 34.813752, 113.553964, 34.813749,
+				113.554869, 34.813723, 113.55503, 34.81372, 113.55511, 34.813719, 113.556256, 34.813688, 113.558016,
+				34.813647, 113.558629, 34.813637, 113.559162, 34.813627, 113.559594, 34.81362, 113.561484, 34.813577,
+				113.562319, 34.813563 };
+		for (int i = 0; i < points.length/2; i++) {
+			Vehicle vehicle = new Vehicle();
+			PointVector.Info info = new PointVector.Info();
+			PointVector.Center center = new PointVector.Center();
+			
+			center.setLat(points[i * 2 + 1]);
+			center.setLng(points[i * 2]);
+			center.setRotation(60);
+			vehicle.setCenter(center);
+			
+			info.setState(State.ONLINE);
+			info.setAccState(true);
+			info.setSpeed(50.5);
+			vehicle.setInfo(info);
+			vehicle.setId(vehicleId);
+			
+			
+			Driver driver = new Driver();
+			driver.setId(UUIDGenerator.getUUID());
+			driver.setName("张三");
+			info.setDriver(driver);
+			
+			Thread.sleep(2000L);
+			
+			kafkaTemplate.send(MessageBuilder.withPayload(vehicle)
+					.setHeader(KafkaHeaders.TOPIC, vehicle.getClass().getName())
+					.setHeader(KafkaHeaders.MESSAGE_KEY, vehicle.getId())
+					.setHeader(KafkaHeaders.PARTITION_ID, 0).build());
+			logger.debug("------------------send finished------------------------");
+		}
+	}
+	
+	
+	
+	@Test
+	@Ignore
+	public void test2() throws Exception {
+		for (int i = 0; i < 1; i++) {
+			VehicleWarningInfo warning = new VehicleWarningInfo();
+			warning.setId(UUIDGenerator.getUUID());
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId(vehicleId);
+			warning.setVehicle(vehicle);
+			warning.setWarnCode(WarnCode.BESTOLEN);
+			warning.setCreateTime(new Date());
+			Thread.sleep(2000L);
+			
+			kafkaTemplate.send(MessageBuilder.withPayload(warning)
+					.setHeader(KafkaHeaders.TOPIC, warning.getClass().getName())
+					.setHeader(KafkaHeaders.MESSAGE_KEY, vehicle.getId())
+					.setHeader(KafkaHeaders.PARTITION_ID, 0).build());
+			logger.debug("------------------send finished------------------------");
+		}
+	}
+	
+}
+

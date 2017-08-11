@@ -1,0 +1,75 @@
+package com.tiamaes.bike.exporter.integrated.task.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.integrated.Task;
+import com.tiamaes.bike.exporter.integrated.task.service.TaskServiceInterface;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+@RestController
+@RequestMapping("/integrated/task")
+public class TaskController {
+	private static Logger logger = LogManager.getLogger(TaskController.class);
+	
+	@Value("${ftp.host}")
+	private String ftpHost;    // 服务器路径
+	@Value("${ftp.filepath}")
+	private String filepath;// 服务器excel文件夹路径
+	@Value("${download.host}")
+	private String downloadHost;    // 服务器路径
+	
+	@Resource
+	private TaskServiceInterface taskService;
+	
+	@RequestMapping(value = "/list", method = RequestMethod.GET, produces = {"application/json" })
+	public @ResponseBody Object exportExcel(@CurrentUser User operator) {
+		Task task = new Task();
+		task.setUserId(operator.getUsername());
+		List<Task> tasks = taskService.getListOfTasks(task);
+		return tasks;
+	}
+	
+	@RequestMapping(value = "/download/{taskId}", method = RequestMethod.GET)
+	public @ResponseBody Object exportExcel(@PathVariable("taskId")String id, @CurrentUser User operator) {
+		Task task = new Task();
+		task.setId(id);
+		task.setUserId(operator.getUsername());
+		task.setDownload(1);
+		Task result = taskService.updateTask(task);
+		StringBuffer stringBuffer = new StringBuffer("http://");
+		stringBuffer.append(downloadHost);
+		stringBuffer.append(filepath);
+		stringBuffer.append(result.getFileName());
+		Map<String, Object> url = new HashMap<>();
+		url.put("url", stringBuffer.toString());
+		return url;
+	}
+	
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	public @ResponseBody void delete(@PathVariable("id")String id,@CurrentUser User operator) {
+		if (StringUtils.isNotBlank(id)) {
+			Task task = taskService.getTaskById(id);
+			try {
+				taskService.deleteTask(task);
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+			}
+		}
+	}
+	
+}

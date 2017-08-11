@@ -1,0 +1,29 @@
+package com.tiamaes.bike.connector.protocol.handler.command;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.command.LockedCommand;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.protocol.message.Message8012;
+
+import io.netty.channel.Channel;
+
+/**
+ * 由锁桩或锁发来的锁车命令
+ * @author Chen
+ *
+ */
+@Component
+public class LockedCommandHandler implements CommandHandler<LockedCommand> {
+	
+	@Autowired
+	private ChannelRepository channelRepository;
+
+	@Override
+	public void execute(LockedCommand command) throws Exception {
+//		Message8012 message = new Message8012(command.getTerminalId(), Result.Locked);
+//		Channel channel = channelRepository.get(String.valueOf(command.getTerminalId()));
+//		channel.writeAndFlush(message);
+	}
+}

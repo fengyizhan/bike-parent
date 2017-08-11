@@ -1,0 +1,182 @@
+package com.tiamaes.bike.common.bean.wallet;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 押金相关记录
+ * @author kangty
+ */
+@ApiModel(value = "Deposit", description = "押金相关记录")
+public class Deposit implements Serializable {
+
+	private static final long serialVersionUID = 5169766554094189011L;
+	
+	@ApiModelProperty(value="主键(入库必需)")
+	private Integer id;
+	@ApiModelProperty(value="用户名(入库必需)")
+	private String username;
+	@ApiModelProperty(value="押金(入库必需)")
+	private float deposit;
+	@ApiModelProperty(value="支付方式(入库必需)")
+	@JsonDeserialize(using = Style.Deserializer.class)
+	private Style style;
+	@ApiModelProperty(value="类型(入库必需)")
+	@JsonDeserialize(using = Type.Deserializer.class)
+	private Type type;
+	@ApiModelProperty(value="押金(入库必需)")
+	private Date createDate;
+	@ApiModelProperty(value="开始时间(查询条件)")
+	private Date startTime;
+	@ApiModelProperty(value="结束时间(查询条件)")
+	private Date endTime;
+	
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public float getDeposit() {
+		return deposit;
+	}
+
+	public void setDeposit(float deposit) {
+		this.deposit = deposit;
+	}
+
+	public Style getStyle() {
+		return style;
+	}
+
+	public void setStyle(Style style) {
+		this.style = style;
+	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+	public static enum Type implements com.tiamaes.bike.common.Enum<Type> {
+		RECHARGE("充值"), REFUND("退款"), CHARGE("扣款");
+		
+		private String name;
+		
+		Type(String name) {
+			this.name = name;
+		}
+
+		@Override
+		@JsonProperty("name")
+		public String getName() {
+			return this.name;
+		}
+
+		@Override
+		@JsonProperty("value")
+		public String getValue() {
+			return name();
+		}
+
+		@Override
+		@JsonProperty("index")
+		public int getIndex() {
+			return this.ordinal();
+		}
+		
+		@JsonCreator
+		public static Type valueOf(@JsonProperty("index") final int index) {
+			Type[] types = Type.values();
+			if (index >= 0 && index < types.length) {
+				return types[index];
+			}
+			return null;
+		}
+		
+		public static class Deserializer extends JsonDeserializer<Type> {
+			@Override
+			public Type deserialize(JsonParser jp, DeserializationContext ctxt)
+					throws IOException, JsonProcessingException {
+				JsonToken currentToken = jp.getCurrentToken();
+				switch (currentToken) {
+				case VALUE_NUMBER_INT:
+					return Type.valueOf(jp.getIntValue());
+				case VALUE_STRING:
+					String text = jp.getText();
+					if(StringUtils.isNotBlank(text)){
+						return Type.valueOf(text.trim().toUpperCase());
+					}
+				case START_OBJECT:
+					JsonNode jsonNode = ((JsonNode) jp.readValueAsTree()).get("value");
+					if(jsonNode != null && jsonNode.isValueNode()){
+						text = jsonNode.asText();
+						if (StringUtils.isNotBlank(text)) {
+							return Type.valueOf(text.trim().toUpperCase());
+						}
+					}
+				default:
+					break;
+				}
+				return null;
+			}
+		}
+		
+	}
+
+}

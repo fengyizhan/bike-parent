@@ -1,0 +1,57 @@
+package com.tiamaes.bike.common.bean.message;
+
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+
+import com.tiamaes.bike.common.bean.connector.command.CircularDelCommand;
+
+/**
+ * 删除圆形区域 
+ * @author waibao001
+ *
+ */
+public class Message8601 extends Message {
+
+	private static final long serialVersionUID = -1384037959775909259L;
+
+	public Message8601(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8601);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+
+	public Message8601(CircularDelCommand circularDelCommand) throws Exception {
+		Header headernow = new Header();
+		headernow.setId(0x8601);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(circularDelCommand.getSimNo());
+		this.setHeader(headernow);
+		this.setResponseBody(circularDelCommand);
+	}
+
+	/**
+	 * 根据实体生成要发送的命令
+	 * @param circularDelCommand
+	 * @throws Exception
+	 */
+	 
+	public void setResponseBody(CircularDelCommand circularDelCommand) throws Exception {
+		StringBuffer bufferStr = new StringBuffer();
+		List<Integer> circularIds = circularDelCommand.getCircularIds();
+		//区域数
+		bufferStr.append(String.format("%02X", circularDelCommand.getCircularIds().size()));
+		//区域id
+		for (Integer circularId : circularIds) {
+			bufferStr.append(String.format("%08X", circularId));
+		}
+		
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		
+		this.setBody(responseBody);
+	}
+}

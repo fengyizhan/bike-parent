@@ -1,0 +1,88 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.Device;
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Message8001;
+import com.tiamaes.bike.connector.protocol.message.Message8001.Result;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.protocol.message.Received0005;
+import com.tiamaes.bike.connector.service.AuthenticationServiceInterface;
+
+import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+/**
+ * 终端鉴权
+ * 
+ * @author Chen
+ *
+ */
+@Component
+public class Protocol0005Handler implements ProtocolHandler<Received0005> {
+	private static Logger logger = LogManager.getLogger(Protocol0005Handler.class);
+	@Autowired
+	private ChannelRepository channelRepository;
+	@Autowired
+	private AuthenticationServiceInterface authenticationService;
+	@Override
+	public Message execute(Channel channel, Received received) throws Exception {
+		Header header = received.getHeader();
+		int terminalId = header.getTerminalId();
+		com.tiamaes.bike.connector.protocol.message.Header.Type termimalType=header.getTerminalType();
+		Received0005 received0005 = new Received0005(header, received.getBytes());
+		//从库中查出设备(锁或者锁桩)
+		//TODO 通过terminalId查询数据库返回对应的鉴权码
+		Device target = null;
+		
+		Attribute<Device> attribute = channel.attr(AttributeKey.valueOf("target"));
+		/**
+		 * 	更新数据库中的该设备的鉴权码
+		 *	如果是鉴权包，并且鉴权通过，则将对应车辆信息放入连接信息中
+		 */
+		channelRepository.put(Integer.toHexString(channel.hashCode()), channel);
+		boolean authenticationRight=true;
+		Message8001 response = new Message8001(header, Result.SUCCESS);
+		
+		if(com.tiamaes.bike.connector.protocol.message.Header.Type.LOCK.equals(termimalType))
+		{//如果是【锁】,根据terminalId获取信息
+			Vehicle vehicle=null;
+			String auth=vehicle.getAuthentication();
+		}
+		if(com.tiamaes.bike.connector.protocol.message.Header.Type.STATION.equals(termimalType))
+		{//如果是【锁桩】
+			Park park=null;
+			String auth=park.getAuthentication();
+			
+		}
+		// 获取传入的鉴权码与查询的鉴权码匹配
+		if(authenticationRight)
+		{
+			attribute.set(target);
+			channelRepository.put(Integer.toHexString(channel.hashCode()), channel);
+		}else
+		{
+			channelRepository.remove(Integer.toHexString(channel.hashCode()));
+			channel.close();
+			response.getBody().setResult(Result.ERROR);
+			return response;
+		}
+		
+		String address = channel.remoteAddress().toString();
+		
+		if(logger.isDebugEnabled()){
+			logger.debug("Client [{}] has bean authorized。address [{}]", terminalId,address);
+		}
+		return response;
+	}
+
+}

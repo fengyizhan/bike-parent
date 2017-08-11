@@ -1,0 +1,362 @@
+(function(angular) {
+	'use strict';
+	define(['app','BMap'], function (app, BMap) {
+		app.register.controller('StationController', ["$rootScope", "$scope", "$resource", "$q", "$timeout", "$filter", function($rootScope, $scope, $resource, $q, $timeout, $filter){
+			/**============================================百度地图样式定义部分============================================**/
+			var map, drawingManager, styleOptions = {
+		        strokeColor:"blue",
+		        fillColor:"blue",
+		        strokeWeight: 3,
+		        strokeOpacity: 0.8,
+		        fillOpacity: 0.6,
+		        strokeStyle: 'solid',
+		        enableEditing: false,
+		        enableClicking: true
+		    };
+			/**============================================接口对象定义部分============================================**/
+			var Station = $resource("api/information/station/:id", { "id" : "@id" }, {
+				init : { method : 'GET',responseType: "json", url : 'api/information/station/init'},
+				validateName : {method : 'GET', url : 'api/information/station/checkname/:name/:id'},
+				get : { method : 'GET'},
+				save : { method : 'PUT'},
+				remove : { method : 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			var selected = {name : "全部"};
+			$scope.searchForm = {
+				types:[selected],
+//				status:[selected],
+				data:{
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.changeToNum = function(id){
+				if (isNaN(id)) {
+					$scope.searchForm.data.id = undefined;
+				}
+			};
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.pre();
+				$scope.dialog.title = "场区详情";
+				$scope.dialog.data = angular.copy(target);
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = (($scope.dialog.data.reportValue || 0) & (1 << i)) >> i === 1;
+				});
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.pre();
+				$scope.dialog.title = "新增场区";
+				$scope.dialog.data = {
+					"type": $scope.dialog.types[0],
+					"delayValue": 10,
+					"limitSpeedValue": 60,
+					"startTime" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"endTime": (function(){
+						let now = new Date();
+						now.setYear(now.getFullYear() + 1);
+						now.setHours(0,0,0,0);
+						return now;
+					})()
+				};
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = true;
+				});
+				$scope.dialog.show();
+				
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					// 处理报警设置的值
+					$scope.dialog.data.reportValue = (function(reports){
+						var reportValue = 0;
+						angular.forEach($filter('filter')(reports, {"selected": true}), function(item){
+							reportValue += item.index;
+						}, reportValue);
+						return reportValue;
+					})($scope.dialog.reportMethods);
+					// 保存场区
+					Station.save($scope.dialog.data,function(response){
+						$scope.pagination.unshift(response);
+                    });
+					$scope.dialog.close();
+					map.clearOverlays();
+				};
+			};
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = false;
+				$scope.dialog.pre();
+				$scope.dialog.title = "修改场区";
+				$scope.dialog.data = angular.copy(target);
+				
+				angular.forEach($scope.dialog.reportMethods, function(item, i){
+					item.selected = (($scope.dialog.data.reportValue || 0) & (1 << i)) >> i === 1;
+				});
+				$scope.dialog.show();
+				
+				$scope.dialog.submit = function(event){
+					event.preventDefault();
+					// 处理报警设置的值
+					$scope.dialog.data.reportValue = (function(reports){
+						var reportValue = 0;
+						angular.forEach($filter('filter')(reports, {"selected": true}), function(item){
+							reportValue += item.index;
+						}, reportValue);
+						return reportValue;
+					})($scope.dialog.reportMethods);
+					// 更新场区
+					Station.save($scope.dialog.data,function(response){
+						$scope.pagination.refresh(response);
+                    });
+					$scope.dialog.close();
+					map.clearOverlays();
+				};
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该场区?',callback:function(){
+					Station.remove({"id":target.id},function(response){
+						if (response.state == undefined) {
+							$scope.pagination.remove(target);
+						} else {
+							$scope.$confrim.init({title:'警告',type:'warning',content : response.message}).show();
+						}
+                    });
+				}}).show();
+			};
+			
+			$scope.isNum = function(str){
+				return $q(function(resolve, reject) {
+					if (str === undefined) {
+						resolve();
+					} else if (!isNaN(str)) {
+				    	resolve();
+					} else {
+						reject();
+					}
+				});
+			};
+			/**============================================页面元素初始化部分============================================**/
+			
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				dialog.start = {
+					"time" : (function(){
+						let now = new Date();
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"open": function($event) {
+						dialog.start.opened = true;
+					}
+				};
+				dialog.end = {
+					"time": (function(){
+						let now = new Date();
+						now.setYear(now.getFullYear() + 1);
+						now.setHours(0,0,0,0);
+						return now;
+					})(),
+					"open": function($event) {
+						dialog.end.opened = true;
+					}
+				};
+//				dialog.reportMethods = [
+//					{"name":"进入区域报警给驾驶员", "index":1, "value": "METHOD1", "selected":true},
+//					{"name":"进入区域报警给平台     ", "index":2, "value": "METHOD2", "selected":true},
+//					{"name":"离开区域报警给驾驶员", "index":4, "value": "METHOD3", "selected":true},
+//					{"name":"离开区域报警给平台     ", "index":8, "value": "METHOD4", "selected":true},
+//					{"name":"超速报警			", "index":16, "value": "METHOD0", "selected":true},
+//				];
+				dialog.validateName = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Station.validateName({"id": dialog.data.id, "name": name}, function(response){
+								response.data === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				
+				dialog.validatePhone = function(phone){
+					return $q(function(resolve, reject) {
+						if (phone === undefined) {
+							reject();
+						} else {
+							var isPhone = /^([0-9]{3,4}-)?[0-9]{7,8}$/;
+						    var isMob=/^((\+?86)|(\(\+86\)))?(13[012356789][0-9]{8}|15[012356789][0-9]{8}|18[02356789][0-9]{8}|147[0-9]{8}|1349[0-9]{7})$/;
+						    if(isMob.test(phone)||isPhone.test(phone)){
+						    	resolve();
+						    } else {
+						    	reject();
+						    }
+						}
+					});
+				};
+				
+				dialog.isNum = function(str){
+					return $q(function(resolve, reject) {
+						if (str === undefined) {
+							resolve();
+						} else if (!isNaN(str)) {
+					    	resolve();
+						} else {
+							reject();
+						}
+					});
+				};
+				
+				dialog.isRightNum = function(obj){
+					console.log(obj);
+					return $q(function(resolve, reject) {
+						if (str === undefined) {
+							resolve();
+						} else if (!isNaN(str)) {
+					    	resolve();
+						} else {
+							reject();
+						}
+					});
+				};
+				
+				dialog.pre = function(){
+					var preBtn = document.getElementById("preBtn");
+					var nextBtn = document.getElementById("nextBtn");
+					preBtn.style.display = "none";
+					nextBtn.style.display = "initial";
+					var stepFirst = document.getElementById("step-1");
+					var stepLast = document.getElementById("step-2");
+					stepFirst.className = "selected";
+					stepLast.className = "disabled";
+					var msgDiv = document.getElementById("msgDiv");
+					var mapDiv = document.getElementById("mapDiv");
+					msgDiv.style.display = "block";
+					mapDiv.style.display = "none";
+				};
+				
+				dialog.next = function(){
+					var preBtn = document.getElementById("preBtn");
+					var nextBtn = document.getElementById("nextBtn");
+					preBtn.style.display = "initial";
+					nextBtn.style.display = "none";
+					var stepFirst = document.getElementById("step-1");
+					var stepLast = document.getElementById("step-2");
+					stepFirst.className = "disabled";
+					stepLast.className = "selected";
+					var msgDiv = document.getElementById("msgDiv");
+					var mapDiv = document.getElementById("mapDiv");
+					msgDiv.style.display = "none";
+					mapDiv.style.display = "block";
+					map = new BMap.Map("1474160923584",{enableMapClick:false});
+					map.enableScrollWheelZoom();
+					map.centerAndZoom(new BMap.Point(113.64964385, 34.75661006), 16);
+					map.enableAutoResize();
+					map.clearOverlays();
+					if ($scope.dialog.increased == false) {
+						var paths = {};
+						var polygon = new BMap.Station($scope.dialog.data, styleOptions);
+						polygon && map.addOverlay(polygon);
+						var stationData = $scope.dialog.data;
+						if (stationData.areaType.index == 0) {
+							paths = polygon.getPath()[0];
+						} else {
+							paths = polygon.getCenter();
+						}
+						map.panTo(new BMap.Point(paths.lng, paths.lat));
+						if ($scope.dialog.editabled == true) {
+							polygon.enableEditing();
+							polygon.addEventListener('lineupdate', function(event){
+								$scope.$apply(function(){
+									var paths = new BMap.PathsFromBD09ToWGS84(polygon.getPath());
+									$scope.dialog.data.paths = paths;
+								});
+							});
+						}
+					} else {
+						drawingManager = new BMapLib.DrawingManager(map, {
+							isOpen: false, //是否开启绘制模式
+							enableDrawingTool: true, //是否显示工具栏
+							enableCalculate: false,
+//							drawingType: BMAP_DRAWING_CIRCLE,
+							drawingType: BMAP_DRAWING_POLYGON,
+							drawingToolOptions: {
+						        anchor: BMAP_ANCHOR_TOP_LEFT,
+						        offset: new BMap.Size(2, 2),
+						        scale: 1,
+						        drawingModes : [
+						          BMAP_DRAWING_POLYGON,
+						          BMAP_DRAWING_CIRCLE
+						        ]
+						    },
+							circleOptions: styleOptions, //圆的样式
+//							polylineOptions: styleOptions//, //线的样式
+							polygonOptions: styleOptions, //多边形的样式
+//							rectangleOptions: styleOptions //矩形的样式
+						});
+						drawingManager.addEventListener("polygoncomplete", function(e, overlay) {
+							$scope.$apply(function(){
+								var allOverlay = map.getOverlays();
+								if (allOverlay.length > 2) {
+									map.removeOverlay(allOverlay[0]);
+								}
+								var paths = new BMap.PathsFromBD09ToWGS84(overlay.getPath());
+								$scope.dialog.data.paths = paths;
+								var areaType = {
+									"index" : 0,
+									"name" : "多边形",
+									"value" : "POLYGON"
+								};
+								$scope.dialog.data.areaType = areaType;
+							});
+							drawingManager.close();
+						});
+						drawingManager.addEventListener("circlecomplete", function(e, overlay) {
+							$scope.$apply(function(){
+								var allOverlay = map.getOverlays();
+								if (allOverlay.length > 2) {
+									map.removeOverlay(allOverlay[0]);
+								}
+								var paths = [];
+								var wgs84 = GPSUtils.fromBD09ToWGS84(overlay.getCenter().lat, overlay.getCenter().lng);
+								paths.push(wgs84);
+								$scope.dialog.data.paths = paths;
+								$scope.dialog.data.radius = overlay.getRadius().toFixed(1);
+								var areaType = {
+									"index" : 1,
+									"name" : "圆",
+									"value" : "CIRCLE"
+								};
+								$scope.dialog.data.areaType = areaType;
+							});
+							drawingManager.close();
+						});
+						drawingManager.close();
+					}
+				};
+				
+				Station.init(function(response){
+					$scope.searchForm.types = $scope.searchForm.types.concat(response.types);
+					dialog.types = response.types;
+					dialog.reportMethods = response.reportValues;
+					angular.forEach(dialog.reportMethods, function(item, i){
+						item.selected = true;
+					});
+				});
+			});
+		}]);
+	});
+})(window.angular);

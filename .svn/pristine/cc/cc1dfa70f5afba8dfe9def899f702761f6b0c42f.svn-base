@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.wallet.information.pay.persistence.PayRechargeMapper">
+	<resultMap id="rechargeMap" type="com.tiamaes.bike.common.bean.pay.PayRecharge">
+		<id property="id" column="id"/>
+		<result property="username" column="username"/>
+		<result property="money" column="money"/>
+		<result property="style" column="style" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="createTime" column="createTime"/>
+		<result property="result" column="result"/>
+		<result property="resultCode" column="resultCode"/>
+	</resultMap>
+	
+	<select id="getPayRechargeById" parameterType="int" resultMap="rechargeMap">
+		SELECT t.id, t.username, t.money, t.style, t.createTime,t.result,t.resultCode FROM tw_pay_recharge t WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfPayRechargesByUsername" parameterType="com.tiamaes.bike.common.bean.pay.PayRecharge" resultMap="rechargeMap">
+		SELECT t.id, t.username, t.money, t.style, t.createTime,t.result,t.resultCode FROM tw_pay_recharge t 
+		<where>
+			<if test="username != null">
+		     AND t.username like concat('%',#{username},'%') 
+			</if>
+			<if test="id != null">
+		     AND t.id = #{id} 
+			</if>
+			<if test="style != null and style.index != null">
+		     AND t.style = #{style.index} 
+			</if>
+			<if test="startTime != null">
+		     AND t.createTime >= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} >= t.createTime 
+			</if>
+			<if test="result != null">
+		     AND t.result like concat('%',#{result},'%') 
+			</if>
+			<if test="resultCode != null">
+		     AND t.resultCode like concat('%',#{resultCode,jdbcType=INTEGER},'%') 
+			</if>
+		</where>
+	</select>
+	
+	<insert id="addPayRecharge" parameterType="com.tiamaes.bike.common.bean.pay.PayRecharge">
+		INSERT INTO tw_pay_recharge
+		(id,
+		 username,
+		 money,
+		 style,
+		 createTime,resultCode)
+		VALUES
+		(#{id},
+		 #{username},
+		 #{money},
+		 #{style.index},
+		 #{createTime},#{resultCode})
+	</insert>
+	
+	<update id="updatePayRecharge" parameterType="com.tiamaes.bike.common.bean.pay.PayRecharge">
+		UPDATE tw_pay_recharge
+			SET username   = #{username},
+			    money      = #{money},
+				style      = #{style.index},
+				result     = #{result},
+				resultcode = #{resultCode}
+				
+			WHERE id = #{id}
+	</update>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tw_pay_recharge'
+	</select>
+	
+</mapper>

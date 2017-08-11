@@ -1,0 +1,124 @@
+<div ng-controller="ParkController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>资料管理</li>
+		<li class="active">集中停放区管理</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属省</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.province" theme="bootstrap" title="{{$select.selected.name}}" on-select="selectProvince($item)">
+										<ui-select-match placeholder="所属省">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.provinces track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属市</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.city" theme="bootstrap" title="{{$select.selected.name}}" on-select="selectCity($item)">
+										<ui-select-match placeholder="所属市">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.cities track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">所属区县</span>
+								<div class="input-group-default">
+									<ui-select ng-model="searchForm.data.district" theme="bootstrap" title="{{$select.selected.name}}">
+										<ui-select-match placeholder="所属区县">{{$select.selected.name}}</ui-select-match>
+										<ui-select-choices position="down" repeat="item in searchForm.districts track by $index">
+											<div ng-bind-html="item.name"></div>
+										</ui-select-choices> 
+									</ui-select>
+								</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">停放区编号</span>
+								<input type="text" class="form-control" name="id" ng-model="searchForm.data.id" ng-change="changeToNum(searchForm.data.id)" placeholder="请输入停放区编号(数字)" maxlength="11" style="min-width: 120px;">
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">停放区名称</span>
+								<input type="text" class="form-control" name="name" ng-model="searchForm.data.name" placeholder="请输入停放区名称" maxlength="15" style="min-width: 120px;">
+							</div>
+						</div>
+					</div>
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">责任人</span>
+								<input type="text" class="form-control" name="principal" ng-model="searchForm.data.principal" placeholder="请输入停放区责任人" maxlength="15" style="min-width: 160px;">
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+					<div class="row hidden-lg" style="margin-bottom: 5px;">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-primary btn-block"
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-success btn-sm" ng-click="add()">
+								<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+								<span>新增停放区</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="api/information/park/page/" id="pagination">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="110">停放区编号</td>
+								<td width="150">停放区名称</td>
+								<td width="480">停放区地址</td>
+								<td width="80">责任人</td>
+								<td width="80">责任人电话</td>
+								<td width="130">行政区划</td>
+								<td width="130">创建时间</td>
+								<td width="100">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 110px;" ng-bind="item.id" title="{{item.id}}"></div></td>
+								<td class="ellipsis"><div style="width: 150px;" ng-bind="item.name" title="{{item.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 480px;" ng-bind="item.address" title="{{item.address}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.principal" title="{{item.principal}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.telephone" title="{{item.telephone}}"></div></td>
+								<td class="ellipsis"><div style="width: 130px;" ng-bind="item.property.province.name+'-'+item.property.city.name+'-'+item.property.district.name" title="{{item.property.province.name+'-'+item.property.city.name+'-'+item.property.district.name}}"></div></td>
+								<td ng-bind="item.createTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="info(item)">详情</a>
+									<a href="javascript:;" ng-click="edit(item)">编辑</a>
+									<a href="javascript:;" ng-click="remove(item)">删除</a>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/information/park/dialog.html" style="width:1000px;height:inherit;"></div>
+</div>

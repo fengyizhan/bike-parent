@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.project.persistence.ProjectVehicleMapper">
+	<resultMap id="projectVehicleMap" type="com.tiamaes.bike.common.bean.information.ProjectVehicle">
+		<id column="projectId" property="projectId"/>
+		<id column="vehicleId" property="vehicleId"/>
+	</resultMap>
+
+	<!-- 批量保存工程车辆信息 -->
+	<insert id="addProjectVehicles">
+		INSERT INTO tb_project_vehicle
+		  (projectId,
+		   vehicleId)
+    VALUES
+		  <foreach collection="projectVehicles" item="item" separator="," >
+		  (#{item.projectId},#{item.vehicleId})
+		  </foreach>
+	</insert>
+	<!-- 删除工程车辆信息 -->
+	<delete id="deleteProjectVehicles">
+		DELETE FROM tb_project_vehicle
+		<where>
+			<if test="projectId != null and projectId != ''">
+				projectId = #{projectId}
+				AND vehicleId IN
+				<foreach collection="projectVehicles" index="index" item="item" open="(" separator="," close=")">
+			  		#{item.vehicleId}
+			    </foreach>
+			</if>
+			<if test="projectId == null">
+				vehicleId IN
+				<foreach collection="projectVehicles" index="index" item="item" open="(" separator="," close=")">
+			  		#{item.vehicleId}
+			    </foreach>
+			</if>
+		</where>
+	</delete>
+	<!-- 根据车辆id返回工程id -->
+	<select id="findByVehicles" resultType="String">
+		SELECT DISTINCT projectId
+						FROM Tb_Project_Vehicle
+						<where>
+							<if test="projectVehicles != null">
+								vehicleId IN
+									<foreach collection="projectVehicles" index="index" item="item" open="(" separator="," close=")">
+								  		#{item.vehicleId}
+								    </foreach>
+				    		</if>
+			    		</where>
+	</select>
+
+	<!-- 根据工程id返回车辆ids -->
+	<select id="findVehiclesByPId" parameterType="String"  resultMap="projectVehicleMap">
+		SELECT  projectId,
+				vehicleId
+				FROM Tb_Project_Vehicle
+				<where>
+					projectId = #{projectId}
+	    		</where>
+	</select>
+</mapper>

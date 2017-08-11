@@ -1,0 +1,126 @@
+package com.tiamaes.bike.api.information.department.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.tiamaes.bike.api.information.department.persistence.CompanyMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * @author kangty
+ * 公司信息管理接口实现类
+ */
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class CompanyService implements CompanyServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(CompanyService.class);
+	
+	@Resource
+	private CompanyMapper companyMapper;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Company> operator;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Company getCompanyById(String id) {
+		Assert.notNull(id, "公司编号不能为空!");
+		Company company = operator.get(RedisKey.COMPANIES, id);
+		if (company == null) {
+			company = companyMapper.getCompanyById(id);
+			if (company != null) {
+				operator.putIfAbsent(RedisKey.COMPANIES, company.getId(), company);
+			}
+		}
+		return company;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Company> getListOfCompanys(Parameters<Company> parameters, Pagination<Company> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		List<Company> companyList = companyMapper.getListOfCompanys(parameters);
+		return companyList;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfCompanys(Parameters<Company> parameters) {
+		return companyMapper.getTotalOfCompanys(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Company addCompany(Company company) {
+		Assert.notNull(company);
+		Assert.notNull(company.getName(), "公司名称不能为空");
+		Assert.isTrue(!companyMapper.hasExists(null, company.getName()), "公司名称已经存在");
+		Assert.notNull(company.getContactName(), "联系人不能为空");
+		Assert.notNull(company.getContactPhone(), "联系电话不能为空");
+		Assert.notNull(company.getLicenseWord(), "许可证字不能为空");
+		Assert.notNull(company.getLicenseNo(), "许可证号不能为空");
+		companyMapper.addCompany(company);
+		Company result = companyMapper.getCompanyById(company.getId());
+		if (result != null) {
+			operator.putIfAbsent(RedisKey.COMPANIES, result.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Company updateCompany(Company company) {
+		Assert.notNull(company);
+		Assert.notNull(company.getName(), "公司名称不能为空");
+		Assert.isTrue(!companyMapper.hasExists(company.getId(), company.getName()), "公司名称已经存在");
+		Assert.notNull(company.getContactName(), "联系人不能为空");
+		Assert.notNull(company.getContactPhone(), "联系电话不能为空");
+		Assert.notNull(company.getLicenseWord(), "许可证字不能为空");
+		Assert.notNull(company.getLicenseNo(), "许可证号不能为空");
+		companyMapper.updateCompany(company);
+		Company result = companyMapper.getCompanyById(company.getId());
+		if (result != null) {
+			operator.put(RedisKey.COMPANIES, result.getId(), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteCompany(Company company) {
+		Assert.notNull(company, "公司不能为空!");
+		companyMapper.deleteCompany(company);
+		Company result = companyMapper.getCompanyById(company.getId());
+		if (result == null) {
+			operator.delete(RedisKey.COMPANIES, company.getId());
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkCompanyName(Optional<String> id, String name) {
+		return companyMapper.hasExists(id.isPresent() ? id.get() : null, name);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Company> getCompanys() {
+		return companyMapper.getCompanys();
+	}
+
+}

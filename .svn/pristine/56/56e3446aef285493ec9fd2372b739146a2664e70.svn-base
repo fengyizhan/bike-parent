@@ -1,0 +1,152 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import java.io.UnsupportedEncodingException;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.bean.connector.RegisterResult;
+import com.tiamaes.bike.common.bean.information.Region;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8100;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 终端注册0x0100
+ * 
+ * @author lsl
+ *
+ */
+@Component
+public class Protocol0100Handler extends ProtocolHandler {
+	private static Logger logger = LogManager.getLogger(Protocol0100Handler.class);
+
+	@Autowired
+	private HandlerServiceInterface handlerService;
+
+	@Override
+	public Message execute(Channel channel, Message request) throws Exception {
+		String simNo = request.getHeader().getSimNo();
+		Vehicle vehicle = decodeBody(request);
+		// 查询数据库判断车辆和终端是否已经注册，如果都有并且没有注册，则更新车载机的sim卡号和注册状态，以及车辆的注册状态
+		// 注册成功，则更新鉴权码到数据库表中，并随实体返回
+		RegisterResult registerResult = handlerService.registerVehicle(vehicle);
+		// 注册结果0成功，1车辆已被注册，2数据库中无该车辆，3终端已被注册，4数据库中无该终端
+		int result = 2;
+		String registerNo = "";
+		if (registerResult != null) {
+			result = registerResult.getResult().getIndex();
+			registerNo = registerResult.getRegisterNo();
+		}
+		if (result == 0) {
+			if (!StringUtils.isBlank(simNo)) {
+				String address = channel.remoteAddress().toString();
+				logger.debug(String.format("Auto [%s] has registed, the remote address is [%s].", simNo, address));
+			}
+		}
+		Message8100 response = new Message8100(simNo);
+		// 鉴权码 长度过长，现在是取的死值
+		response.setResponseBody(request.getHeader().getSerialNo(), result, registerNo);
+		return response;
+	}
+
+	public static Vehicle decodeBody(Message request) throws UnsupportedEncodingException{
+		// 终端注册消息体
+		byte[] bytebody = request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+
+		// 省域ID
+		String provinceId = String.valueOf(buffer.readUnsignedShort());
+		// 市县域ID
+		String cityId = String.valueOf(buffer.readUnsignedShort());
+		String region = StringUtils.leftPad(provinceId, 2, "0") + StringUtils.leftPad(cityId, 4, "0");
+		// 制造商ID
+		byte[] manufactureIdBytes = new byte[5];
+		buffer.readBytes(manufactureIdBytes);
+		String manufactureId = new String(manufactureIdBytes);
+		// 终端型号
+		byte[] terminalModelNoBytes = new byte[8];
+		if(bytebody.length > 37){
+			terminalModelNoBytes = new byte[20];
+		}
+		buffer.readBytes(terminalModelNoBytes);
+		String terminalModelNo = new String(terminalModelNoBytes);
+		// 终端ID
+		byte[] terminalIdBytes = new byte[7];
+		buffer.readBytes(terminalIdBytes);
+		String terminalName = new String(terminalIdBytes);
+		//根据制造商ID，终端型号，终端ID生成主键
+		byte[] idBytes = new byte[0];
+		idBytes = ArrayUtils.addAll(idBytes, manufactureIdBytes);
+		idBytes = ArrayUtils.addAll(idBytes, terminalModelNoBytes);
+		idBytes = ArrayUtils.addAll(idBytes, new byte[20 - terminalModelNoBytes.length]);
+		idBytes = ArrayUtils.addAll(idBytes, terminalIdBytes);
+		String id = org.bouncycastle.util.encoders.Hex.toHexString(idBytes);
+		
+		// 车牌颜色
+		byte[] plateColorBytes = new byte[1];
+		buffer.readBytes(plateColorBytes);
+		String plateColorStr = Hex.encodeHexString(plateColorBytes);
+		Vehicle.PlateColor plateColor = Vehicle.PlateColor.OTHER;
+		switch (plateColorStr) {
+		case "01":
+			plateColor = Vehicle.PlateColor.BLUE;
+			break;
+		case "02":
+			plateColor = Vehicle.PlateColor.YELLOW;
+			break;
+		case "03":
+			plateColor = Vehicle.PlateColor.BLACK;
+			break;
+		case "04":
+			plateColor = Vehicle.PlateColor.WRITE;
+			break;
+		default:
+			plateColor = Vehicle.PlateColor.OTHER;
+			break;
+		}
+		// 车牌
+		byte[] plateNoBytes = new byte[buffer.readableBytes()];
+		buffer.readBytes(plateNoBytes);
+		String plateNo = new String(plateNoBytes, "GBK").trim();
+		// sim卡号
+		String simNo = request.getHeader().getSimNo();
+		Vehicle vehicle = new Vehicle();
+		Terminal terminal = new Terminal();
+		Terminal.Factory factory = new Terminal.Factory();
+		factory.setId(manufactureId);
+		terminal.setFactory(factory);
+		Terminal.Type type = new Terminal.Type();
+		type.setId(terminalModelNo);
+		terminal.setType(type);
+		terminal.setName(terminalName);
+		terminal.setSimNo(simNo);
+		terminal.setId(id);
+		vehicle.setTerminal(terminal);
+		vehicle.setCarNo(plateNo);
+		vehicle.setPlateColor(plateColor);
+		Vehicle.Property property = new Vehicle.Property();
+		Region province = new Region();
+		province.setId(StringUtils.rightPad(provinceId, 6, "0"));
+		Region city = new Region();
+		city.setId(region);
+		property.setProvince(province);
+		property.setCity(city);
+		vehicle.setProperty(property);
+		
+		return vehicle;
+	}
+	
+}

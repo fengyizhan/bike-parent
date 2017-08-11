@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.VehicleStatusInfoMapper">
+	<!-- 保存车辆状态信息 -->
+	<insert id="addStatusInfo" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+	INSERT INTO tb_bike_status_info
+	  (id,
+	   vehicleId,
+	   vehicleName,
+	   simNo,
+	   electricity,
+	   isLock,
+	   state,
+	   speed,
+	   elevation,
+	   direction,
+	   locationState,
+	   lngState,
+	   latState,
+	   createDate,
+	   runState)
+	VALUES
+	  (#{statusInfoId,jdbcType=VARCHAR},
+	   #{id,jdbcType=INTEGER},
+	   #{name,jdbcType=VARCHAR},
+	   #{simNo,jdbcType=VARCHAR},
+	   #{info.electricity,jdbcType=INTEGER},
+	   #{info.isLock,jdbcType=INTEGER},
+	   #{info.state.index,jdbcType=INTEGER},
+	   #{info.speed,jdbcType=INTEGER},
+	   #{info.elevation,jdbcType=INTEGER},
+	   #{info.direction,jdbcType=INTEGER},
+	   #{info.locationState,jdbcType=INTEGER},
+	   #{info.lngState,jdbcType=INTEGER},
+	   #{info.latState,jdbcType=INTEGER},
+	   #{statusInfoCreateDate},
+	   #{info.runState.index,jdbcType=INTEGER})
+	</insert>
+</mapper>

@@ -1,0 +1,103 @@
+package com.tiamaes.bike.exporter.integrated.borrow.service;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.time.DateFormatUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.tiamaes.bike.common.bean.integrated.BorrowRecord;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.common.utils.ZipUtils;
+import com.tiamaes.bike.exporter.integrated.borrow.persistence.BorrowQueryMapper;
+import com.tiamaes.bike.utils.ExcelWorkBook;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class BorrowQueryService implements BorrowQueryServiceInterface {
+	private static Logger logger = LogManager.getLogger(BorrowQueryService.class);
+	
+	@Value("${java.io.tmpdir}")
+	private String tmpdir;// 本地临时文件目录
+	
+	@Resource
+	private BorrowQueryMapper borrowQueryMapper;
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public File exportExcelOfBorrowRecords(BorrowRecord borrowRecord) throws Exception {
+		String fileName = borrowRecord.getZipFileName();
+		final String[] headers = { "车牌号", "SIM卡号", "所属停放区", "用户名", "开始时间",
+				"结束时间", "共计时长", "公里数", "花费(单位:元)"};
+		long start = System.currentTimeMillis();
+		List<BorrowRecord> body = new ArrayList<BorrowRecord>(60000);
+		List<File> files = new ArrayList<File>();
+		int page = 1;
+		while (true) {
+			Pagination<BorrowRecord> pagination = new Pagination<BorrowRecord>(page, 60000);
+			PageHelper.startPage(pagination);
+			body = borrowQueryMapper.getListOfBorrowRecords(borrowRecord);
+			if (body.size() == 0) {
+				break;
+			}
+			SXSSFWorkbook excel = new ExcelWorkBook<BorrowRecord>(headers, body){
+				@Override
+				protected void createExcelCells(BorrowRecord record, Row row) {
+					Cell cell = row.createCell(0);
+					cell.setCellValue(record.getVehicle().getName());
+					Cell cell1 = row.createCell(1);
+					cell1.setCellValue(record.getVehicle().getSimNo());
+					Cell cell2 = row.createCell(2);
+					cell2.setCellValue(record.getStartPark().getName());
+					Cell cell3 = row.createCell(3);
+					cell3.setCellValue(record.getEndPark().getName());
+					Cell cell4 = row.createCell(4);
+					cell4.setCellValue(record.getUser().getUsername());
+					Cell cell5 = row.createCell(5);
+					cell5.setCellValue(DateFormatUtils.format(record.getStartTime(), "yyyy-MM-dd HH:mm:ss"));
+					Cell cell6 = row.createCell(6);
+					cell6.setCellValue(DateFormatUtils.format(record.getEndTime(), "yyyy-MM-dd HH:mm:ss"));
+					Cell cell7 = row.createCell(7);
+					cell7.setCellValue(record.getCountTime());
+					Cell cell8 = row.createCell(8);
+					cell8.setCellValue(record.getKilometers());
+					Cell cell9 = row.createCell(9);
+					cell9.setCellValue(record.getCost());
+				}
+			};
+			logger.debug(tmpdir);
+			File xlsxFile = new File(tmpdir + "/" + UUIDGenerator.getUUID() + ".xlsx");
+			FileOutputStream out = new FileOutputStream(xlsxFile);
+			excel.write(out);
+			out.close();
+			excel.dispose();
+			files.add(xlsxFile);
+			if (body.size() < 60000) {
+				break;
+			} else {
+				page++;
+			}
+		}
+		// 进行打包工作
+		String zipFileFullName = tmpdir + "/" + fileName;
+		File zipFile = new File(zipFileFullName);
+		ZipUtils.createZip(zipFile, files);
+		logger.debug(String.format("cost : %d ms", System.currentTimeMillis() - start));
+		return zipFile;
+	}
+	
+}

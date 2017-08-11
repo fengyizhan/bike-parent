@@ -1,0 +1,92 @@
+package com.tiamaes.bike.api.information.station.persistence;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.tiamaes.bike.common.bean.information.Station;
+
+/**
+ * @author kangty
+ * 场区信息管理持久层接口
+ */
+public interface StationMapper {
+	
+	/**
+	 * 根据场区编号查询场区信息
+	 * @param id
+	 * @return
+	 */
+	Station getStationById(@Param("id")int id);
+	
+	/**
+	 * 无参获取场区列表
+	 * @return
+	 */
+	List<Station> getListOfStations();
+	
+	/**
+	 * 根据参数获取场区列表
+	 * @param station
+	 * @return
+	 */
+	List<Station> getListOfStations(Station station);
+	
+	/**
+	 * 获取场区总数
+	 * @param station
+	 * @return
+	 */
+	int getTotalOfStations(Station station);
+	
+	/**
+	 * 新增场区信息
+	 * @param station
+	 */
+	void addStation(Station station);
+	
+	/**
+	 * 更新场区信息
+	 * @param station
+	 */
+	void updateStation(Station station);
+	
+	/**
+	 * 删除场区信息
+	 * @param station
+	 */
+	void deleteStation(Station station);
+	
+	/**
+	 * 检查场区名是否已经存在
+	 * @param param
+	 * @return
+	 */
+	boolean hasExists(@Param("id")Integer id, @Param("name")String name);
+	
+	/**
+	 * 获取所有场区列表, 用于下拉菜单生成
+	 * @return
+	 */
+	List<Station> getStations();
+
+	/**
+	 * 根据分类获取场区列表, 用于下拉菜单生成
+	 * @param type
+	 * @return
+	 */
+	List<Station> getStationsByType(@Param("type")int type);
+	
+	/**
+	 * 获取开始场区 (不包含已经存在工程中的)
+	 * @return
+	 */
+	List<Station> getBeginStations();
+	
+	/**
+	 * 获取主键id
+	 * @return
+	 */
+	Integer getId();
+
+}

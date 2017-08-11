@@ -1,0 +1,87 @@
+package com.tiamaes.bike.common.bean.homepage;
+
+import java.io.Serializable;
+
+public class OngoingProjectTripInfo implements Serializable {
+	
+	private static final long serialVersionUID = 4278486816518937967L;
+
+	/**
+	 * 车辆id
+	 */
+	private String vehicleId;
+	
+	/**
+	 * 车牌号码
+	 */
+	private String carNo;
+	
+	/**
+	 * 当前状态
+	 */
+	private String state;
+	
+	/**
+	 * 驾驶员姓名
+	 */
+	private String driverName;
+	
+	/**
+	 * 联系电话
+	 */
+	private String telephone;
+	
+	/**
+	 * 运输趟次
+	 */
+	private int tripCount;
+
+	public String getVehicleId() {
+		return vehicleId;
+	}
+
+	public void setVehicleId(String vehicleId) {
+		this.vehicleId = vehicleId;
+	}
+
+	public String getCarNo() {
+		return carNo;
+	}
+
+	public void setCarNo(String carNo) {
+		this.carNo = carNo;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getDriverName() {
+		return driverName;
+	}
+
+	public void setDriverName(String driverName) {
+		this.driverName = driverName;
+	}
+
+	public String getTelephone() {
+		return telephone;
+	}
+
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
+	}
+
+	public int getTripCount() {
+		return tripCount;
+	}
+
+	public void setTripCount(int tripCount) {
+		this.tripCount = tripCount;
+	}
+
+}

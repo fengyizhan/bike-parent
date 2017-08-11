@@ -1,0 +1,118 @@
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('VehicleController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/		
+			var Vehicle = $resource("api/information/vehicle/:id", { "id" : "@id" }, {
+				init : { method : 'GET',responseType: "json", url : 'api/information/vehicle/init'},
+				initParks : { method : 'GET', isArray: true, url : 'api/information/park/getAllParks'},
+				initTerminalTypes : { method : 'GET', isArray: true, url : 'api/information/dictionary/terminal/types'},
+				initFactories : { method : 'GET', isArray: true, url : 'api/information/dictionary/terminal/factories'},
+				validateName : { method : 'GET', url : 'api/information/vehicle/checkname/:name/:id'},
+				get : { method : 'GET'},
+				save : { method : 'PUT'},
+				remove : { method : 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			var selected = {name : "全部"};
+			$scope.searchForm = {
+				parks:[selected],
+				runStatuses:[selected],
+				terminalTypes:[selected],
+				data:{
+					"property":{
+						"runStatus":selected
+					},
+					"park":selected,
+					"terminal": {
+						"type": selected
+					}
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "车辆信息详情";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.title = "新增车辆信息";
+				$scope.dialog.data = {
+					"property":{
+						"runStatus": $scope.dialog.runStatuses[3]
+					}
+				};
+				$scope.dialog.show();
+			}
+			
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "修改车辆信息";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			}
+			
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该车辆信息?',callback:function(){
+                    Vehicle.remove({"id":target.id},function(response){
+                    	$scope.pagination.remove(target);
+                    });
+				}}).show();
+			};
+			
+			/**============================================页面元素初始化部分============================================**/
+			
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				Vehicle.initParks(function(response){
+					$scope.searchForm.parks = $scope.searchForm.parks.concat(response);
+					dialog.parks = response;
+				});
+				Vehicle.init(function(response){
+					$scope.searchForm.runStatuses = $scope.searchForm.runStatuses.concat(response.runStatuses);
+					dialog.runStatuses = response.runStatuses;
+					dialog.states = response.state;
+				});
+				Vehicle.initTerminalTypes(function(response){
+					$scope.searchForm.terminalTypes = $scope.searchForm.terminalTypes.concat(response);
+					dialog.terminalTypes = response;
+				});
+				Vehicle.initFactories(function(response){
+					dialog.factories = response;
+				});
+				dialog.validateName = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Vehicle.validateName({"id": dialog.data.id, "name": name}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				dialog.submit = function(event){
+					event.preventDefault();
+					Vehicle.save($scope.dialog.data,function(response){
+						if($scope.dialog.increased){
+							$scope.pagination.unshift(response);
+						}else{
+							$scope.pagination.refresh(response);
+						}
+                    });
+					$scope.dialog.close();
+				};
+			});
+		}]);
+	});
+})(window.angular);

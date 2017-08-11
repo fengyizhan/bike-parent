@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.project.persistence.ProjectMapper">
+	<resultMap id="projectMap" type="com.tiamaes.bike.common.bean.information.Project">
+		<id column="id" property="id"/>
+		<result property="name" column="name"/>
+		<result column="address" property="address"/>
+		<result column="unit" property="unit"/>
+		<result column="startTime" property="startTime"/>
+		<result column="endTime" property="endTime"/>
+		<result column="createDate" property="createDate"/>
+		<result column="principal" property="principal"/>
+		<result column="telephone" property="telephone"/>
+		<association property="beginStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="beginStation"/>
+	        <result property="name" column="beginStationName"/>
+	        <association property="paths" column="beginStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+    	<association property="endStation" javaType="com.tiamaes.bike.common.bean.information.Station">
+	        <id property="id" column="endStation"/>
+	        <result property="name" column="endStationName"/>
+	        <association property="paths" column="endStation" select="com.tiamaes.bike.api.information.paths.persistence.PathsMapper.getPathsByTargetId"/>
+	    </association>
+	</resultMap>
+</mapper>

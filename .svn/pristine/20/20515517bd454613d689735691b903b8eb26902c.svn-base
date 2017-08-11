@@ -1,0 +1,155 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+
+/**
+ * 位置信息汇报包
+ * 
+ * @author Chen
+ */
+public class Received0100 extends Received {
+	private Body body;
+	public Received0100(Header header, byte[] bytes) throws ParseException {
+		super(header, bytes);
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytes);
+		int warnFlag=buffer.readUnsignedShort();
+		int batterycapa=buffer.readByte();
+		int lock=buffer.readByte();
+		BikeStatus bikeStatus=new BikeStatus();
+		bikeStatus.setBatterycapa(batterycapa);
+		bikeStatus.setLock(Lock.values()[lock]);
+		int position=buffer.readByte();
+		int atitude=buffer.readInt();
+		int longitude=buffer.readInt();
+		int height=buffer.readUnsignedShort();
+		int velocity=buffer.readUnsignedShort();
+		int direction=buffer.readUnsignedShort();
+		byte[] bytes1=new byte[6];
+		buffer.readBytes(bytes1);
+		String temp=bytes.toString();
+		SimpleDateFormat sdf=new SimpleDateFormat("YY-MM-DD-hh-mm-ss");
+		
+			Date time=sdf.parse(temp);
+	
+		body.setAtitude(atitude);
+		body.setBikeStatus(bikeStatus);
+		body.setDirection(direction);
+		body.setHeight(height);
+		body.setLongitude(longitude);
+		body.setPositionStatus(PositionStatus.values()[position]);
+		body.setTime(time);
+		
+	}
+	
+public Body getBody() {
+		return body;
+	}
+
+	public void setBody(Body body) {
+		this.body = body;
+	}
+
+public class Body{
+	private WarnFlag warnFlag;
+	private BikeStatus bikeStatus;
+	private PositionStatus positionStatus;
+	private int atitude;
+	private int longitude;
+	private int height;
+	private int velocity;
+	private int direction;
+	private Date time;
+	
+	public WarnFlag getWarnFlag() {
+		return warnFlag;
+	}
+	public void setWarnFlag(WarnFlag warnFlag) {
+		this.warnFlag = warnFlag;
+	}
+
+	public BikeStatus getBikeStatus() {
+		return bikeStatus;
+	}
+	public void setBikeStatus(BikeStatus bikeStatus) {
+		this.bikeStatus = bikeStatus;
+	}
+	
+	public PositionStatus getPositionStatus() {
+		return positionStatus;
+	}
+	public void setPositionStatus(PositionStatus positionStatus) {
+		this.positionStatus = positionStatus;
+	}
+	public int getAtitude() {
+		return atitude;
+	}
+	public void setAtitude(int atitude) {
+		this.atitude = atitude;
+	}
+	public int getLongitude() {
+		return longitude;
+	}
+	public void setLongitude(int longitude) {
+		this.longitude = longitude;
+	}
+	public int getHeight() {
+		return height;
+	}
+	public void setHeight(int height) {
+		this.height = height;
+	}
+	public int getVelocity() {
+		return velocity;
+	}
+	public void setVelocity(int velocity) {
+		this.velocity = velocity;
+	}
+	public int getDirection() {
+		return direction;
+	}
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}
+	public Date getTime() {
+		return time;
+	}
+	public void setTime(Date time) {
+		this.time = time;
+	}
+	
+}
+public enum WarnFlag{
+		ILLEGALMOVE,LOWERELECTRIC,BIKESTEAL,ZIGBEEFAULT,GNSSFAULT,GNSSBREAK,GNSSSHORT,BLUETOOTHFAULT
+	}
+public class BikeStatus{
+	private int batterycapa;
+	private Lock lock;
+	
+	public int getBatterycapa() {
+		return batterycapa;
+	}
+	public void setBatterycapa(int batterycapa) {
+		this.batterycapa = batterycapa;
+	}
+	public Lock getLock() {
+		return lock;
+	}
+	public void setLock(Lock lock) {
+		this.lock = lock;
+	}
+
+}
+
+public enum Lock{
+	车辆可借锁关,车辆可借锁开,车已被预约锁关,车已被预约锁开,车已借出锁关,车已借出锁开,车不可借锁关,车不可借锁开
+}
+public enum PositionStatus{
+	未定位,定位东经北纬,未定位南纬,定位东经南纬,未定位西经北纬,定位西经北纬,定位西经南纬
+}
+}

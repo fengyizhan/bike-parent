@@ -1,0 +1,273 @@
+package com.tiamaes.bike.api.information.vehicle.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
+import com.tiamaes.bike.api.information.department.persistence.DepartmentMapper;
+import com.tiamaes.bike.api.information.terminal.persistence.TerminalMapper;
+import com.tiamaes.bike.api.information.vehicle.persistence.VehicleMapper;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Auto;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class VehicleService implements VehicleServiceInterface {
+
+	@Resource
+	private VehicleMapper vehicleMapper;
+	@Resource
+	private TerminalMapper terminalMapper;
+	@Resource
+	private DepartmentMapper departmentMapper;
+	@Resource(name = "vehicleTemplate")
+	private RedisTemplate<String, Vehicle> vehicleTemplate;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Vehicle> operator;
+	@Resource(name = "stringRedisTemplate")
+	private HashOperations<String, String, String> stringOperator;
+	@Autowired
+	private DefaultRedisScript<Vehicle> vehicleScriptExecutor;
+	private ObjectMapper objectMapper;
+	@Autowired
+	public void setJacksonObjectMapperBuilder(Jackson2ObjectMapperBuilder jacksonObjectMapperBuilder) {
+		this.objectMapper = jacksonObjectMapperBuilder.createXmlMapper(false).build();
+		this.objectMapper.enableDefaultTyping(DefaultTyping.NON_FINAL, As.PROPERTY);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Auto> getVehiclesByPid(String pid) {
+		if(StringUtils.isNotBlank(pid)){
+			List<Auto> list = vehicleMapper.getVehiclesByPid(pid);
+			return list;
+		}
+		return null;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleById(String id) {
+		Assert.notNull(id, "车辆编号不能为空!");
+		
+		Vehicle vehicle = operator.get(RedisKey.VEHICLES, id);
+		
+		return vehicle;
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleByName(String name) {
+		Assert.notNull(name, "车牌号不能为空!");
+		//根据车牌号获取主键
+		String id = stringOperator.get(RedisKey.VEHICLES_CARNO, name);
+		if(null==id){
+			return null;
+		}
+		Vehicle vehicle = operator.get(RedisKey.VEHICLES, id);
+		
+		return vehicle;
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return vehicleMapper.getListOfVehicles(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehicles(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getListOfVehicles(parameters);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfVehicles(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getTotalOfVehicles(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Vehicle addVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle);
+		Assert.isTrue(!vehicleMapper.hasExists(vehicle.getName()), "车牌号已经存在");
+		vehicleMapper.addVehicle(vehicle);
+		Vehicle newVehicle = vehicleMapper.getVehicleById(vehicle.getId());
+		if(newVehicle!=null){
+			//根据主键存放对象
+			operator.putIfAbsent(RedisKey.VEHICLES, newVehicle.getId(), newVehicle);
+			//主键和车牌号做映射
+			stringOperator.putIfAbsent(RedisKey.VEHICLES_CARNO, newVehicle.getName(), newVehicle.getId());
+			//终端号和主键做映射
+			if (newVehicle.getTerminal() != null && StringUtils.isNotBlank(newVehicle.getTerminal().getId())) {
+				stringOperator.putIfAbsent(RedisKey.VEHICLES_TERMINALS_ID, newVehicle.getTerminal().getId(), vehicle.getId());
+			}
+			return getVehicleById(newVehicle.getId());
+		}else{
+			return null;
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Vehicle updateVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle);
+		Assert.notNull(vehicle.getName(), "车牌号不能为空");
+
+		vehicleMapper.updateVehicle(vehicle);
+		
+		//根据主键存放对象
+		operator.put(RedisKey.VEHICLES, vehicle.getId(), vehicle);
+		//主键和车牌号做映射
+		stringOperator.put(RedisKey.VEHICLES_CARNO, vehicle.getName(), vehicle.getId());
+		//终端号和主键做映射
+		if (vehicle.getTerminal() != null && StringUtils.isNotBlank(vehicle.getTerminal().getId())) {
+			stringOperator.put(RedisKey.VEHICLES_TERMINALS_ID, vehicle.getTerminal().getId(), vehicle.getId());
+		}
+		
+		return vehicle;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteVehicle(Vehicle vehicle) {
+		Assert.notNull(vehicle, "车辆不能为空!");
+		vehicleMapper.deleteVehicle(vehicle);
+		
+		operator.delete(RedisKey.VEHICLES, vehicle.getId());
+		stringOperator.delete(RedisKey.VEHICLES_CARNO, vehicle.getName());
+		if(vehicle.getTerminal()!=null && vehicle.getTerminal().getId()!=null){
+			stringOperator.delete(RedisKey.VEHICLES_TERMINALS_ID, vehicle.getTerminal().getId());
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean hasExists(String carNo) {
+		return vehicleMapper.hasExists(carNo);
+	}
+	
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getAllVehiclesWithPlateNo(String  plateNo){
+		return vehicleMapper.getAllVehiclesWithPlateNo(plateNo);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Vehicle getVehicleBySimNo(String simNo) {
+		Assert.notNull(simNo, "车辆simNo不能为空!");
+		StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+		Jackson2JsonRedisSerializer<Vehicle> hashValueSerializer = new Jackson2JsonRedisSerializer<>(Vehicle.class);
+		hashValueSerializer.setObjectMapper(objectMapper);
+		List<String> keys = new ArrayList<String>();
+		keys.add(RedisKey.VEHICLES_TERMINALS_SIMNO);
+		keys.add(RedisKey.VEHICLES_TERMINALS_ID);
+		keys.add(RedisKey.VEHICLES);
+		Vehicle vehicle = vehicleTemplate.execute(vehicleScriptExecutor, stringRedisSerializer, hashValueSerializer,
+				keys, simNo);
+		return vehicle;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehiclesAnother(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return vehicleMapper.getListOfVehiclesAnother(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfVehiclesAnother(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getTotalOfVehiclesAnother(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehiclesP(Parameters<Vehicle> parameters, Pagination<Vehicle> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return vehicleMapper.getListOfVehiclesP(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfVehiclesP(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getTotalOfVehiclesP(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehiclesP(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getListOfVehiclesP(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Vehicle> getListOfVehiclesAnother(Parameters<Vehicle> parameters) {
+		return vehicleMapper.getListOfVehiclesAnother(parameters);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfCompany(String id) {
+		List<Department> departments = departmentMapper.getDepartmentsByCompanyId(id);
+		int total = 0;
+		for (Department department : departments) {
+			total = vehicleMapper.getTotalUseOfDepartment(department.getId());
+			if (total > 0) {
+				return total;
+			}
+		}
+		return total;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalUseOfDepartment(String id) {
+		return vehicleMapper.getTotalUseOfDepartment(id);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public double getLoadcubesByIds(List<String> vehicleIds) {
+		double loadcubes = 0;
+		for (String vehicleId : vehicleIds) {
+			loadcubes+=vehicleMapper.getLoadcubesByIds(vehicleId);
+		}
+		return loadcubes;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getRegisteredCount() {
+		return vehicleMapper.getRegisteredCount();
+	}
+}

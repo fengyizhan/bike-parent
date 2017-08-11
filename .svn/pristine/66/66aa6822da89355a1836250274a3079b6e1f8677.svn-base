@@ -1,0 +1,129 @@
+package com.tiamaes.bike.api.information.dictionary.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.dictionary.service.DictionaryServiceInterface;
+import com.tiamaes.bike.common.bean.information.Region;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.information.VehicleType;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/dictionary")
+@Api(tags = {"dictionary"}, description = "字典管理")
+public class DictionaryController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(DictionaryController.class);
+	
+	
+	@Resource
+	private DictionaryServiceInterface dictionaryService;
+	
+	/**
+	 * 获取终端类型下拉菜单
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/terminal/types", method = RequestMethod.GET)
+	@ApiOperation(value = "终端类型下拉列表", notes = "获取终端类型下拉菜单")
+	public @ResponseBody List<Vehicle.Type> types(@CurrentUser User operator) {
+		return dictionaryService.getListOfTypes();
+	}
+	
+	/**
+	 * 获取生产厂家下拉菜单
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/terminal/factories", method = RequestMethod.GET)
+	@ApiOperation(value = "生产厂家下拉列表", notes = "获取生产厂家下拉菜单")
+	public @ResponseBody List<Vehicle.Factory> factories(@CurrentUser User operator) {
+		return dictionaryService.getListOfFactories();
+	}
+	
+	/**
+	 * 获取所有车辆类型列表，用于下拉菜单生成 
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/vehicle/vehicleTypes", method = RequestMethod.GET)
+	@ApiOperation(value = "车辆类型下拉列表", notes = "获取所有车辆类型列表，用于下拉菜单生成 ")
+	public @ResponseBody List<VehicleType> vehicleTypes(@CurrentUser User operator) {
+		return dictionaryService.getListOfVehicleTypes();
+	}
+	
+	/**
+	 * 获取所有省列表，用于下拉菜单生成 
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/vehicle/initRegions", method = RequestMethod.GET)
+	@ApiOperation(value = "所有省下拉列表", notes = "获取所有省列表，用于下拉菜单生成  ")
+	public @ResponseBody Map<String,Object> initRegions(@CurrentUser User operator){
+		Map<String,Object> result = new HashMap<String, Object>();
+		Region region = new Region();
+		
+		//获取省
+//		region.setType(1);
+		List<Region> provinces = dictionaryService.getListOfRegions(region);
+		//获取市
+		/*region.setType(2);
+		List<Region> citys = dictionaryService.getListOfRegions(region);
+		//获取市
+		region.setType(3);
+		List<Region> countys = dictionaryService.getListOfRegions(region);*/
+		
+		result.put("provinces", provinces);
+		//result.put("citys", citys);
+		//result.put("countys", countys);
+		return result;
+	}
+	
+	/**
+	 * 根据省份获取所有市列表，用于下拉菜单生成 
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/vehicle/citysByProvinceId/{parentId}", method = RequestMethod.GET)
+	@ApiOperation(value = "部分市下拉列表", notes = "根据省份获取所有市列表，用于下拉菜单生成 ")
+	public @ResponseBody List<Region> getCitysByProvinceId(@PathVariable String parentId, @CurrentUser User operator) {
+		Assert.notNull(parentId, "省ID不能为空");
+		Region region = new Region();
+		region.setState(2);
+		region.setParentId(parentId);
+		
+		return dictionaryService.getListOfRegions(region);
+	}
+	/**
+	 * 根据市获取所有县列表，用于下拉菜单生成 
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/vehicle/countysByCityId/{parentId}", method = RequestMethod.GET)
+	@ApiOperation(value = "部分县下拉列表", notes = "根据市获取所有县列表，用于下拉菜单生成 ")
+	public @ResponseBody List<Region> getCountysByCityId(@PathVariable String parentId, @CurrentUser User operator) {
+		Assert.notNull(parentId, "市ID不能为空");
+		Region region = new Region();
+		region.setState(3);
+		region.setParentId(parentId);
+		
+		return dictionaryService.getListOfRegions(region);
+	}
+}

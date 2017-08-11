@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.VehicleLocationMapper">
+	<resultMap id="locationRecordMap" type="com.tiamaes.bike.common.bean.integrated.LocationRecord">
+		<id property="id" column="id"/>
+		<result property="borrowId" column="borrowId"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="electricity" column="electricity"/>
+		<result property="speed" column="speed"/>
+		<result property="elevation" column="elevation"/>
+		<result property="direction" column="direction"/>
+		<result property="createDate" column="createDate"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="vehicleName"/>
+			<result property="simCode" column="simNo"/>
+		</association>
+	</resultMap>
+	<!-- 根据id获取车辆的定位信息 -->
+	<select id="getLocationById" parameterType="String" resultMap="locationRecordMap">
+		SELECT 	id,
+				borrowId,
+				lng,
+				lat,
+				electricity,
+				speed,
+				elevation,
+				direction,
+				createDate,
+				vehicleId,
+		     	vehicleName,
+		     	simNo,
+		     	createDate
+		  FROM tb_bike_location_info 
+		  WHERE id = #{id}
+	</select>
+	<!-- 根据时间段或车辆id查询车辆的定位信息 -->
+	<select id="getLocationByTime" parameterType="com.tiamaes.webgis.common.bean.webgis.integrated.LocationRecord" resultType="com.tiamaes.webgis.common.bean.system.PointVector$Center">
+		SELECT 	t.lng,
+				t.lat,
+				t.direction AS rotation
+		  FROM tb_bike_location_info t 
+		  <where>
+			<if test="vehicle != null and vehicle.id != null">
+		     AND t.vehicleId = #{vehicle.id}
+			</if>
+			<if test="startTime != null">
+		     AND t.createDate &gt;= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} &gt;= t.createDate
+			</if>
+		</where>
+		ORDER BY v.createDate
+	</select>
+	<!-- 保存车辆定位信息 -->
+	<insert id="addVehicleLocation" parameterType="com.tiamaes.bike.common.bean.information.Vehicle">
+		INSERT INTO tb_bike_location_info
+		  (id,
+		   borrowId,
+		   vehicleId,
+		   vehicleName,
+		   lng,
+		   lat,
+		   electricity,
+		   speed,
+		   elevation,
+		   direction,
+		   createDate)
+		VALUES
+		  (#{locationInfoId,jdbcType=VARCHAR},
+		   #{borrowId,jdbcType=VARCHAR},
+		   #{id,jdbcType=INTEGER},
+		   #{name,jdbcType=VARCHAR},
+		   #{center.lng,jdbcType=DOUBLE},
+		   #{center.lat,jdbcType=DOUBLE},
+		   #{info.electricity,jdbcType=INTEGER},
+		   #{info.speed,jdbcType=INTEGER},
+		   #{info.elevation,jdbcType=INTEGER},
+		   #{info.direction,jdbcType=INTEGER},
+		   #{locationInfoCreateDate})
+	</insert>
+</mapper>

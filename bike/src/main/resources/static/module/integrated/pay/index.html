@@ -1,0 +1,94 @@
+<div ng-controller="PayController" ng-cloak>
+	<ol class="breadcrumb">
+		<li>综合查询</li>
+		<li class="active">线上支付记录查询</li>
+	</ol>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<form id="form1" autocomplete="off" class="form-inline">
+					<div class="row" style="margin-bottom: 5px;">
+						<div class="col-md-12">
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">用户名</span>
+								<input type="text" class="form-control" name="username" ng-model="searchForm.data.username" placeholder="请输入用户名">
+							</div>
+							<div class="input-group input-group-sm">
+									<span class="input-group-addon">支付方式</span>
+									<div class="input-group-default">
+										<ui-select ng-model="searchForm.data.style" theme="bootstrap" title="{{$select.selected.name}}">
+											<ui-select-match placeholder="支付方式">{{$select.selected.name}}</ui-select-match>
+											<ui-select-choices position="down" repeat="item in searchForm.styles track by $index">
+												<div ng-bind-html="item.name"></div>
+											</ui-select-choices>
+										</ui-select>
+									</div>
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">开始时间</span>
+								<input type="text" class="form-control" ng-model="start.time"
+									is-open="start.time.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									max-date="end.time" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.startTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<div class="input-group input-group-sm">
+								<span class="input-group-addon">结束时间</span>
+								<input type="text" class="form-control" ng-model="end.time"
+									is-open="end.time.opened" uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+									min-date="start.time" readonly="readonly" />
+								<span class="input-group-btn">
+									<button type="button" class="btn btn-default" ng-click="searchForm.endTime.open($event)">
+										<i class="glyphicon glyphicon-calendar"></i>
+									</button>
+								</span> 
+							</div>
+							<button type="submit" class="btn btn-primary btn-sm hidden-xs" 
+								ng-click="searchForm.submit()">
+								<span class="glyphicon glyphicon-search"></span>
+								<span>查询</span>
+							</button>
+						</div>
+					</div>
+				</form>
+				<div class="row" style="margin-bottom:10px;">
+					<div class="col-md-12 text-right">
+						<div class="btn-group" role="group" aria-label="...">
+							<button type="button" class="btn btn-info btn-sm" ng-click="exportExcel()">
+								<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+								<span>根据查询条件导出Excel</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<pagination2 parameters="searchForm.data" uri="wallet/information/payrecharge/page/" id="pagination" items-per-page="20" style="margin-top:40px;">
+					<table class="table table-bordered table-condensed table-hover">
+						<thead>
+							<tr>
+								<td width="100">用户名</td>
+								<td width="100">金额</td>
+								<td width="160">支付方式</td>
+								<td width="160">支付结果</td>
+								<td width="160">状态码</td>
+								<td width="130">创建时间</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in $parent.list track by $index">
+								<td class="ellipsis"><div style="width: 100px;" ng-bind="item.username" title="{{item.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 100px;" ng-bind="item.money" title="{{item.money}}"></div></td>
+								<td class="ellipsis"><div style="width: 130px;" ng-bind="item.style.name" title="{{item.style.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 160px;" ng-bind="item.result" title="{{item.result}}"></div></td>
+								<td class="ellipsis"><div style="width: 160px;" ng-bind="item.resultCode" title="{{item.resultCode}}"></div></td>
+								<td ng-bind="item.createTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+							</tr>
+						</tbody>
+					</table>
+				</pagination2>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,155 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+import java.util.Random;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.RunState;
+import com.tiamaes.bike.common.bean.connector.VehicleLocation;
+import com.tiamaes.bike.common.bean.connector.VehicleStatusInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.integrated.DirectionType;
+import com.tiamaes.bike.common.bean.integrated.WarnCode;
+import com.tiamaes.bike.storage.service.LocatioInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class LocatioInfoServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(LocatioInfoServiceTest.class);
+	
+	@Resource
+	private LocatioInfoServiceInterface locatioInfoService;
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@Test
+	public void saveVehicleLocationTest() throws Exception{
+		String id = "616c1aef3bf54ea3b7b6a84e173957f4";
+		VehicleLocation vehicleLocation = new VehicleLocation();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("f8a777e680824267ad3ac56dfa248a56");
+		vehicleLocation.setVehicle(vehicle);
+		vehicleLocation.setId(id);
+		vehicleLocation.setLat(34.838109);
+		vehicleLocation.setLng(113.517306);
+		vehicleLocation.setDirection(2);
+		vehicleLocation.setCreateTime(new Date());
+		vehicleLocation.setSpeed(35.2);
+//		locatioInfoService.saveVehicleLocation(vehicleLocation);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleLocation));
+	}
+	
+	@Test
+	public void saveVehicleStatusInfoTest() throws Exception{
+		VehicleStatusInfo vehicleStatusInfo = new VehicleStatusInfo(); 
+		String id = "28af30c9784244fc99944960ad302ef2";
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("d196b09f835842d79c993d961d94849f");
+		vehicle.setName("京Q23456");
+//		vehicle.setDepartment(department);
+//		vehicle.setCompany(company);
+//		vehicle.setTerminal(terminal);
+		
+		vehicleStatusInfo.setId(id);
+		vehicleStatusInfo.setVehicle(vehicle);
+		vehicleStatusInfo.setLocationState(true);
+		vehicleStatusInfo.setLatState(true);
+		vehicleStatusInfo.setLngState(true);
+		
+//		locatioInfoService.saveVehicleStatusInfo(vehicleStatusInfo);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleStatusInfo));
+		
+	}
+	
+	@Test
+	public void saveVehicleWarningInfoTest() throws Exception{
+
+		VehicleWarningInfo vehicleWarningInfo = new VehicleWarningInfo(); 
+		String id = "281a10f9570c4b59ae34afeba8c7d82f";
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("d196b09f835842d79c993d961d94849f");
+		vehicle.setName("京Q23456");
+//		vehicle.setDepartment(department);
+//		vehicle.setCompany(company);
+//		vehicle.setTerminal(terminal);
+		
+		vehicleWarningInfo.setId(id);
+		vehicleWarningInfo.setVehicle(vehicle);
+		vehicleWarningInfo.setWarnCode(WarnCode.ILLEGALMOVEMENT);
+		vehicleWarningInfo.setWarnContent(WarnCode.ILLEGALMOVEMENT.getName());
+		vehicleWarningInfo.setDirectionType(DirectionType.IN);
+		vehicleWarningInfo.setLat(34.838606);
+		vehicleWarningInfo.setLng(113.51589);
+		
+		locatioInfoService.saveVehicleWarningInfo(vehicleWarningInfo);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleWarningInfo));
+	}
+	
+	@Test
+	@Ignore
+	public void locationInfoServiceKafkaTest() throws Exception {
+		for (int val = 100; val <= 100; val++) {
+			Vehicle vehicle = new Vehicle();
+			vehicle.setId("1000"+(val+2));
+			vehicle.setName("TM0"+val);
+			PointVector.Center center = new PointVector.Center();
+			PointVector.Info info = new PointVector.Info();
+			setVehicle(vehicle, center, info);
+			
+			locatioInfoService.savePointVector(vehicle);
+		}
+	}
+
+	private Vehicle setVehicle(Vehicle vehicle, PointVector.Center center, PointVector.Info info) {
+		double lng = Double.valueOf("113.648"+String.valueOf((int)((Math.random()*9+1)*100000)));
+		center.setLng(lng);
+		double lat = Double.valueOf("34.746"+String.valueOf((int)((Math.random()*9+1)*100000)));
+		center.setLat(lat);
+		vehicle.setCenter(center);
+		
+		info.setDate(new Date());
+		info.setSpeed(0);
+		info.setElectricity((int)(Math.random()*100+1));
+		info.setLocationState(true);
+		info.setLngState(true);
+		info.setLatState(true);
+		int val = new Random().nextInt(4);
+		if (val == 0) {
+			info.setRunState(RunState.CANBORROW);
+		} else if (val == 1) {
+			info.setRunState(RunState.RESERVED);
+		} else if (val == 2) {
+			info.setRunState(RunState.BORROWED);
+		} else {
+			info.setRunState(RunState.CANNOTBORROW);
+		}
+		vehicle.setInfo(info);
+		return vehicle;
+	}
+}

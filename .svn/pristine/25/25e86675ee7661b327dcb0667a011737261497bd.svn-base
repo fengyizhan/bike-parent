@@ -1,0 +1,98 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.tiamaes.bike.common.bean.information.Park;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.system.User;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(value = "ParkVehicleUseRecord", description = "停车区车辆使用实体")
+public class ParkVehicleUseRecord implements Serializable {
+
+	private static final long serialVersionUID = 7106339318816093912L;
+
+	public ParkVehicleUseRecord() {}
+
+	public ParkVehicleUseRecord(String id, Park park, Vehicle vehicle, 
+			User user, UseType userType, Date createDate) {
+		this.setId(id);
+		this.setPark(park);
+		this.setVehicle(vehicle);
+		this.setUser(user);
+		this.setUserType(userType);
+		this.setCreateDate(createDate);
+	}
+
+	@ApiModelProperty(value="日志编号")
+	private String id;
+	@ApiModelProperty(value="停放区信息")
+	private Park park;
+	@ApiModelProperty(value="车辆信息")
+	private Vehicle vehicle;
+	@ApiModelProperty(value="用户信息")
+	private User user;
+	@ApiModelProperty(value="使用类型(0: 借车, 1: 还车)")
+	private UseType userType;
+	@ApiModelProperty(value="创建时间")
+	private Date createDate;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Park getPark() {
+		return park;
+	}
+
+	public void setPark(Park park) {
+		this.park = park;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public UseType getUserType() {
+		return userType;
+	}
+
+	public void setUserType(UseType userType) {
+		this.userType = userType;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+	
+}

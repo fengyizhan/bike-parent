@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.ProjectTripInfoMapper">
+	
+	<!-- 保存工程趟次信息 -->
+	<insert id="addProjectTripInfo" parameterType="com.tiamaes.bike.common.bean.connector.ProjectTripInfo" >
+    INSERT INTO tb_project_trips 
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.id != null and vehicle.company.id != ''" >
+        companyId,
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.name != null and vehicle.company.name != ''" >
+        companyName,
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.id != null and vehicle.department.id != ''" >
+        departmentId,
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.name != null and vehicle.department.name != ''" >
+        departmentName,
+      </if>
+      <if test="vehicle != null and vehicle.id != null and vehicle.id != ''" >
+        vehicleId,
+      </if>
+      <if test="vehicle != null and vehicle.carNo != null and vehicle.carNo != ''" >
+        carNo,
+      </if>
+      <if test="vehicle != null and vehicle.terminal != null and vehicle.terminal.simNo != null and vehicle.terminal.simNo != ''" >
+        simNo,
+      </if>
+      <if test="driver != null and driver.identityCard != null and driver.identityCard != ''" >
+        driverNo,
+      </if>
+      <if test="driver != null and driver.name != null and driver.name != ''" >
+        driverName,
+      </if>
+      <if test="driver != null and driver.telephone != null and driver.telephone != ''" >
+        driverPhone,
+      </if>
+      <if test="beginStation != null and beginStation.id != null and beginStation.id != ''" >
+        beginStationId,
+      </if>
+      <if test="beginStation != null and beginStation.name != null and beginStation.name != ''" >
+        beginStationName,
+      </if>
+      <if test="beginTime != null" >
+        beginTime,
+      </if>
+      <if test="endStation != null and endStation.id != null and endStation.id != ''" >
+        endStationId,
+      </if>
+      <if test="endStation != null and endStation.name != null and endStation.name != ''" >
+        endStationName,
+      </if>
+      <if test="endTime != null" >
+        endTime,
+      </if>
+      <if test="loadCube != null" >
+        loadCube,
+      </if>
+      <if test="projectId != null and projectId.trim()!=''" >
+        projectId
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.id != null and vehicle.company.id != ''" >
+        #{vehicle.company.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.name != null and vehicle.company.name != ''" >
+        #{vehicle.company.name,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.id != null and vehicle.department.id != ''" >
+        #{vehicle.department.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.name != null and vehicle.department.name != ''" >
+        #{vehicle.department.name,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.id != null and vehicle.id != ''" >
+        #{vehicle.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.carNo != null and vehicle.carNo != ''" >
+        #{vehicle.carNo,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.terminal != null and vehicle.terminal.simNo != null and vehicle.terminal.simNo != ''" >
+        #{vehicle.terminal.simNo,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.identityCard != null and driver.identityCard != ''" >
+        #{driver.identityCard,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.name != null and driver.name != ''" >
+        #{driver.name,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.telephone != null and driver.telephone != ''" >
+        #{driver.telephone,jdbcType=VARCHAR},
+      </if>
+      <if test="beginStation != null and beginStation.id != null and beginStation.id != ''" >
+        #{beginStation.id,jdbcType=VARCHAR},
+      </if>
+      <if test="beginStation != null and beginStation.name != null and beginStation.name != ''" >
+        #{beginStation.name,jdbcType=VARCHAR},
+      </if>
+      <if test="beginTime != null" >
+        #{beginTime},
+      </if>
+      <if test="endStation != null and endStation.id != null and endStation.id != ''" >
+        #{endStation.id,jdbcType=VARCHAR},
+      </if>
+      <if test="endStation != null and endStation.name != null and endStation.name != ''" >
+        #{endStation.name,jdbcType=VARCHAR},
+      </if>
+      <if test="endTime != null" >
+        #{endTime},
+      </if>
+      <if test="loadCube != null" >
+        #{loadCube,jdbcType=DOUBLE},
+      </if>
+      <if test="projectId != null and projectId.trim()!=''" >
+        #{projectId}
+      </if>
+    </trim>
+  </insert>
+  
+  <delete id="deleteProjectTripInfo" parameterType="String">
+  	DELETE FROM tb_project_trips WHERE id = #{id}
+  </delete>
+</mapper>

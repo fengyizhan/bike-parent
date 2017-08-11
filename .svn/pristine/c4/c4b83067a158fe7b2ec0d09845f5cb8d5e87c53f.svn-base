@@ -1,0 +1,14 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+/**
+ * 位置信息汇报包
+ * 
+ * @author Chen
+ */
+public class Received0100 extends Received {
+
+	public Received0100(Header header, byte[] bytes) {
+		super(header, bytes);
+	}
+	
+}

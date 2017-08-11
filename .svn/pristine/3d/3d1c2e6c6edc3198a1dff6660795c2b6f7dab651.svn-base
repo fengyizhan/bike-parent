@@ -1,0 +1,94 @@
+var departments = null;
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('InoutStationRecordController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/
+			var VehicleStationInfo = $resource("api/information/vehicle/:id", { "id" : "@id" }, {
+				init : { method : 'GET',responseType: "json", url : 'reporter/integrated/station/init'},
+				initcompanys : { method : 'GET', isArray: true, url : 'api/information/company/list'},
+				initDepartments : { method : 'GET', responseType: "json", url : 'api/information/department/pullList'},
+				initStations : { method : 'GET', responseType: "json", url : 'api/information/station/pullList'},
+				getDepartmentsByCompanyId : { method : 'GET', isArray: true, url : 'api/information/department/departments/:parentId'},
+				exportExcel : { method : 'POST',responseType: "json", url : 'exporter/integrated/station/exportExcel'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			var selected = {name : "全部"};
+			$scope.searchForm = {
+				companys:[selected],
+				departments:[selected],
+				stations:[selected],
+				states:[selected],
+				data:{
+					"company":selected,
+					"department":selected,
+					"station":selected,
+					"state":selected,
+					"startTime" : $rootScope.start.time,
+					"endTime" : $rootScope.end.time
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			//公司--部门级联查询(列表页面)
+			$scope.selectCompany = function(item){
+				if(!item.id){
+					$scope.searchForm.companys.selected = undefined;
+					$scope.searchForm.departments = [selected];
+					$scope.searchForm.departments = $scope.searchForm.departments.concat(departments);
+					$scope.searchForm.departments.selected = undefined;
+					$scope.searchForm.data.department = selected;
+					return;
+				}
+				VehicleStationInfo.getDepartmentsByCompanyId({"parentId":item.id},function(response){
+					$scope.searchForm.departments = [selected];
+					$scope.searchForm.departments = $scope.searchForm.departments.concat(response);
+					$scope.searchForm.data.department = selected;
+				});
+			};
+			// 导出Excel
+			$scope.exportExcel = function(){
+				if ($scope.$$childTail.list == null) {
+					$scope.$confrim.init({title:'警告',type:'warning',content : '没有记录可供导出!'}).show();
+				} else {
+					$scope.$confrim.init({title:'成功',type:'success',content : '导出任务已加入至队列当中, 请耐心等待!'}).show();
+					VehicleStationInfo.exportExcel($scope.searchForm.data, function(response){
+						$rootScope.taskList.unshift(response);
+						$rootScope.subscribe(response.id);
+					});
+				}
+			};
+			/**============================================页面元素初始化部分==========================================**/
+			//初始化进出场类型
+			VehicleStationInfo.init(function(response){
+				$scope.searchForm.states = $scope.searchForm.states.concat(response.states);
+			});
+			//初始化公司列表
+			VehicleStationInfo.initcompanys(function(response){
+				$scope.searchForm.companys = $scope.searchForm.companys.concat(response);
+			});
+			//初始化部门列表
+			VehicleStationInfo.initDepartments(function(response){
+				$scope.searchForm.departments = $scope.searchForm.departments.concat(response.departments);
+				departments = response.departments;
+			});
+			//初始化场区列表
+			VehicleStationInfo.initStations(function(response){
+				$scope.searchForm.stations = $scope.searchForm.stations.concat(response.stations);
+			});
+			$scope.searchForm.startTime = {
+				"open": function($event) {
+					$scope.searchForm.startTime.opened = true;
+				}
+			};
+			$scope.searchForm.endTime = {
+				"open": function($event) {
+					$scope.searchForm.endTime.opened = true;
+				}
+			};
+			/**============================================对话框元素初始化部分========================================**/
+		}]);
+	});
+})(window.angular);

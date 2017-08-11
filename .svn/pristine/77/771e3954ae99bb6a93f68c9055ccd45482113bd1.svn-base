@@ -1,0 +1,66 @@
+package com.tiamaes.bike.api.common.message.controller;
+
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.common.bean.Result;
+import com.tiamaes.bike.api.information.authority.service.AuthorityServiceInterface;
+import com.tiamaes.bike.api.util.SystemUtil;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.system.Authority;
+import com.tiamaes.bike.common.bean.system.DataAuthority;
+import com.tiamaes.bike.messages.SMS;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/common/message")
+@Api(tags = {"message"}, description = "手机短信发送")
+public class MessageController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(MessageController.class);
+	@Resource
+	private AuthorityServiceInterface authorityService;
+	@Resource
+	private RedisTemplate<String,String> redisTemplate;
+	@Resource
+	private SMS sms;
+	
+	/**
+	 * 发送手机验证码
+	 * @param mobile 手机号码
+	 */
+	@RequestMapping(value = "/sendVerifyCode/{mobile}", method = RequestMethod.POST, produces = { "application/json" })
+	@ApiOperation(value = "短信发送", notes = "短信发送")
+	public @ResponseBody Result sendVerifyCode(@PathVariable("mobile") String mobile) {
+		
+		Result result=new Result();
+		Assert.notNull(mobile,"手机号不能为空");
+		//生成随机验证码
+		int number=SystemUtil.numberGenerator(6);
+		//存储到session中以便登陆验证比对，5分钟失效
+		String key=String.format(RedisKey.MESSAGE_VERIFYCODE,mobile);
+		redisTemplate.opsForValue().set(key, String.valueOf(number),5,TimeUnit.MINUTES);
+		//发送短信验证码
+		String message=sms.send(mobile,"（共享单车）验证码："+number+"，5分钟内有效。");
+		result.setSuccess(true);
+		result.setMessage(message);
+		return result;
+	}
+	
+}

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.VehicleWarningInfoMapper">
+	<resultMap id="vehicleStatusInfoMap" type="com.tiamaes.bike.common.bean.connector.VehicleWarningInfo">
+		<id property="id" column="id"/>
+		<result property="warnCode" column="warnCode" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="warnContent" column="warnContent"/>
+		<result property="districtId" column="districtId"/>
+		<result property="directionType" column="directionType" typeHandler="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+		<result property="drivingTime" column="drivingTime"/>
+		<result property="createTime" column="createTime"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="place" column="place"/>
+		<association property="vehicle" javaType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<result property="id" column="vehicleId"/>
+			<result property="name" column="carNo"/>
+			<result property="simCode" column="simNo"/>
+			<association property="company" javaType="com.tiamaes.bike.common.bean.information.Company">
+				<result property="id" column="companyId"/>
+				<result property="name" column="companyName"/>
+			</association>
+			<association property="department" javaType="com.tiamaes.bike.common.bean.information.Department">
+				<result property="id" column="departmentId"/>
+				<result property="name" column="departmentName"/>
+			</association>
+		</association>		
+	</resultMap>
+	<!-- 保存车辆状态信息 -->
+	<insert id="addWarningInfo" parameterType="com.tiamaes.bike.common.bean.connector.VehicleWarningInfo">
+			INSERT INTO Tb_Vehicle_Warning_Info (id,companyId,companyName,departmentId,departmentName,vehicleId,
+			     							 	carNo,simNo,warnCode,warnContent,
+			     							 	<if test="districtType!=null">
+			     							 	districtType,
+			     							 	</if>
+			     							 	districtId,
+			     							 	<if test="directionType!=null">
+			     							 	directionType,
+			     							 	</if>
+			     							 	drivingTime,
+			     							 	<if test="drivingTimeState!=null">
+			     							 	drivingTimeState,
+			     							 	</if>
+			     							 	createTime,lng,lat)
+							  			 VALUES(#{id},#{vehicle.company.id},#{vehicle.company.name},
+							  					 #{vehicle.department.id},#{vehicle.department.name},#{vehicle.id},
+							  					 #{vehicle.name},#{vehicle.terminal.simNo},
+							  					 #{warnCode.index},#{warnContent},
+							  					 <if test="districtType!=null">
+							  					 #{districtType.index},
+							  					 </if>
+							  					 #{districtId,jdbcType=INTEGER},
+							  					 <if test="directionType!=null">
+							  					 #{directionType.index},
+							  					 </if>
+							  					 #{drivingTime,jdbcType=INTEGER},
+							  					 <if test="drivingTimeState!=null">
+							  					 #{drivingTimeState.index},
+							  					 </if>
+							  					 #{createTime},#{lng},#{lat})
+	</insert>
+</mapper>

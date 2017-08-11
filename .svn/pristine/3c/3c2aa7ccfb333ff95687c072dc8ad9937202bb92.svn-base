@@ -1,0 +1,20 @@
+package com.tiamaes.bike.storage.service;
+
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+
+public interface DriverSigninInfoServiceInterface {
+	
+	/**
+	 * 增加司机插拔卡记录
+	 * @param driverSigninInfo
+	 * @return 
+	 */
+	String addDriverSigninInfo(DriverSigninInfo driverSigninInfo) throws Exception;
+	
+	/**
+	 * 根据id删除司机插拔卡记录
+	 * @param id
+	 */
+	void deleteDriverSigninInfo(String id);
+
+}

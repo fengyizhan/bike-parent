@@ -1,0 +1,16 @@
+package com.tiamaes.bike.exporter.integrated.trips.service;
+
+import java.io.File;
+
+import com.tiamaes.bike.common.bean.integrated.TripRecord;
+
+public interface TripsQueryServiceInterface {
+	
+	/**
+	 * 导出车辆上下线记录数据
+	 * @param tripRecord
+	 * @throws Exception
+	 */
+	File exportExcelOfTripRecords(TripRecord tripRecord)  throws Exception;
+
+}

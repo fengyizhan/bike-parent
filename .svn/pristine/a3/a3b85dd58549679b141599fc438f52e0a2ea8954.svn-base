@@ -1,0 +1,54 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.util.Date;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.tiamaes.bike.common.bean.system.Authority;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 部门
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Department", description = "部门实体")
+public class Department extends Authority{
+	private static final long serialVersionUID = -7799929723605781020L;
+	@ApiModelProperty(value="创建日期")
+	private Date createDate;
+	@ApiModelProperty(value="上级公司(新增时必填, 查询时可不填)")
+	private Company company;
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	public Company getCompany() {
+		return company;
+	}
+
+	public void setCompany(Company company) {
+		this.company = company;
+	}
+
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	
+	@Override
+	public Integer getLevel() {
+		return 2;
+	}
+	
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+}

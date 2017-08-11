@@ -1,0 +1,336 @@
+package com.tiamaes.bike.api.information.station.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.api.information.command.service.CommandServiceInterface;
+import com.tiamaes.bike.api.information.paths.persistence.PathsMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectMapper;
+import com.tiamaes.bike.api.information.project.persistence.ProjectVehicleMapper;
+import com.tiamaes.bike.api.information.station.persistence.StationMapper;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.command.CircularAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.CircularDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand.VertexProperty;
+import com.tiamaes.bike.common.bean.connector.command.PolygonDelCommand;
+import com.tiamaes.bike.common.bean.information.Pathpoint;
+import com.tiamaes.bike.common.bean.information.ProjectVehicle;
+import com.tiamaes.bike.common.bean.information.Station;
+import com.tiamaes.bike.common.bean.information.Station.AreaType;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageHelper;
+import com.tiamaes.mybatis.Pagination;
+
+/**
+ * @author kangty
+ * 场区信息管理接口实现类
+ */
+@Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class StationService implements StationServiceInterface {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(StationService.class);
+	
+	@Resource
+	private ObjectMapper objectMapper;
+	@Resource
+	private PathsMapper pathsMapper;
+	@Resource
+	private StationMapper stationMapper;
+	@Resource
+	private ProjectMapper projectMapper;
+	@Resource
+	private ProjectVehicleMapper projectVehicleMapper;
+	
+	@Resource
+	private CommandServiceInterface commandService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, Station> operator;
+	@Autowired
+	@Qualifier("kafkaStringTemplate")
+	private KafkaTemplate<String, String> kafkaStringTemplate;
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Station getStationById(int id) {
+		Assert.notNull(id, "场区编号不能为空!");
+		Station station = operator.get(RedisKey.STATIONS, String.valueOf(id));
+		if (station == null) {
+			station = stationMapper.getStationById(id);
+			if (station != null) {
+				operator.putIfAbsent(RedisKey.STATIONS, String.valueOf(station.getId()), station);
+			}
+		}
+		return station;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Station> getListOfStations(Station station, Pagination<Station> pagination) {
+		Assert.notNull(pagination, "分页对象不能为空");
+		PageHelper.startPage(pagination);
+		return stationMapper.getListOfStations(station);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public int getTotalOfStations(Station station) {
+		return stationMapper.getTotalOfStations(station);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Station addStation(Station station) {
+		Assert.notNull(station);
+		Assert.notNull(station.getName(), "场区名称不能为空");
+		Assert.isTrue(!stationMapper.hasExists(null, station.getName()), "场区名称已经存在");
+		Assert.notNull(station.getPrincipal(), "责任人不能为空");
+		Assert.notNull(station.getTelephone(), "联系电话不能为空");
+		stationMapper.addStation(station);
+		List<Pathpoint> pathpoints = station.getPaths();
+		for (Pathpoint pp : pathpoints) {
+			pp.setTargetid(station.getId());
+		}
+		pathsMapper.addPaths(pathpoints);
+		Station result = stationMapper.getStationById(station.getId());
+		if (result != null) {
+			operator.putIfAbsent(RedisKey.STATIONS, String.valueOf(station.getId()), result);
+		}
+		return result;
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public Station updateStation(Station station) {
+		Assert.notNull(station);
+		Assert.notNull(station.getName(), "场区名称不能为空");
+		Assert.isTrue(!stationMapper.hasExists(station.getId(), station.getName()), "场区名称已经存在");
+		Assert.notNull(station.getPrincipal(), "责任人不能为空");
+		Assert.notNull(station.getTelephone(), "联系电话不能为空");
+		stationMapper.updateStation(station);
+		pathsMapper.deletePaths(station.getId());
+		List<Pathpoint> pathpoints = station.getPaths();
+		for (Pathpoint pp : pathpoints) {
+			pp.setTargetid(station.getId());
+		}
+		pathsMapper.addPaths(pathpoints);
+		Station result = stationMapper.getStationById(station.getId());
+		if (result != null) {
+			operator.put(RedisKey.STATIONS, String.valueOf(station.getId()), station);
+		}
+			
+		//根据厂区获取工程下的车辆
+		List<ProjectVehicle> projectVehicleList =  projectMapper.getProjectVehicleByStation(station);
+		
+		if(projectVehicleList!=null && projectVehicleList.size()>0){
+			
+			//3.封装设置删除厂区命令，参数（工程id，工程车辆集合，厂区）
+			setDelete(projectVehicleList, station);
+			//4.封装设置增加厂区命令，参数(工程车辆集合，厂区，电话号码)
+			for (ProjectVehicle projectVehicle : projectVehicleList) {
+				//判断该为圆形还是多边形
+				if(AreaType.POLYGON.equals(station.getAreaType())){
+					//设置多边形区域的命令
+					List<PolygonAddCommand> polygonAddCommands = new ArrayList<PolygonAddCommand>();
+					
+					Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+					//装配设置多边形区域命令
+					polygonAddCommands = setPolygonCommand(polygonAddCommands,station,vehicle.getTerminal().getSimNo());
+					//5.发送命令
+					commandService.sendCommands(polygonAddCommands);
+				} else if(AreaType.CIRCLE.equals(station.getAreaType())){
+					//设置多边形区域的命令
+					List<CircularAddCommand> circularAddCommands = new ArrayList<CircularAddCommand>();
+					Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+					//装配设置多边形区域命令
+					circularAddCommands = setCircularAddCommand(circularAddCommands,station,vehicle.getTerminal().getSimNo());
+					//5.发送命令
+					commandService.sendCommands(circularAddCommands);
+				}
+			}
+		}
+		return result;
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteStation(Station station) {
+		Assert.notNull(station, "场区不能为空!");
+		stationMapper.deleteStation(station);
+		pathsMapper.deletePaths(station.getId());
+		Station result = stationMapper.getStationById(station.getId());
+		if (result == null) {
+			operator.delete(RedisKey.STATIONS, String.valueOf(station.getId()));
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public boolean checkStationName(Optional<Integer> id, String name) {
+		return stationMapper.hasExists(id.isPresent() ? id.get() : null, name);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Station> getStations() {
+		return stationMapper.getStations();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Station> getStationsByType(int type) {
+		return stationMapper.getStationsByType(type);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<Station> getBeginStations() {
+		return stationMapper.getBeginStations();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public Integer getId() {
+		return stationMapper.getId();
+	}
+
+	/**
+	 * 封装删除多边形区域或圆形区域
+	 * @param projectVehicles
+	 * @param station
+	 */
+	private void setDelete(List<ProjectVehicle> projectVehicles,Station station) {
+		
+		List<Integer> stationIds = new ArrayList<Integer>();
+		stationIds.add(station.getId());
+		//循环车辆
+		for (ProjectVehicle projectVehicle : projectVehicles) {
+			Vehicle vehicle = vehicleService.getVehicleById(projectVehicle.getVehicleId());
+			if(AreaType.CIRCLE.equals(station.getAreaType())){
+				//删除圆形区域的命令
+				CircularDelCommand  circularDelCommand = new CircularDelCommand();
+				//圆形区域的id集合
+				circularDelCommand.setCircularIds(stationIds);;
+				circularDelCommand.setId(UUIDGenerator.getUUID());
+				circularDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+				commandService.sendCommand(circularDelCommand);
+				
+			}else if(AreaType.POLYGON.equals(station.getAreaType())){
+				//删除多边形区域的命令
+				PolygonDelCommand  polygonDelCommand = new PolygonDelCommand();
+				//多边形区域的id集合
+				polygonDelCommand.setPolygonIds(stationIds);
+				polygonDelCommand.setId(UUIDGenerator.getUUID());
+				polygonDelCommand.setSimNo(vehicle.getTerminal().getSimNo());
+				commandService.sendCommand(polygonDelCommand);
+			}
+		}
+	}
+
+	/**
+	 * 装配设置多边形命令
+	 * @param polygonAddCommands 
+	 * @param station 修改的厂区
+	 * @param simNo sim卡号
+	 * @return
+	 */
+	private List<PolygonAddCommand> setPolygonCommand(List<PolygonAddCommand> polygonAddCommands,Station station,String simNo) {
+		//工程厂区
+		PolygonAddCommand polygonAddCommand = new PolygonAddCommand();
+		//id
+		polygonAddCommand.setId(UUIDGenerator.getUUID());
+		//simNo
+		polygonAddCommand.setSimNo(simNo);
+		//区域id
+		polygonAddCommand.setRegionId(station.getId());
+		//区域属性
+		polygonAddCommand.setRegionAttr(station.getReportValue());
+		// 起始时间
+		polygonAddCommand.setStartTime(station.getStartTime());
+		//结束时间
+		polygonAddCommand.setEndTime(station.getEndTime());
+		//最高速度
+		int limitSpeedValue = station.getLimitSpeedValue();
+		polygonAddCommand.setMaxSpeed((short)limitSpeedValue);
+		//拐点
+		if(station.getPaths()!=null && station.getPaths().size()>0){
+			//区域总顶点数
+			polygonAddCommand.setVertexCount(station.getPaths().size());
+			List<VertexProperty> vertexPropertys = new ArrayList<VertexProperty>();
+			for (Pathpoint path : station.getPaths()) {
+				VertexProperty vertexProperty = new VertexProperty();
+				vertexProperty.setLat(path.getLat());
+				vertexProperty.setLng(path.getLng());
+				vertexPropertys.add(vertexProperty);
+			}
+			//顶点项
+			polygonAddCommand.setVertexPropertys(vertexPropertys);
+		}
+		polygonAddCommands.add(polygonAddCommand);
+		
+		return polygonAddCommands;
+	}
+	
+	/**
+	 * 装配设置圆形命令
+	 * @param circularAddCommands
+	 * @param station
+	 * @param simNo
+	 * @return
+	 */
+	private List<CircularAddCommand> setCircularAddCommand(List<CircularAddCommand> circularAddCommands,Station station,String simNo) {
+		//工程厂区
+		CircularAddCommand circularAddCommand = new CircularAddCommand();
+		//设置属性
+		circularAddCommand.setSetAttr(1);
+		//区域总数
+		circularAddCommand.setCircularCounts(1);
+		//id
+		circularAddCommand.setId(UUIDGenerator.getUUID());
+		//simNo
+		circularAddCommand.setSimNo(simNo);
+		//区域id
+		circularAddCommand.setRegionId(station.getId());
+		//区域属性
+		circularAddCommand.setRegionAttr(station.getReportValue());
+		//中心点
+		if(station.getPaths()!=null && station.getPaths().size()>0){
+			for (Pathpoint path : station.getPaths()) {
+				//中心点纬度
+				circularAddCommand.setLat(path.getLat());
+				//中心点经度
+				circularAddCommand.setLng(path.getLng());
+			}
+		}
+		// 起始时间
+		circularAddCommand.setStartTime(station.getStartTime());
+		//结束时间
+		circularAddCommand.setEndTime(station.getEndTime());
+		//最高速度
+		int limitSpeedValue = station.getLimitSpeedValue();
+		circularAddCommand.setMaxSpeed((short)limitSpeedValue);
+		
+		circularAddCommands.add(circularAddCommand);
+		return circularAddCommands;
+	}
+}

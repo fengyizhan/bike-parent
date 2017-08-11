@@ -1,0 +1,14 @@
+package com.tiamaes.bike.connector.protocol.message;
+
+/**
+ * 查询终端属性应答包
+ * 
+ * @author Chen
+ */
+public class Received0008 extends Received {
+
+	public Received0008(Header header, byte[] bytes) {
+		super(header, bytes);
+	}
+	
+}

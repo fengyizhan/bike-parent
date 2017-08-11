@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.ResponseInfoMapper">
+	<!-- 保存终端信息 -->
+	<insert id="saveResponseInfo" parameterType="com.tiamaes.bike.common.bean.connector.ResponseInfo">
+		INSERT INTO TB_RESPONSE_INFO (ID,SIMNO,MESSAGEID,MESSAGESEQNO,RESPONSETIME,RESPONSECONTENT,RESPONSESTATE,RESPONSE)
+		VALUES(#{id}, #{simNo}, #{messageId}, #{messageSeqNo}, now(), #{responseContent}, #{responseState.index}, #{response})
+	</insert>
+</mapper>

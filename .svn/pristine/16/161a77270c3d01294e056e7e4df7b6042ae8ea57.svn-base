@@ -1,0 +1,22 @@
+package com.tiamaes.bike.storage.persistence;
+
+import com.tiamaes.bike.common.bean.connector.DriverSigninInfo;
+
+/**
+ * 司机插拔卡记录mapper
+ * @author kangty
+ */
+public interface DriverSigninInfoMapper {
+
+	/**
+	 * 增加司机插拔卡记录
+	 * @param driverSigninInfo
+	 */
+	void addDriverSigninInfo(DriverSigninInfo driverSigninInfo);
+
+	/**
+	 * 根据id删除司机插拔卡记录
+	 * @param id
+	 */
+	void deleteDriverSigninInfo(String id);
+}

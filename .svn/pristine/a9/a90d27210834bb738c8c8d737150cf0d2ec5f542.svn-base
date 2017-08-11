@@ -1,0 +1,11 @@
+package com.tiamaes.bike.api.information.dictionary.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.information.IndustryType;
+
+public interface IndustryTypeMapper {
+	
+	List<IndustryType> getListOfIndustryTypes();
+	
+}

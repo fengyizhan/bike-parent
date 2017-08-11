@@ -1,0 +1,130 @@
+package com.tiamaes.bike.connector.service;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.connector.command.CircularAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.CircularDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.Command;
+import com.tiamaes.bike.common.bean.connector.command.DialCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.LineDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.MonitorCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonAddCommand;
+import com.tiamaes.bike.common.bean.connector.command.PolygonDelCommand;
+import com.tiamaes.bike.common.bean.connector.command.TextCommand;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8300;
+import com.tiamaes.bike.common.bean.message.Message8400;
+import com.tiamaes.bike.common.bean.message.Message8600;
+import com.tiamaes.bike.common.bean.message.Message8601;
+import com.tiamaes.bike.common.bean.message.Message8604;
+import com.tiamaes.bike.common.bean.message.Message8605;
+import com.tiamaes.bike.common.bean.message.Message8606;
+import com.tiamaes.bike.common.bean.message.Message8607;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.connector.persistence.CommandMapper;
+
+import io.netty.channel.Channel;
+
+@Service
+@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+public class CommandService implements CommandServiceInterface {
+	private static Logger logger = LogManager.getLogger(CommandService.class);
+	private static Map<Class<? extends Command>, Class<? extends Message>> mapper;
+	
+	static {
+		mapper = new HashMap<Class<? extends Command>, Class<? extends Message>>();
+		mapper.put(TextCommand.class, Message8300.class);
+		mapper.put(DialCommand.class, Message8400.class);
+		mapper.put(MonitorCommand.class, Message8400.class);
+		mapper.put(PolygonAddCommand.class, Message8604.class);
+		mapper.put(PolygonDelCommand.class, Message8605.class);
+		mapper.put(LineAddCommand.class, Message8606.class);
+		mapper.put(LineDelCommand.class, Message8607.class);
+		mapper.put(CircularAddCommand.class, Message8600.class);
+		mapper.put(CircularDelCommand.class, Message8601.class);
+	};
+	
+	@Autowired
+	private ChannelRepository channelRepository;
+	
+	@Resource(name = "stringRedisTemplate")
+	private RedisTemplate<String, Long> longRedisTemplate;
+	
+	@Resource(name = "stringRedisTemplate")
+	private RedisTemplate<String, String> stringRedisTemplate;
+	
+	@Resource
+	private CommandMapper commandMapper;
+	
+	@Autowired
+	private HandlerServiceInterface handlerService;
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void sendCommand(Command command){
+		String simNo = command.getSimNo();
+		Channel channel = channelRepository.get(simNo);
+		String id = command.getId();
+		Integer serialNo = handlerService.getSerialNo(simNo);
+		if (StringUtils.isBlank(id)) {
+			return;
+		}
+		if (channel == null) {
+			return;
+		}
+		
+		Message message = null;
+		try {
+			message = mapper.get(command.getClass()).getConstructor(command.getClass()).newInstance(command);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			logger.error(e, e.getCause());
+		}
+		if (message == null) {
+			return;
+		}
+		message.getHeader().setSerialNo(serialNo);
+		
+		// 将id存入设备通用应答redis中
+		stringRedisTemplate.opsForHash().put(RedisKey.COMMAND_RESPONSES_ID, generateRedisHashKey(message.getHeader().getId(), simNo, serialNo), id);
+		// 发送下发指令
+		channel.writeAndFlush(message);
+	}
+	
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+	public void deleteCommand(Command command) {
+		commandMapper.deleteCommand(command);
+	}
+	
+	/**
+	 * 生成redis的hashkey
+	 * @param id
+	 * @param simNo
+	 * @param serialNo
+	 * @return
+	 */
+	private String generateRedisHashKey(Integer id, String simNo, Integer serialNo) {
+		StringBuffer stringBuffer = new StringBuffer();
+		stringBuffer.append(id);
+		stringBuffer.append(simNo);
+		stringBuffer.append(serialNo);
+		return stringBuffer.toString();
+	}
+
+}

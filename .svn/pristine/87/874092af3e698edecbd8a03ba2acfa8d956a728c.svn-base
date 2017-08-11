@@ -1,0 +1,57 @@
+package com.tiamaes.bike.api.information.terminal.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.mybatis.Pagination;
+
+public interface TerminalServiceInterface {
+	/**
+	 * 根据Id查询终端详情
+	 * @param id
+	 * @return Terminal
+	 */
+	Terminal getTerminalById(String id);
+	/**
+	 * 查询注册终端列表
+	 * @param terminal
+	 * @param page
+	 * @return List
+	 */
+	List<Terminal> getAllTerminals(Terminal terminal, Pagination<Terminal> pagination);
+	/**
+	 * 查询注册终端数
+	 * @param terminal
+	 * @return
+	 */
+	int getTotalOfTerminals(Terminal terminal);
+	/**
+	 * 保存终端
+	 * @param terminal
+	 * @return Terminal
+	 */
+	Terminal addTerminal(Terminal terminal);
+	/**
+	 * 更新终端
+	 * @param terminal
+	 * 
+	 */
+	Terminal updateTerminal(Terminal terminal);
+	/**
+	 * 删除终端
+	 * @param terminal
+	 */
+	void deleteTerminal(Terminal terminal);
+	/**
+	 * 检查终端号是否已经存在
+	 * @param username
+	 * @return boolean
+	 */
+	boolean checkTerminalName(String terminalNo);
+	/**
+	 * 根据simno获取终端
+	 * @param simNo
+	 * @return
+	 */
+	public Terminal getTerminalBySimNo(String simNo); 
+}

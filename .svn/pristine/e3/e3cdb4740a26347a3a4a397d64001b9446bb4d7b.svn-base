@@ -1,0 +1,46 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.commons.codec.DecoderException;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.connector.WayBill;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8001;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 电子运单上报
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0701Handler extends ProtocolHandler {
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws JsonProcessingException, DecoderException {
+		String simNo = request.getHeader().getSimNo();
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), 0);
+		return response;
+	}
+	
+	public static WayBill decodeBody(Message request){
+		WayBill waybill= new WayBill();
+		byte[] bytebody=request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		//电子运单长度
+		int wayBillLength = (int) buffer.readUnsignedInt();
+		//电子运单内容
+		byte[] wayBillContent = new byte[buffer.readableBytes()];
+		buffer.readBytes(wayBillContent);
+		
+		waybill.setWayBillLength(wayBillLength);
+		waybill.setWayBillContent(wayBillContent);
+		return waybill;
+	}
+}

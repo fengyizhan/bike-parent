@@ -1,0 +1,45 @@
+package com.tiamaes.bike.api.listener;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.api.information.command.persistence.CommandMapper;
+import com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo;
+
+@Component
+public class Listener {
+	private static Logger logger = LogManager.getLogger(Listener.class);
+	
+	@Autowired
+	@Qualifier("kafkaStringTemplate")
+	private KafkaTemplate<String, String> kafkaStringTemplate;
+	
+	@Resource
+	private CommandMapper commandMapper;
+
+	@KafkaListener(id = "listen6", topics = "com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo")
+	public void listen6(@Payload VehicleOnOffLineInfo vehicleOnOffLineInfo) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug(vehicleOnOffLineInfo.getState().getName());
+		}
+		if(VehicleOnOffLineInfo.State.ONLINE.equals(vehicleOnOffLineInfo.getState())){
+			//根据上下线信息查询出command集合然后遍历, 查询出车辆离线命令列表，并重新将命令发送到消息队列
+//			List<Command> list = commandMapper.getListOfCommandBySimNo(vehicleOnOffLineInfo.getVehicle().getTerminal().getSimNo());
+//			
+//			for(Command command : list){
+//				logger.debug(command.getBody());
+//				kafkaStringTemplate.send(MessageBuilder.withPayload(command.getBody())
+//						.setHeader(KafkaHeaders.TOPIC, Command.class.getName())
+//						.setHeader(KafkaHeaders.MESSAGE_KEY, command.getSimNo()).build());
+//			}
+		}
+	}
+}

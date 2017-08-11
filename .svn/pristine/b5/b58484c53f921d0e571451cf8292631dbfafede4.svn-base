@@ -1,0 +1,297 @@
+package com.tiamaes.bike.api.information.vehicle.controller;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.Result;
+import com.tiamaes.bike.common.bean.connector.command.DialCommand;
+import com.tiamaes.bike.common.bean.connector.command.MonitorCommand;
+import com.tiamaes.bike.common.bean.connector.command.TextCommand;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.information.Vehicle.Property;
+import com.tiamaes.bike.common.utils.GetAddress;
+import com.tiamaes.logger.Operation;
+import com.tiamaes.logger.TiamaesLogger;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/vehicle")
+@Api(tags = {"vehicle"}, description = "车辆信息管理")
+public class VehicleController {
+	private static Logger logger = LogManager.getLogger(VehicleController.class);
+	@Autowired
+	private VehicleServiceInterface vehicleService;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+	
+	/**
+	 * 列表页面，分页查询
+	 * @param vehicle
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "车辆列表", notes = "分页查询车辆列表数据")
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	@RequestMapping(value = {"/page/{number:\\d+}", "/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	public @ResponseBody PageInfo<Vehicle> page(@RequestBody Vehicle vehicle, @PathVariable Map<String,String> pathVariable, @CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Vehicle> pagination = new Pagination<>(number, pageSize);
+		//封装参数
+		Parameters<Vehicle> parameters = new Parameters<>();
+		parameters.setModel(vehicle);
+		parameters.setUser(operator);
+		
+		List<Vehicle> list = vehicleService.getListOfVehicles(parameters, pagination);
+		return new PageInfo<Vehicle>(list);
+	}
+	
+	/**
+	 * 查询车辆详情
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
+	@ApiOperation(value = "车辆详情", notes = "根据id查询车辆详情",response = Vehicle.class)
+	public @ResponseBody Vehicle get(@PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		return vehicleService.getVehicleById(id);
+	}
+	
+	/**
+	 * 根据simNo查询车辆详情(外部接口文档)
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/bySimNo/{simNo}", method = RequestMethod.GET)
+	@ApiOperation(value = "车辆详情", notes = "根据simNo查询车辆详情",response = Vehicle.class)
+	public @ResponseBody Vehicle getVehicleBySimNo(@PathVariable("simNo")String simNo, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(simNo);
+		}
+		return vehicleService.getVehicleBySimNo(simNo);
+	}
+	/**
+	 * 校验车牌号是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}", "/checkname/{name}/{id}"}, method = RequestMethod.GET)
+	@ApiOperation(value = "校验车牌号", notes = "校验车牌号是否存在")
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name) {
+		Map<String, Object> result = new HashMap<>();
+		if(id.isPresent()){
+			result.put("state", false);
+		}else{
+			result.put("state", vehicleService.hasExists(name));
+		}
+		return result;
+	}
+	
+	/**
+	 * 添加车辆信息
+	 * @param vehicle
+	 * @param operator
+	 * @return
+	 */
+	@TiamaesLogger(operation = Operation.ADD)
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "新增车辆信息", notes = "新增车辆信息",response = Vehicle.class)
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	public @ResponseBody Vehicle add(@RequestBody Vehicle vehicle, @CurrentUser User operator){
+		if(logger.isDebugEnabled()) {
+			logger.debug(vehicle.toString());
+		}
+		vehicle.setId(vehicleService.getId().toString());
+		Property property = vehicle.getProperty();
+		property.setCreateDate(new Date());
+		vehicle.setProperty(property);
+		vehicle = vehicleService.addVehicle(vehicle);
+		return vehicleService.getVehicleById(vehicle.getId());
+	}
+	
+	/**
+	 * 修改车辆信息
+	 * @param vehicle
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "更新车辆信息", notes = "更新车辆信息",response = Vehicle.class)
+	@ApiImplicitParam(name = "vehicle", value = "车辆实体", required = true, dataType = "Vehicle")
+	@TiamaesLogger(operation = Operation.UPDATE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	public @ResponseBody Vehicle update(@RequestBody Vehicle vehicle, @PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(vehicle.toString());
+		}
+		vehicle = vehicleService.updateVehicle(vehicle);
+		return vehicle;
+	}
+	
+	/**
+	 * 删除车辆信息
+	 * @param id
+	 * @param operator
+	 */
+	@ApiOperation(value = "删除车辆", notes = "删除车辆信息",response = Vehicle.class)
+	@TiamaesLogger(operation = Operation.DELETE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	public @ResponseBody Vehicle delete(@PathVariable("id")String id, @CurrentUser User operator) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(id);
+		}
+		Vehicle vehicle = vehicleService.getVehicleById(id);
+		vehicleService.deleteVehicle(vehicle);
+		return vehicle;
+	}
+	
+	/**
+	 * 车辆状态,设备状态下拉列表初始化
+	 * @return
+	 */
+	@ApiOperation(value = "车辆状态,设备状态下拉列表初始化", notes = "车辆状态,设备状态下拉列表初始化")
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<>();
+		result.put("runStatuses", Vehicle.Property.RunStatus.values());
+		result.put("state", Vehicle.State.values());
+		return result;
+	}
+	
+	/**
+	 * 通过车牌号模糊查询所有车辆
+	 * @param name
+	 * @param operator
+	 * @return
+	 */
+	@ApiOperation(value = "查询车辆", notes = "通过车牌号模糊查询所有车辆")
+	@RequestMapping(value = "/search/{name}", method = RequestMethod.GET)
+	public @ResponseBody List<Vehicle> search(@PathVariable("name")String name, @CurrentUser User operator) {
+		return vehicleService.getAllVehiclesWithPlateNo(name);
+	}
+	
+	/**
+	 * 获取车辆各个状态的数量
+	 * @return
+	 * @throws Exception
+	 */
+	@ApiOperation(value = "车辆状态统计", notes = "获取车辆在线，离线，停车的数量")
+	@RequestMapping(value = "/onlineCount",method = RequestMethod.GET)
+	public Map<String, Long> getOnlineCount() throws Exception {
+		Map<String,Long> result = new HashMap<>();
+		//统计全部在线，停车，离线的车辆
+		SetOperations<String, String> setOperator = stringRedisTemplate.opsForSet();
+		long onlines = 0;
+		long offlines = 0;
+		long parkings = 0;
+		
+		onlines = setOperator.size(RedisKey.VEHICLES_ONLINE);
+		offlines = setOperator.size(RedisKey.VEHICLES_OFFLINE);
+		parkings = setOperator.size(RedisKey.VEHICLES_PARKING);
+		
+		result.put("onlines", onlines);
+		result.put("offlines", offlines);
+		result.put("parkings", parkings);
+		
+		return result;
+	}
+	
+	/**
+	 * 统计已注册的车辆数
+	 * @return
+	 * @throws Exception
+	 */
+	@ApiOperation(value = "已注册车辆统计", notes = "统计已注册的车辆数")
+	@RequestMapping(value = "/registeredCount",method = RequestMethod.GET)
+	public int getRegisteredCount()throws Exception{
+		return vehicleService.getRegisteredCount();
+	}
+	
+	/**
+	 * 根据坐标点获取
+	 * @param point
+	 * @return
+	 */
+	@ApiOperation(value = "经纬度转地址", notes = "根据经纬度获取地址")
+	@RequestMapping(value = "/getAddress/{point}", method = RequestMethod.GET)
+	public Map<String, String> getAddress(@PathVariable("point")String point) {
+		Map<String, String> result = new HashMap<>();
+		String address = "";
+		if (StringUtils.isNotBlank(point) && point.indexOf(",") > -1) {
+			String[] points = point.split(",");
+			String lng = points[0].replace("-", "");
+			String lat = points[1].replace("-", "");
+			address = GetAddress.generateAddress(lat, lng);
+		}
+		result.put("address", address);
+		return result;
+	}
+	
+	
+	/**
+	 * 扫码借车
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/scanBorrow/{id}", method = RequestMethod.GET)
+	@ApiOperation(value = "扫码借车", notes = "根据id扫码借车",response = Vehicle.class)
+	public @ResponseBody Result scanBorrow(@PathVariable("id")String id, @CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Result result=new Result();
+		//1.判断车辆基本状态，如电量，硬件等；如果不正常提示
+		//2.判断车辆是否正在使用或预约中，如果使用中提示
+		//3.生成借车记录
+		Vehicle vehicle=vehicleService.getVehicleById(id);
+		try{
+			if(vehicle==null)
+			{
+				result.setSuccess(false);
+				result.setMessage("车辆信息有误，请检查！");
+			}
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+			result.setMessage("扫码借车异常！");
+			result.setSuccess(false);
+		}
+		return result;
+	}
+}

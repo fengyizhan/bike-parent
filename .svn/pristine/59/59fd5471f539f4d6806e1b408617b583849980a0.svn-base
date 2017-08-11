@@ -1,0 +1,144 @@
+package com.tiamaes.bike.connector.handler;
+
+
+import java.io.IOException;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.config.ChannelRepository;
+import com.tiamaes.bike.config.SpringContextHolder;
+import com.tiamaes.bike.connector.protocol.handler.ProtocolHandler;
+import com.tiamaes.bike.connector.service.HandlerServiceInterface;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+
+@Component
+@ChannelHandler.Sharable
+@Qualifier("somethingServerHandler")
+public class SomethingServerHandler extends ChannelInboundHandlerAdapter {
+	private static Logger logger = LogManager.getLogger(SomethingServerHandler.class);
+	
+	/**
+	 * <p>连接注册器，可该注册器中取出指定终端的连接</p>
+	 * <code>
+	 * 		Channel channel = channelRepository.get(UUIDGenerator.getUUID());
+			channel.writeAndFlush(object);
+	 * </code>
+	 */
+	@Autowired
+	private ChannelRepository channelRepository;
+	
+	@Autowired
+	private HandlerServiceInterface handlerService;
+	
+	/**
+	 * 连接建立成功之后触发
+	 */
+	@Override
+	public void channelActive(ChannelHandlerContext context) throws Exception {
+		Assert.notNull(this.channelRepository, "[Assertion failed] - ChannelRepository is required; it must not be null");
+		context.fireChannelActive();
+	}
+
+	/**
+	 * 处理消息
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext context, Object msg) throws Exception {
+		Message message = (Message) msg;
+		Assert.notNull(message.getHeader().getId(), "message id must not be null");
+		int messageId = message.getHeader().getId();
+		
+		String simNo = message.getHeader().getSimNo();
+		Channel channelOld = channelRepository.get(simNo);
+		Channel channel = context.channel();
+		Attribute<Integer> lastSerialNo = channel.attr(AttributeKey.valueOf("lastSerialNo"));
+		Integer lastSerialNoNum = lastSerialNo.get();
+		int serialNo = message.getHeader().getSerialNo();
+		if (lastSerialNoNum != null && lastSerialNoNum == serialNo) {
+			return;
+		}
+		lastSerialNo.set(serialNo);
+		Attribute<Vehicle> attribute = channel.attr(AttributeKey.valueOf("target"));
+		Vehicle target = attribute.get();
+		//如果既不是注册也不是鉴权，并且没有鉴权通过，则返回
+		if ((channelOld == null || target == null) && messageId != 0x0100 && messageId != 0x0102) {
+			context.close();
+			return;
+		}
+		ProtocolHandler handler = SpringContextHolder.getBean(String.format("protocol%sHandler", String.format("%04X", messageId)));
+		if(handler == null){
+			return;
+		}
+		Message response = handler.execute(channel, message);
+		if (response != null) {
+			context.channel().writeAndFlush(response);
+			return;
+		}
+	}
+
+	/**
+	 * 产生异常时触发
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext context, Throwable cause) throws Exception {
+		if(!(cause instanceof IOException)) {
+			logger.error(cause.getMessage(), cause);
+		}
+//		context.close();
+	}
+
+	/**
+	 * 当长连接断开时触发，在连接注册器中注销该终端
+	 * @throws JsonProcessingException 
+	 */
+	@Override
+	public void channelInactive(ChannelHandlerContext context) throws JsonProcessingException {
+		Assert.notNull(context);
+		Assert.notNull(this.channelRepository, "[Assertion failed] - ChannelRepository is required; it must not be null");
+		Attribute<Vehicle> attribute = context.channel().attr(AttributeKey.valueOf("target"));
+		Vehicle target = attribute.get();
+		if(target != null && target.getTerminal()!=null && StringUtils.isNotBlank(target.getTerminal().getSimNo())){
+			attribute.remove();
+			handlerService.sendVehicleOnOffLineInfo(target);
+		}
+	}
+	
+	/**
+	 * 超时处理
+	 */
+	@Override
+	public void userEventTriggered(ChannelHandlerContext ctx, Object evt)
+	    throws Exception{
+//	    System.out.println("触发事件");
+	    if (evt instanceof IdleStateEvent) {
+	        IdleStateEvent e = (IdleStateEvent) evt;
+	        if (e.state() == IdleState.ALL_IDLE) {
+	        	ctx.close();
+	        	System.out.println("idle timeout,disconnect");
+//	        } else if (e.state() == IdleState.READER_IDLE) {
+//	        	System.out.println("读超时");
+//	        } else if (e.state() == IdleState.WRITER_IDLE) {
+//	        	System.out.println("写超时");
+//	        } else{
+//	        	System.out.println("其他触发");
+	        }
+	    }
+	}
+}

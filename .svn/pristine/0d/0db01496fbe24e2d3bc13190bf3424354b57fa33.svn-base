@@ -1,0 +1,225 @@
+package com.tiamaes.bike.storage;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.LoadState;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.common.bean.connector.VehicleLocation;
+import com.tiamaes.bike.common.bean.connector.VehicleStatusInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DirectionType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DistrictType;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.DrivingTimeState;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo.WarnCode;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.bean.information.Driver;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.storage.service.LocatioInfoServiceInterface;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class LocatioInfoServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(LocatioInfoServiceTest.class);
+	
+	@Resource
+	private LocatioInfoServiceInterface locatioInfoService;
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	@Before
+	public void before() {
+		assertNotNull("KafkaTemplate not found...");
+	}
+	
+	@org.junit.Test
+	public void saveVehicleLocationTest() throws Exception{
+		String id = "616c1aef3bf54ea3b7b6a84e173957f4";
+		VehicleLocation vehicleLocation = new VehicleLocation();
+		Vehicle vehicle = new Vehicle();
+		vehicle.setId("f8a777e680824267ad3ac56dfa248a56");
+		vehicleLocation.setVehicle(vehicle);
+		vehicleLocation.setId(id);
+		vehicleLocation.setLat(34.838109);
+		vehicleLocation.setLng(113.517306);
+		vehicleLocation.setDirection(2);
+		vehicleLocation.setCreateTime(new Date());
+		vehicleLocation.setSpeed(35.2);
+//		locatioInfoService.saveVehicleLocation(vehicleLocation);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleLocation));
+	}
+	
+	@org.junit.Test
+	public void saveVehicleStatusInfoTest() throws Exception{
+		VehicleStatusInfo vehicleStatusInfo = new VehicleStatusInfo(); 
+		String id = "28af30c9784244fc99944960ad302ef2";
+		Vehicle vehicle = new Vehicle();
+		Department department = new Department();
+		Company company = new Company();
+		Terminal terminal = new Terminal();
+		terminal.setSimNo("015800020022");
+		company.setId("a7db3db0e0a541b38e2e71e1449f906f");
+		company.setName("公交十二公司");
+		department.setId("b8c2d49da0334091bacd21adf08ac54c");
+		department.setName("一车队");
+		vehicle.setId("d196b09f835842d79c993d961d94849f");
+		vehicle.setName("京Q23456");
+		vehicle.setDepartment(department);
+		vehicle.setCompany(company);
+		vehicle.setTerminal(terminal);
+		
+		vehicleStatusInfo.setId(id);
+		vehicleStatusInfo.setVehicle(vehicle);
+		vehicleStatusInfo.setAccState(true);
+		vehicleStatusInfo.setLocationState(true);
+		vehicleStatusInfo.setLatState(true);
+		vehicleStatusInfo.setLngState(true);
+		vehicleStatusInfo.setRunState(false);
+		vehicleStatusInfo.setEncryptState(true);
+		vehicleStatusInfo.setOilState(false);
+		vehicleStatusInfo.setElectricState(false);
+		vehicleStatusInfo.setLocked(true);
+		vehicleStatusInfo.setMilage(15.23);
+		vehicleStatusInfo.setOilContent(60);
+		vehicleStatusInfo.setSpeed(120);
+		
+//		locatioInfoService.saveVehicleStatusInfo(vehicleStatusInfo);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleStatusInfo));
+		
+	}
+	
+	@org.junit.Test
+	public void saveVehicleWarningInfoTest() throws Exception{
+
+		VehicleWarningInfo vehicleWarningInfo = new VehicleWarningInfo(); 
+		String id = "281a10f9570c4b59ae34afeba8c7d82f";
+		Vehicle vehicle = new Vehicle();
+		Department department = new Department();
+		Company company = new Company();
+		Terminal terminal = new Terminal();
+		terminal.setSimNo("015800020022");
+		company.setId("a7db3db0e0a541b38e2e71e1449f906f");
+		company.setName("公交十二公司");
+		department.setId("b8c2d49da0334091bacd21adf08ac54c");
+		department.setName("一车队");
+		vehicle.setId("d196b09f835842d79c993d961d94849f");
+		vehicle.setName("京Q23456");
+		vehicle.setDepartment(department);
+		vehicle.setCompany(company);
+		vehicle.setTerminal(terminal);
+		
+		vehicleWarningInfo.setId(id);
+		vehicleWarningInfo.setVehicle(vehicle);
+		vehicleWarningInfo.setWarnCode(WarnCode.CAMERAFAULT);
+		vehicleWarningInfo.setWarnContent(WarnCode.CAMERAFAULT.getName());
+		vehicleWarningInfo.setDistrictType(DistrictType.RAILWAY);
+		vehicleWarningInfo.setDistrictId(100600);
+		vehicleWarningInfo.setDirectionType(DirectionType.IN);
+		vehicleWarningInfo.setDrivingTime(5000);
+		vehicleWarningInfo.setDrivingTimeState(DrivingTimeState.INSUFFICIENT);
+		vehicleWarningInfo.setLat(34.838606);
+		vehicleWarningInfo.setLng(113.51589);
+		
+		locatioInfoService.saveVehicleWarningInfo(vehicleWarningInfo);
+		
+		logger.debug("保存车辆定位信息" + objectMapper.writeValueAsString(vehicleWarningInfo));
+	}
+	
+	@Test
+	public void locationInfoServiceKafkaTest() throws Exception {
+		Vehicle vehicle = new Vehicle();
+		vehicle.setSimCode("015800020022");
+		PointVector.Center center = new PointVector.Center();
+		PointVector.Info info = new PointVector.Info();
+		setVehicle(vehicle, center, info);
+		
+		locatioInfoService.savePointVector(vehicle);
+	}
+
+	private Vehicle setVehicle(Vehicle vehicle, PointVector.Center center, PointVector.Info info) {
+		center.setLng(113.51589);
+		center.setLat(34.838606);
+		center.setRotation(60);
+		vehicle.setCenter(center);
+		
+		info.setDate(new Date());
+		info.setHeight(50);
+		info.setSpeed(20.5);
+		info.setOdometer(3654.13);
+		//info.setAddress("莲花街实心竹");
+		info.setState(State.OFFLINE);
+		info.setAccState(null);
+		info.setLiftingState(false);
+		info.setCanopyState(true);
+		Driver driver = new Driver();
+		driver.setName("张三");
+		driver.setLicenseNo("4123004550100");
+		info.setDriver(driver);
+		//info.setDayTrip("");
+		info.setLocationState(null);
+		info.setLngState(false);
+		info.setLatState(true);
+		info.setRunState(true);
+		info.setEncryptState(false);
+		info.setLoadState(LoadState.FULLLOAD);
+		info.setOilState(false);
+		info.setElectricState(false);
+		info.setLocked(true);
+		info.setDoor1(true);
+		info.setDoor2(false);
+		info.setDoor3(true);
+		info.setDoor4(false);
+		info.setDoor5(false);
+		info.setGps(true);
+		info.setCompass(false);
+		info.setGlonass(true);
+		info.setGalileo(true);
+		info.setOilContent(50.03);
+		info.setRecordSpeed(100.36);
+		info.setArtificialAlarmId(2);
+		info.setNearlight(true);
+		info.setFarlight(true);
+		info.setRightlight(true);
+		info.setLeftlight(true);
+		info.setBraking(true);
+		info.setReverseGear(false);
+		info.setFoglight(true);
+		info.setClearanceLamp(true);
+		info.setTrumpet(null);
+		info.setAirCondition(false);
+		info.setNeutralPosition(false);
+		info.setRetarder(true);
+		info.setAbs(true);
+		info.setHeater(false);
+		info.setClutch(true);
+		info.setDeepDormancy(false);
+		info.setDormancy(true);
+		info.setAnalogQuantityAD1(15.0);
+		info.setAnalogQuantityAD0(30.12);
+		info.setWireless((short)5);
+		info.setGnssSatellite((short)7);
+		info.setFollowUpLength(2000l);
+		vehicle.setInfo(info);
+		return vehicle;
+	}
+}

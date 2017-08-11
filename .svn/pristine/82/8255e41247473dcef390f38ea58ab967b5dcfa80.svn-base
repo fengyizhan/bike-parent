@@ -1,0 +1,175 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 线路
+ * 
+ * @author Chen
+ *
+ */
+@ApiModel(value = "Route", description = "线路")
+public class Route implements Serializable {
+	private static final long serialVersionUID = 6645751594452138659L;
+
+	private Integer id;
+	@ApiModelProperty(value="线路名称(新增时必填, 查询时可不填)")
+	private String name;
+	/**
+	 * 线路有效期开始时间
+	 */
+	@ApiModelProperty(value="线路有效期开始时间")
+	private Date startTime;
+	/**
+	 * 线路有效期结束时间
+	 */
+	@ApiModelProperty(value="线路有效期结束时间")
+	private Date endTime;
+	/**
+	 * 限速值
+	 */
+	@ApiModelProperty(value="限速值")
+	private int limitSpeedValue;
+	/**
+	 * 延时值
+	 */
+	@ApiModelProperty(value="延时值")
+	private int delayValue;
+	/**
+	 * 线路宽度
+	 */
+	@ApiModelProperty(value="线路宽度")
+	private int width;
+	/**
+	 * 起始站
+	 */
+	@ApiModelProperty(value="起始站")
+	private Station beginStation;
+	/**
+	 * 终点站
+	 */
+	@ApiModelProperty(value="终点站")
+	private Station endStation;
+	/**
+	 * 线路地理坐标集
+	 */
+	@ApiModelProperty(value="线路地理坐标集")
+	private List<Pathpoint> paths;
+	
+	private Date createDate;
+	
+	/**
+	 * 报警值(单位：秒)
+	 */
+	@ApiModelProperty(value="报警值(单位：秒)")
+	private int reportValue;
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	public int getLimitSpeedValue() {
+		return limitSpeedValue;
+	}
+
+	public void setLimitSpeedValue(int limitSpeedValue) {
+		this.limitSpeedValue = limitSpeedValue;
+	}
+
+	public int getDelayValue() {
+		return delayValue;
+	}
+
+	public void setDelayValue(int delayValue) {
+		this.delayValue = delayValue;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public void setWidth(int width) {
+		this.width = width;
+	}
+
+	public Station getBeginStation() {
+		return beginStation;
+	}
+
+	public void setBeginStation(Station beginStation) {
+		this.beginStation = beginStation;
+	}
+
+	public Station getEndStation() {
+		return endStation;
+	}
+
+	public void setEndStation(Station endStation) {
+		this.endStation = endStation;
+	}
+
+	public List<Pathpoint> getPaths() {
+		return paths;
+	}
+
+	public void setPaths(List<Pathpoint> paths) {
+		this.paths = paths;
+	}
+
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+	
+	public int getReportValue() {
+		return reportValue;
+	}
+
+	public void setReportValue(int reportValue) {
+		this.reportValue = reportValue;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

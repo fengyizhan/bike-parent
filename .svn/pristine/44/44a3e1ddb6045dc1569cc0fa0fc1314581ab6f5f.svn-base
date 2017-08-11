@@ -1,0 +1,39 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.connector.protocol.message.Header;
+import com.tiamaes.bike.connector.protocol.message.Message;
+import com.tiamaes.bike.connector.protocol.message.Message8001;
+import com.tiamaes.bike.connector.protocol.message.Received;
+import com.tiamaes.bike.connector.protocol.message.Message8001.Result;
+import com.tiamaes.bike.connector.protocol.message.Received0100;
+
+import io.netty.channel.Channel;
+
+/**
+ * 位置信息汇报包0x0200
+ * 
+ * @author lsl
+ *
+ */
+@Component
+public class Protocol0100Handler implements ProtocolHandler<Received0100> {
+	private static Logger logger = LogManager.getLogger(Protocol0100Handler.class);
+
+	@Override
+	public Message execute(Channel channel, Received received) throws Exception {
+		Header header = received.getHeader();
+		int terminalId = header.getTerminalId();
+//		Received0100 received0100 = new Received0100(header, received.getBytes());
+		Message8001 response = new Message8001(header, Result.SUCCESS);
+		if(logger.isDebugEnabled()){
+			logger.debug("[8001][{}][{}] Location information has been processed.", terminalId);
+		}
+		return response;
+	}
+
+	
+}

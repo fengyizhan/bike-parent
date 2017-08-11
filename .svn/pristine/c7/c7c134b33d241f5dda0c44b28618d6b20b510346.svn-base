@@ -1,0 +1,23 @@
+package com.tiamaes.bike.exporter.integrated.trips.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.integrated.TripRecord;
+
+public interface TripsQueryMapper {
+	
+	/**
+	 * 获取工程趟次记录分页数据
+	 * @param tripRecord
+	 * @return
+	 */
+	List<TripRecord> getListOfTripRecords(TripRecord tripRecord);
+	
+	/**
+	 * 获取工程趟次记录总记录数
+	 * @param tripRecord
+	 * @return
+	 */
+	int getTotalOfTripRecords(TripRecord tripRecord);
+
+}

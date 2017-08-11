@@ -1,0 +1,66 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.io.Serializable;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+/**
+ * 工程项目路线
+ * @author kangty
+ *
+ */
+@ApiModel(value = "ProjectRoute", description = "工程项目路线")
+public class ProjectRoute implements Serializable {
+	private static final long serialVersionUID = 4592112029895522217L;
+	
+	/**
+	 * 项目id
+	 */
+	@ApiModelProperty(value="项目id")
+	private String projectId;
+	
+	/**
+	 * 路线id
+	 */
+	@ApiModelProperty(value="路线id")
+	private Integer routeId;
+	
+	/**
+	 * 对应的路线信息
+	 */
+	@ApiModelProperty(value="对应的路线信息")
+	private Route route;
+
+	public String getProjectId() {
+		return projectId;
+	}
+
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+
+	public Integer getRouteId() {
+		return routeId;
+	}
+
+	public void setRouteId(Integer routeId) {
+		this.routeId = routeId;
+	}
+	
+	public Route getRoute() {
+		return route;
+	}
+
+	public void setRoute(Route route) {
+		this.route = route;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+
+}

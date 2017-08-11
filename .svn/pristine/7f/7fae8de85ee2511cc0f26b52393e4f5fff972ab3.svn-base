@@ -1,0 +1,47 @@
+package com.tiamaes.bike.reporter.integrated.trips.persistence;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.homepage.OngoingProjectTripInfo;
+import com.tiamaes.bike.common.bean.information.Project;
+import com.tiamaes.bike.common.bean.integrated.TripRecord;
+
+@SuppressWarnings("rawtypes")
+public interface TripsQueryMapper {
+	
+	/**
+	 * 获取工程趟次记录分页数据
+	 * @param tripRecord
+	 * @param pagination
+	 * @return
+	 */
+	List<TripRecord> getListOfTripRecords(Parameters<TripRecord> parameters);
+	
+	/**
+	 * 获取工程趟次记录总记录数
+	 * @param tripRecord
+	 * @return
+	 */
+	int getTotalOfTripRecords(Parameters<TripRecord> parameters);
+	
+	/**
+	 * 获取工程趟次记录总记录数(首页用)
+	 * @param parameters
+	 * @return
+	 */
+	int getCountOfTripRecords(Parameters parameters);
+	
+	/**
+	 * 根据时间段统计趟次
+	 * @param parameters
+	 * @return
+	 */
+	TripRecord getTotalByTime(Parameters parameters);
+	/**
+	 * 根据开始地点和结束地点获取工程趟次信息
+	 * @param project
+	 * @return
+	 */
+	List<OngoingProjectTripInfo> getListOfOngoingProjectInfoDetail(Project project);
+}

@@ -1,0 +1,46 @@
+package com.tiamaes.bike.connector.protocol.handler;
+
+import org.apache.commons.codec.DecoderException;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tiamaes.bike.common.bean.connector.BroadcastOrCancel;
+import com.tiamaes.bike.common.bean.message.Message;
+import com.tiamaes.bike.common.bean.message.Message8001;
+
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+
+/**
+ * 信息点播/取消
+ * @author waibao001
+ *
+ */
+@Component
+public class Protocol0303Handler extends ProtocolHandler {
+	
+	@Override
+	public Message execute(Channel channel, Message request) throws JsonProcessingException, DecoderException {
+		String simNo = request.getHeader().getSimNo();
+		Message8001 response = new Message8001(simNo);
+		response.setResponseBody(request.getHeader(), 0);
+		return response;
+	}
+	
+	public static BroadcastOrCancel decodeBody(Message request){
+		BroadcastOrCancel broadcastOrCancel= new BroadcastOrCancel();
+		byte[] bytebody=request.getBody();
+		CompositeByteBuf buffer = Unpooled.compositeBuffer();
+		buffer.writeBytes(bytebody);
+		//透传消息类型
+		int messageType = buffer.readUnsignedByte();
+		//点播/取消标志
+		int flag = buffer.readUnsignedByte();
+		
+		broadcastOrCancel.setMessageType(messageType);
+		broadcastOrCancel.setFlag(flag);
+		
+		return broadcastOrCancel;
+	}
+}

@@ -1,0 +1,69 @@
+package com.tiamaes.bike.common.bean.integrated;
+
+import java.io.Serializable;
+
+public class QueryFormEntity implements Serializable {
+	
+	private static final long serialVersionUID = 4752117378268228276L;
+
+	private AlarmRecord alarmRecord;
+	
+	private DriverCardRecord driverCardRecord;
+	
+	private PhotoRecord photoRecord;
+	
+	private PileRecord pileRecord;
+	
+	private TripRecord tripRecord;
+	
+	private OnlineRecord onlineRecord;
+
+	public AlarmRecord getAlarmRecord() {
+		return alarmRecord;
+	}
+
+	public void setAlarmRecord(AlarmRecord alarmRecord) {
+		this.alarmRecord = alarmRecord;
+	}
+
+	public DriverCardRecord getDriverCardRecord() {
+		return driverCardRecord;
+	}
+
+	public void setDriverCardRecord(DriverCardRecord driverCardRecord) {
+		this.driverCardRecord = driverCardRecord;
+	}
+
+	public PhotoRecord getPhotoRecord() {
+		return photoRecord;
+	}
+
+	public void setPhotoRecord(PhotoRecord photoRecord) {
+		this.photoRecord = photoRecord;
+	}
+
+	public PileRecord getPileRecord() {
+		return pileRecord;
+	}
+
+	public void setPileRecord(PileRecord pileRecord) {
+		this.pileRecord = pileRecord;
+	}
+
+	public TripRecord getTripRecord() {
+		return tripRecord;
+	}
+
+	public void setTripRecord(TripRecord tripRecord) {
+		this.tripRecord = tripRecord;
+	}
+
+	public OnlineRecord getOnlineRecord() {
+		return onlineRecord;
+	}
+
+	public void setOnlineRecord(OnlineRecord onlineRecord) {
+		this.onlineRecord = onlineRecord;
+	}
+
+}

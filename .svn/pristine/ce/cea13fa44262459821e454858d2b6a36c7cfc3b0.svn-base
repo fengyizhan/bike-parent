@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.vehicle.persistence.VehicleTypeMapper">
+
+	<!-- 获取所有车辆类型列表，用于下拉菜单生成 -->
+	<select id="getListOfVehicleTypes" resultType="com.tiamaes.bike.common.bean.information.VehicleType">
+		SELECT description,code FROM VehicleType 
+	</select>
+</mapper>

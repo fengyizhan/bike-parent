@@ -1,0 +1,75 @@
+package com.tiamaes.bike.common.bean.connector;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * 请求报文信息入库实体
+ * @author lsl
+ *
+ */
+public class RequestInfo implements Serializable {
+
+	private static final long serialVersionUID = -5257331293807892625L;
+	/**
+	 * 主键，32位UUID
+	 */
+	private String id;
+	/**
+	 * sim卡号，12位，不足12位前补零
+	 */
+	private String simNo;
+	/**
+	 * 消息ID(包类型)
+	 */
+	private int messageId;
+	/**
+	 * 消息流水号
+	 */
+	private int messageSeqNo;
+	/**
+	 * 请求时间
+	 */
+	private Date requestTime;
+	/**
+	 * 消息内容
+	 */
+	private String requestContent;
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getSimNo() {
+		return simNo;
+	}
+	public void setSimNo(String simNo) {
+		this.simNo = simNo;
+	}
+	public int getMessageId() {
+		return messageId;
+	}
+	public void setMessageId(int messageId) {
+		this.messageId = messageId;
+	}
+	public int getMessageSeqNo() {
+		return messageSeqNo;
+	}
+	public void setMessageSeqNo(int messageSeqNo) {
+		this.messageSeqNo = messageSeqNo;
+	}
+	public Date getRequestTime() {
+		return requestTime;
+	}
+	public void setRequestTime(Date requestTime) {
+		this.requestTime = requestTime;
+	}
+	public String getRequestContent() {
+		return requestContent;
+	}
+	public void setRequestContent(String requestContent) {
+		this.requestContent = requestContent;
+	}
+	
+}

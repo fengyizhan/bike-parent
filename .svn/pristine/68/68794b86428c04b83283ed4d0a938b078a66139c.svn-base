@@ -1,0 +1,28 @@
+package com.tiamaes.bike.api.information.dictionary.service;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.tiamaes.bike.api.information.dictionary.persistence.IndustryTypeMapper;
+import com.tiamaes.bike.common.bean.information.IndustryType;
+
+@Service
+public class IndustryTypeService implements IndustryTypeServiceInterface {
+
+	@Resource
+	private IndustryTypeMapper industryTypeMapper;
+	
+
+	@Override
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	public List<IndustryType> getListOfIndustryTypes() {
+		return industryTypeMapper.getListOfIndustryTypes();
+	}
+
+	
+}

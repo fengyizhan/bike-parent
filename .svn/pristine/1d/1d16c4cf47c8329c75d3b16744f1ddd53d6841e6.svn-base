@@ -1,0 +1,200 @@
+<div class="md-content">
+	<div class="index-modal-header">
+		<h6>车牌号：<span ng-bind="dialog.target.name"></span></h6>
+		<button class="close md-close" aria-hidden="true" data-dismiss="modal" type="button">×</button>
+	</div>
+	<div class="modal-body">
+		<div class="modal-map">
+			<ul class="nav nav-tabs" id="nav-tabs-project" role="tablist">
+				<li role="presentation" class="active">
+					<a target="_self" href="#tab1" role="tab" data-toggle="tab">车辆详情</a>
+				</li>
+				<li role="presentation">
+					<a target="_self" href="#tab2" role="tab" data-toggle="tab" ng-click="dialog.tabEvent2()">历史轨迹</a>
+				</li>
+				<li role="presentation">
+					<a target="_self" href="#tab3" role="tab" data-toggle="tab" ng-click="dialog.tabEvent3()">借出记录</a>
+				</li>
+			</ul>
+			<div class="tab-content">
+				<div id="tab1" role="tabpanel" class="tab-pane active">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-md-8" style="padding:0;width:524px;">
+								<table class="table">
+									<tr>
+										<td style="width: 76px;">用户名：</td>
+										<td><span ng-bind="dialog.target.info.driver.username"></td>
+									</tr>
+									<tr>
+										<td style="width: 76px;">SIM卡号：</td>
+										<td><span ng-bind="dialog.target.terminal.simNo"></td>
+									</tr>
+									<tr>
+										<td style="width: 76px;">当天趟次：</td>
+										<td colspan="3"><span ng-bind="dialog.target.info.dayTrip"></td>
+									</tr>
+									<tr>
+										<td style="width: 76px;">当前位置：</td>
+										<td colspan="3"><span ng-bind="dialog.target.address"></span></td>
+									</tr>
+								</table>
+							</div>
+							<div class="col-md-4" style="padding:0;width:258px;height:241px;">
+								<ul class="status-list">
+									<li ng-class="{'success':dialog.target.info.electricity > 20,'danger':dialog.target.info.electricity <= 20}"><div class="speed"><span ng-bind="dialog.target.info.electricity"></span></div><div>电量(%)</div></li>
+									<li ng-class="dialog.target.info.locationState?'success':'default'"><i class="fa fa-map-marker" aria-hidden="true"></i><div>定位状态</div></li>
+									<li ng-class="{'success':dialog.target.state.index == 0,'default':dialog.target.state.index == 1,'danger':dialog.target.state.index > 1}"><i class="fa fa-lightbulb-o" aria-hidden="true"></i><div ng-bind="dialog.target.state.name"></div></li>
+									<li ng-class="{'success':dialog.target.info.state.index == 1,'default':dialog.target.info.state.index == 0,'danger':dialog.target.info.state.index == 2}"><i class="fa fa-bicycle" aria-hidden="true"></i><div ng-bind="dialog.target.info.state.name"></div></li>
+									<li class="success"><div class="speed"><span ng-bind="dialog.target.info.speed"></span></div><div>km/h</div></li>
+									<li class="success"><i class="fa fa-arrow-up" aria-hidden="true" style="transform: rotate({{dialog.target.center.rotation}}deg);"></i><div>行驶方向</div></li>
+									<li ng-class="dialog.target.info.isLock?'success':'default'"><i ng-if="dialog.target.info.isLock" class="fa fa-unlock-alt" aria-hidden="true"></i><i ng-if="!dialog.target.info.isLock" class="fa fa-lock" aria-hidden="true"></i><div>锁状态</div></li>
+									<li ng-class="default"><i class="fa fa-ban" aria-hidden="true"></i><div>暂无功能</div></li>
+									<li ng-class="default'"><i class="fa fa-ban" aria-hidden="true"></i><div>暂无功能</div></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+					<!-- <div class="btn-bus-info">
+						<p><label>远程控制</label></p>
+						<ul ng-if="!dialog.ctrl3.state && !dialog.ctrl4.state && !dialog.ctrl5.state">
+							<li ng-click="dialog.ctrl1()"><a href="javascript:;"><i class="fa fa-video-camera" aria-hidden="true"></i><span>视频监控</span></a></li>
+					    	<li ng-click="dialog.ctrl2()"><a href="javascript:;"><i class="fa fa-plug" aria-hidden="true"></i><span>远程断电</span></a></li>
+					    	<li ng-click="dialog.ctrl3.open()"><a href="javascript:;"><i class="fa fa-envelope-o" aria-hidden="true"></i><span>下发信息</span></a></li>
+					    	<li ng-click="dialog.ctrl4.open()"><a href="javascript:;"><i class="glyphicon glyphicon-earphone"></i><span>语音通话</span></a></li>
+					    	<li ng-click="dialog.ctrl5.open()"><a href="javascript:;"><i class="glyphicon glyphicon-headphones"></i><span>车辆监听</span></a></li>
+					    </ul>
+					    <div class="message-container" ng-if="dialog.ctrl3.state">
+						    <div class="container">
+						    	<div class="row">
+				    				<div class="col-sm-3">
+				    					<i class="fa fa-envelope-o" aria-hidden="true" style="color: #428bca;"></i>
+				    					<span>下发信息</span>
+				    				</div>
+						    		<div class="col-sm-6">
+						    			<textarea id="message" ng-model="dialog.ctrl3.message" maxlength="500"></textarea>
+						    		</div>
+						    		<div class="col-sm-3 btn-container">
+						    			<button type="submit" class="btn btn-primary" ng-disabled="!dialog.ctrl3.message||!(dialog.target.info.state.name=='在线' || dialog.target.info.state.name=='停车')" ng-click="dialog.ctrl3.submit()">发&nbsp;送</button>
+						    			<button type="button" class="btn btn-default" ng-click="dialog.ctrl3.close()">取&nbsp;消</button>
+						    		</div>
+						    	</div>
+						    </div>
+					    </div>
+					    <div class="message-container" ng-if="dialog.ctrl4.state">
+						    <div class="container">
+						    	<div class="row">
+				    				<div class="col-sm-3">
+				    					<i class="glyphicon glyphicon-earphone" aria-hidden="true" style="color: #428bca;"></i>
+				    					<span>语音通话</span>
+				    				</div>
+						    		<div class="col-sm-6">
+						    			<p><b>您确定使用该号码</b><input type="text" ng-model="dialog.ctrl4.message"  maxlength="11" ><b>进行语音通话吗?</b></p>
+						    		</div>
+						    		<div class="col-sm-3 btn-container">
+						    			<button type="submit" class="btn btn-primary" ng-disabled="!dialog.ctrl4.message||!(dialog.target.info.state.name=='在线' || dialog.target.info.state.name=='停车')" ng-click="dialog.ctrl4.submit()">确&nbsp;定</button>
+						    			<button type="button" class="btn btn-default" ng-click="dialog.ctrl4.close()">取&nbsp;消</button>
+						    		</div>
+						    	</div>
+						    </div>
+					    </div>
+					    <div class="message-container" ng-if="dialog.ctrl5.state">
+						    <div class="container">
+						    	<div class="row">
+				    				<div class="col-sm-3">
+				    					<i class="glyphicon glyphicon-headphones" aria-hidden="true" style="color: #428bca;"></i>
+				    					<span>车辆监听</span>
+				    				</div>
+						    		<div class="col-sm-6">
+						    			<p><b>您确定使用该号码</b><input type="text" ng-model="dialog.ctrl5.message" maxlength="11"><b>进行车辆监听吗?</b></p>
+						    		</div>
+						    		<div class="col-sm-3 btn-container">
+						    			<button type="submit" class="btn btn-primary" ng-disabled="!dialog.ctrl5.message||!(dialog.target.info.state.name=='在线' || dialog.target.info.state.name=='停车')" ng-click="dialog.ctrl5.submit()">确&nbsp;定</button>
+						    			<button type="button" class="btn btn-default" ng-click="dialog.ctrl5.close()">取&nbsp;消</button>
+						    		</div>
+						    	</div>
+						    </div>
+					    </div>
+					</div> -->
+				</div>
+				<div id="tab2" role="tabpanel" class="tab-pane">
+					<div class="historyVedio">
+						<div id="historyMap" style="width:100%;height:324px;"></div>
+						<div class="tools">
+							<!-- 
+							<div class="progress">
+								<div class="progress-bar" role="progressbar"
+									aria-valuemin="0" aria-valuemax="100" style="width:100%;"></div>
+							</div>
+							 -->
+							<div class="btn-group btn-group-xs">
+								<button type="button" class="btn" ng-click="dialog.play()"><i class="fa fa-play" aria-hidden="true"></i></button>
+								<button type="button" class="btn" ng-click="dialog.stop()"><i class="fa fa-stop" aria-hidden="true"></i></button>
+								<button type="button" class="btn" ng-click="dialog.pause()"><i class="fa fa-pause" aria-hidden="true"></i></button>
+							</div>
+							<div class="btn-group btn-group-xs" style="margin-left:32px;color:#cccccc;">
+								<form autocomplete="off" class="form-inline">
+									<div class="input-group input-group-sm">
+										<input type="text" class="form-control input-group-datepicker"
+											ng-model="dialog.start.time" is-open="dialog.start.opened"
+											uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+											min-date="minDate" max-date="dialog.end.time"
+											ng-required="true" close-text="Close" readonly="readonly"
+											ng-click="dialog.start.open($event)" />
+									</div>/
+									<div class="input-group input-group-sm">
+										<input type="text" class="form-control input-group-datepicker"
+											ng-model="dialog.end.time" is-open="dialog.end.opened"
+											uib-datepicker-popup="yyyy-MM-dd HH:mm:ss" startingDay="1"
+											min-date="dialog.start.time" max-date="dialog.end.maxDate"
+											ng-required="true" close-text="Close" readonly="readonly"
+											data-date-format="dd-mm-yyyy"
+											ng-click="dialog.end.open($event)" />
+									</div>
+								</form>
+							</div>
+							<div class="btn-group btn-group-xs" style="position:absolute;right:5px;">
+								<!-- <i class="fa fa-cog" aria-hidden="true"></i> -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="tab3" role="tabpanel" class="tab-pane table-responsive" style="height:356px;">
+					<table class="table table-bordered table-condensed table-hover" style="margin-top: 20px;">
+						<thead>
+							<tr>
+								<td width="80">出发停放区</td>
+								<td width="80">目的停放区</td>
+								<td width="80">用户名</td>
+								<td width="40">花费</td>
+								<td width="60">共计时长</td>
+								<td width="40">公里数</td>
+								<td width="130">开始时间</td>
+								<td width="130">结束时间</td>
+								<td width="60">操作</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="item in dialog.borrowRecordList track by $index">
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.startPark.name" title="{{item.startPark.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.endPark.name" title="{{item.endPark.name}}"></div></td>
+								<td class="ellipsis"><div style="width: 80px;" ng-bind="item.driver.username" title="{{item.driver.username}}"></div></td>
+								<td class="ellipsis"><div style="width: 40px;" ng-bind="item.cost" title="{{item.cost}}"></div></td>
+								<td class="ellipsis"><div style="width: 60px;" ng-bind="item.countTime" title="{{item.countTime}}"></div></td>
+								<td class="ellipsis"><div style="width: 40px;" ng-bind="item.kilometers" title="{{item.kilometers}}"></div></td>
+								<td ng-bind="item.startTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td ng-bind="item.endTime | date:'yyyy-MM-dd HH:mm:ss'"></td>
+								<td class="text-center">
+									<a href="javascript:;" ng-click="dialog.history(item)">历史轨迹</a>
+								</td>
+							</tr>
+							<tr ng-hide="dialog.borrowRecordList.length > 0">
+								<td colspan="9" class="norecords text-center">暂无数据</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

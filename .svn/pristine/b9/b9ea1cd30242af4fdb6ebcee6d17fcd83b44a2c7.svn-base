@@ -1,0 +1,64 @@
+package com.tiamaes.bike.reporter;
+
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.integrated.PhotoRecord;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.bike.reporter.integrated.photo.service.PhotoRecordServiceInterface;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.userdetails.User;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class PhotoRecordServiceTest {
+	
+	private static Logger logger = LogManager.getLogger(PhotoRecordServiceTest.class);
+	
+	@Autowired
+	private PhotoRecordServiceInterface service;
+	
+	@Autowired
+	@Qualifier("jacksonObjectMapper")
+	private ObjectMapper jacksonObjectMapper;
+
+	@Before
+	public void before() {
+		assertNotNull("Service not found...", service);
+		assertNotNull("jacksonObjectMapper not found...", jacksonObjectMapper);
+	}
+	
+	@Test
+	public void getListOfPhotoRecords() throws Exception {
+		int number = 1;
+		PhotoRecord photoRecord = new PhotoRecord();
+		Parameters<PhotoRecord> parameters = new Parameters<PhotoRecord>();
+		User user = AlarmQueryServiceTest.setUser();
+//		user.setId("849aa67d60aa438a83e7024f1ec2d93f");
+		parameters.setUser(user);
+		parameters.setModel(photoRecord);
+		int total = service.getTotalOfPhotoRecords(parameters);
+		Pagination<PhotoRecord> pagination = new Pagination<PhotoRecord>(number, total);
+		List<PhotoRecord> photoRecords = service.getListOfPhotoRecords(parameters, pagination);
+		Assert.assertNotNull(photoRecords);
+		logger.debug(jacksonObjectMapper.writeValueAsString(photoRecords));
+	}
+	
+	public static void main(String[] args) {
+		System.out.println(UUIDGenerator.getUUID());
+	}
+}

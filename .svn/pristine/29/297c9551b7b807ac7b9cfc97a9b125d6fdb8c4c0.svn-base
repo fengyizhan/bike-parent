@@ -1,0 +1,104 @@
+package com.tiamaes.bike.connector.service;
+
+import java.net.UnknownHostException;
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.connector.PhotoPackage;
+import com.tiamaes.bike.common.bean.connector.RegisterResult;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.information.Terminal;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.message.Message0200;
+import com.tiamaes.bike.common.bean.message.Message8800;
+import com.tiamaes.bike.common.bean.message.Message.Header;
+
+/**
+ * 通信程序车辆数据库服务接口
+ * 
+ * @author lsl
+ *
+ */
+public interface HandlerServiceInterface {
+
+	/**
+	 * 根据查询数据库判断车辆和终端是否已经注册，如果都有并且没有注册，则更新车载机的sim卡号和注册状态和鉴权码，以及车辆的注册状态
+	 * 
+	 * @return 返回注册结果0成功，1车辆已被注册，2数据库中无该车辆，3终端已被注册，4数据库中无该终端
+	 */
+	RegisterResult registerVehicle(Vehicle vehicle);
+
+	/**
+	 * 根据sim卡号获取对应车辆信息
+	 * 
+	 * @param simNo
+	 * @return
+	 */
+	Vehicle getVehicleBySimNo(String simNo);
+	
+	/**
+	 * 根据sim卡号获取对应终端信息
+	 * @param simNo
+	 * @return
+	 */
+	Terminal getTerminalBySimNo(String simNo);
+
+	/**
+	 * 根据手机号注销当前车辆
+	 * 
+	 * @param simNo
+	 * @return
+	 */
+	boolean logoutVehicle(String simNo);
+
+	/**
+	 * 通过车载机simNo获取最新序列号
+	 * 
+	 * @param simNo
+	 * @return
+	 */
+	int getSerialNo(String simNo);
+
+	/**
+	 * 处理0001通用应答
+	 * 
+	 * @param responseInfo
+	 */
+	void handle0001(ResponseInfo responseInfo);
+
+	/**
+	 * 处理0102鉴权,第一个是查出的车辆基本信息，第二个是是否发送上线信息
+	 * @param target
+	 * @param sendOnLine
+	 * @throws UnknownHostException
+	 */
+	void handle0102(Vehicle target ,boolean sendOnLine) throws UnknownHostException;
+
+	/**
+	 * 处理0200定位
+	 * 
+	 * @param message0200
+	 */
+	void handle0200(Message0200 message0200, Vehicle vehicle);
+	
+	/**
+	 * 处理0704离线定位
+	 * 
+	 * @param message0200
+	 */
+	void handle0704(List<Message0200> list, Vehicle vehicle);
+
+	/**
+	 * 处理0801分包上传
+	 * 
+	 * @param photoPackage
+	 * @param header
+	 * @return
+	 */
+	Message8800 handle0801(PhotoPackage photoPackage, Header header, Vehicle tempVehicle) throws Exception;
+	
+	/**
+	 * 发送下线消息
+	 * @param target
+	 */
+	void sendVehicleOnOffLineInfo(Vehicle target);
+}

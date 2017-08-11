@@ -1,0 +1,256 @@
+(function(angular) {
+	'use strict';
+	define(['app'], function (app) {
+		app.register.controller('VehicleController', ["$rootScope", "$scope", "$resource", "$timeout", "$q", function($rootScope, $scope, $resource, $timeout, $q){
+			/**============================================接口对象定义部分============================================**/		
+			var Vehicle = $resource("api/information/vehicle/:id", { "id" : "@id" }, {
+				init : { method : 'GET',responseType: "json", url : 'api/information/vehicle/init'},
+				initcompanys : { method : 'GET', isArray: true, url : 'api/information/company/list'},
+				initDepartments : { method : 'GET', responseType: "json", url : 'api/information/department/pullList'},
+				getDepartmentsByCompanyId : { method : 'GET', isArray: true, url : 'api/information/department/departments/:parentId'},
+				getCitysByProvinceId : { method : 'GET', isArray: true, url : 'api/information/dictionary/vehicle/citysByProvinceId/:parentId'},
+				getCountysByCityId : { method : 'GET', isArray: true, url : 'api/information/dictionary/vehicle/countysByCityId/:parentId'},
+				initVehicleTypes : { method : 'GET', isArray: true, url : 'api/information/dictionary/vehicle/vehicleTypes'},
+				initIndustryTypes : { method : 'GET', isArray: true, url : 'api/information/dictionary/vehicle/industryTypes'},
+				initTerminalTypes : { method : 'GET', isArray: true, url : 'api/information/dictionary/terminal/types'},
+				initRegions : { method : 'GET', responseType: "json", url : 'api/information/dictionary/vehicle/initRegions'},
+				validateName : {method : 'GET', url : 'api/information/vehicle/checkname/:name/:id'},
+				get : { method : 'GET'},
+				save : { method : 'PUT'},
+				remove : { method : 'DELETE'}
+			});
+			/**============================================表单查询定义部分============================================**/
+			var selected = {name : "全部"};
+			var blank = {name : ""};
+			$scope.searchForm = {
+				departments:[selected],
+				runStatuses:[selected],
+				terminalTypes:[selected],
+				companys:[selected],
+				data:{
+					"property":{
+						"runStatus":selected
+					},
+					"department":selected,
+					"company":selected,
+					"terminal": {
+						"type": selected
+					}
+				},
+				submit: function(){
+					$scope.searchForm.data = angular.copy($scope.searchForm.data);
+				}
+			};
+			/**============================================页面方法定义部分============================================**/
+			$scope.info = function(target){
+				$scope.dialog.editabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.carNoEditabled = false;
+				$scope.dialog.title = "车辆信息详情";
+				$scope.dialog.data = angular.copy(target);
+				$scope.dialog.show();
+			};
+			$scope.add = function(){
+				$scope.dialog.editabled = true;
+				$scope.dialog.carNoEditabled = true;
+				$scope.dialog.increased = true;
+				$scope.dialog.title = "新增车辆信息";
+				$scope.dialog.data = {
+					"property":{
+						"useType": $scope.dialog.useTypes[0],
+						"runStatus": $scope.dialog.runStatuses[3],
+						//"vehicleType": {description : "普通货车",code : "20"},
+						"startDate" : (function(){
+							let now = new Date();
+							return now;
+						})(),
+						"endDate" : (function(){
+							let now = new Date();
+							return now;
+						})()
+					}
+				};
+				$scope.dialog.show();
+			}
+			$scope.edit = function(target){
+				$scope.dialog.editabled = true;
+				$scope.dialog.carNoEditabled = false;
+				$scope.dialog.increased = false;
+				$scope.dialog.title = "修改车辆信息";
+				$scope.dialog.data = angular.copy(target);
+				//编辑时根据初始值初始化省、市、县
+				if($scope.dialog.data.property.province!==undefined ){
+					
+				}else if($scope.dialog.data.property.city!==undefined ){
+					$scope.dialog.data.property.province=$scope.dialog.data.property.city;
+					$scope.dialog.data.property.city=$scope.dialog.data.property.region;
+				}else{
+					
+				}
+				if($scope.dialog.data.property.province!==undefined ){
+					Vehicle.getCitysByProvinceId({"parentId":$scope.dialog.data.property.province.id},function(response){
+						$scope.dialog.citys = response;
+					});
+					
+					Vehicle.getCountysByCityId({"parentId":$scope.dialog.data.property.city.id},function(response){
+						$scope.dialog.countys = response;
+						if(response==""){
+							$scope.dialog.data.property.region = $scope.dialog.data.property.city;
+						}
+					});
+					//根据公司的初始值初始化车队
+					Vehicle.getDepartmentsByCompanyId({"parentId":$scope.dialog.data.company.id},function(response){
+						$scope.dialog.departments = response;
+					});
+				}
+				$scope.dialog.show();
+			}
+			$scope.remove = function(target){
+				$scope.$confrim.init({title:'警告',type:'warning',content : '是否要删除该车辆信息?',callback:function(){
+                    Vehicle.remove({"id":target.id},function(response){
+                    	$scope.pagination.remove(target);
+                    });
+				}}).show();
+			};
+			
+			/**============================================页面元素初始化部分============================================**/
+			//初始化终端类型列表
+			Vehicle.initTerminalTypes(function(response){
+				$scope.searchForm.terminalTypes = $scope.searchForm.terminalTypes.concat(response);
+			});
+			//公司--部门级联查询(列表页面)
+			$scope.selectCompany = function(item){
+				if(!item.id){
+					$scope.companys.selected = undefined;
+					$scope.departments.selected = [selected];
+					return;
+				}
+				Vehicle.getDepartmentsByCompanyId({"parentId":item.id},function(response){
+					$scope.searchForm.departments = [selected];
+					$scope.searchForm.departments = $scope.searchForm.departments.concat(response);
+					
+					//dialog.departments = response;
+				});
+			};
+			/**============================================对话框元素初始化部分============================================**/
+			$scope.$on('dialog-completed', function(e, dialog, element){
+				//初始化公司列表
+				Vehicle.initcompanys(function(response){
+					$scope.searchForm.companys = $scope.searchForm.companys.concat(response);
+					dialog.companys = response;
+				});
+				//初始化部门列表
+				Vehicle.initDepartments(function(response){
+					$scope.searchForm.departments = $scope.searchForm.departments.concat(response.departments);
+					//dialog.departments = response.departments;
+				});
+				//初始化车辆类型列表
+				Vehicle.initVehicleTypes(function(response){
+					dialog.vehicleTypes = response;
+				});
+				//初始化行业类型列表
+				Vehicle.initIndustryTypes(function(response){
+					dialog.industryTypes = response;
+				});
+				//初始化运行状态，物料类型，车辆颜色
+				Vehicle.init(function(response){
+					$scope.searchForm.runStatuses = $scope.searchForm.runStatuses.concat(response.runStatuses);
+					dialog.useTypes = response.useTypes;
+					dialog.plateColors = response.plateColors;
+					dialog.runStatuses = response.runStatuses;
+				});
+				//初始化省下拉菜单
+				Vehicle.initRegions(function(response){
+					dialog.provinces = response.provinces;
+					//dialog.citys = response.citys;
+					//dialog.countys = response.countys;
+				});
+				
+				//公司--》车队级联查询(对话框)
+				dialog.selectCompany = function(item){
+					if(!item.id){
+						dialog.companys.selected = undefined;
+						dialog.departments.selected = [selected];
+						return;
+					}
+					Vehicle.getDepartmentsByCompanyId({"parentId":item.id},function(response){
+						dialog.data.department = [selected];
+						dialog.departments = response;
+					});
+				};
+				
+				//省--》市级联查询
+				dialog.selectProvince = function(item){
+					if(!item.id){
+						dialog.provinces.selected = undefined;
+						dialog.citys.selected = [selected];
+						dialog.countys.selected = [selected];
+						return;
+					}
+					Vehicle.getCitysByProvinceId({"parentId":item.id},function(response){
+						dialog.data.property.city=[selected];
+						dialog.data.property.region=[selected];
+						dialog.citys = response;
+					});
+				};
+				//市--》县/区级联查询
+				dialog.selectCity = function(item){
+					var result;
+					if(!item.id){
+						dialog.citys.selected = undefined;
+						dialog.countys.selected = [selected];
+						return;
+					}
+					Vehicle.getCountysByCityId({"parentId":item.id},function(response){
+						dialog.data.property.region=[selected];
+						dialog.countys = response;
+						if(response==""){
+							dialog.data.property.region = dialog.data.property.city;
+						}
+					});
+				};
+				
+				dialog.startDate = {
+					"open": function($event) {
+						dialog.startDate.opened = true;
+					}
+				};
+				dialog.endDate = {
+					"open": function($event) {
+						dialog.endDate.opened = true;
+					}
+				};
+				//验证车牌号码是否重复
+				dialog.validateName = function(name){
+					return $q(function(resolve, reject) {
+						if(name === undefined){
+							reject();
+						}else if(name !== dialog.data.name){
+							Vehicle.validateName({"id": dialog.data.id, "name": name}, function(response){
+								response.state === true ? reject(): resolve();
+							});
+						}else{
+							resolve();
+						}
+					});
+				};
+				//对话框中表单提交
+				dialog.submit = function(event){
+					event.preventDefault();
+					//如果地区级别为两级
+					if($scope.dialog.data.property.region.id=== undefined){
+						$scope.dialog.data.property.region = $scope.dialog.data.property.city;
+					}
+					Vehicle.save($scope.dialog.data,function(response){
+						if($scope.dialog.increased){
+							$scope.pagination.unshift(response);
+						}else{
+							$scope.pagination.refresh(response);
+						}
+                    });
+					$scope.dialog.close();
+				};
+			});
+		}]);
+	});
+})(window.angular);

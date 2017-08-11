@@ -1,0 +1,32 @@
+package com.tiamaes.bike.storage.service;
+
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo;
+
+public interface VehicleStationInfoServiceInterface {
+	
+	/**
+	 * 增加车辆进出场记录
+	 * @param vehicleStationInfo
+	 * @return 
+	 */
+	String addVehicleStationInfo(VehicleStationInfo vehicleStationInfo)  throws Exception;
+	
+	/**
+	 * 根据id删除车辆进出场记录
+	 * @param id
+	 */
+	void deleteVehicleStationInfo(String id);
+	
+	/**
+	 * 根据id删除工程趟次记录
+	 * @param id
+	 */
+	void deleteProjectTripInfo(String id);
+
+	/**
+	 * 增加工程趟次记录
+	 * @param vehicleStationInfo
+	 */
+	String addProjectTripInfo(VehicleStationInfo vehicleStationInfo) throws Exception;
+
+}

@@ -1,0 +1,8 @@
+package com.tiamaes.bike;
+
+public class TestConstant {
+	public String simNo = "015823601236";
+	public String carNo = "豫G12345";
+	public String vehicleId = "ffb77f41cbd1429cafeefae5435781e1";
+	public String terminalId = "f532e14dba764ac89e15b2466b126dfa";
+}

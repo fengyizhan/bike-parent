@@ -1,0 +1,14 @@
+package com.tiamaes.bike.api.information.dictionary.service;
+
+import java.util.List;
+
+import com.tiamaes.bike.common.bean.information.IndustryType;
+
+public interface IndustryTypeServiceInterface {
+
+	/**
+	 * 获取所有所属行业列表，用于下拉菜单生成
+	 * @return
+	 */
+	List<IndustryType> getListOfIndustryTypes();
+}

@@ -1,0 +1,55 @@
+package com.tiamaes.bike.common.bean.message;
+
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+
+import com.tiamaes.bike.common.bean.connector.command.LineDelCommand;
+
+/**
+ * 删除线路
+ * @author waibao001
+ *
+ */
+public class Message8607 extends Message {
+
+	private static final long serialVersionUID = -1384037959775909259L;
+
+	public Message8607(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8607);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+
+	public Message8607(LineDelCommand lineDelCommand) throws Exception {
+		Header headernow = new Header();
+		headernow.setId(0x8607);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(lineDelCommand.getSimNo());
+		this.setHeader(headernow);
+		this.setResponseBody(lineDelCommand);
+	}
+
+	/**
+	 * 删除线路
+	 * @param polygon
+	 * @throws Exception
+	 */
+	public void setResponseBody(LineDelCommand lineDel) throws Exception {
+		StringBuffer bufferStr = new StringBuffer();
+		List<Integer> lineIds = lineDel.getLineIds();
+		//总线路数
+		bufferStr.append(String.format("%02X", lineDel.getLineIds().size()));
+		for (Integer lineId : lineIds) {
+			bufferStr.append(String.format("%08X", lineId));
+		}
+		
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		
+		this.setBody(responseBody);
+	}
+}

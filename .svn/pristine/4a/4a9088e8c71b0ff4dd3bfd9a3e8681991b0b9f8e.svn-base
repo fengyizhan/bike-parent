@@ -1,0 +1,192 @@
+package com.tiamaes.bike.common.bean.information;
+
+import java.util.Date;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import com.tiamaes.bike.common.bean.connector.Device;
+import com.tiamaes.bike.common.bean.system.Authority;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+/**
+ * 集中停放区信息
+ * @author kangty
+ */
+@ApiModel(value = "Park", description = "集中停放区信息")
+public class Park extends Authority implements Device{
+
+	private static final long serialVersionUID = -3833209413951041513L;
+	
+	@ApiModelProperty(value="停放区所在地址")
+	private String address;
+	@ApiModelProperty(value="负责本停放区的责任人名字")
+	private String principal;
+	@ApiModelProperty(value="责任人的联系电话")
+	private String telephone;
+	@ApiModelProperty(value="本条记录入库时间(入库必需)")
+	private Date createTime;
+	@ApiModelProperty(value="行政区划")
+	private Region region;
+	@ApiModelProperty(value="停放区区半径")
+	private float radius;
+	@ApiModelProperty(value="中心点经度")
+	private double lng;
+	@ApiModelProperty(value="中心点纬度")
+	private double lat;
+	@ApiModelProperty(value="所属地区")
+	private Property property;
+	@ApiModelProperty(value="所属车辆数")
+	private int vehicles;
+	@ApiModelProperty(value="空闲车位数")
+	private int idle;
+	@ApiModelProperty(value="鉴权码")
+	private String authentication;
+	
+	
+	public String getAuthentication() {
+		return authentication;
+	}
+
+	public void setAuthentication(String authentication) {
+		this.authentication = authentication;
+	}
+	
+	public String getAddress() {
+		return address;
+	}
+	
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	
+	public String getPrincipal() {
+		return principal;
+	}
+	
+	public void setPrincipal(String principal) {
+		this.principal = principal;
+	}
+	
+	public String getTelephone() {
+		return telephone;
+	}
+	
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
+	}
+	
+	public Date getCreateTime() {
+		return createTime;
+	}
+	
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	
+	public Region getRegion() {
+		return region;
+	}
+
+	public void setRegion(Region region) {
+		this.region = region;
+	}
+
+	public float getRadius() {
+		return radius;
+	}
+	
+	public void setRadius(float radius) {
+		this.radius = radius;
+	}
+	
+	public double getLng() {
+		return lng;
+	}
+	
+	public void setLng(double lng) {
+		this.lng = lng;
+	}
+	
+	public double getLat() {
+		return lat;
+	}
+	
+	public void setLat(double lat) {
+		this.lat = lat;
+	}
+	
+	public Property getProperty() {
+		return property;
+	}
+
+	public void setProperty(Property property) {
+		this.property = property;
+	}
+
+	public int getVehicles() {
+		return vehicles;
+	}
+
+	public void setVehicles(int vehicles) {
+		this.vehicles = vehicles;
+	}
+
+	public int getIdle() {
+		return idle;
+	}
+
+	public void setIdle(int idle) {
+		this.idle = idle;
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this);
+	}
+	
+	public static class Property {
+		@ApiModelProperty(value="所属省")
+		private Region province;
+		@ApiModelProperty(value="所属市")
+		private Region city;
+		@ApiModelProperty(value="所属区/县")
+		private Region district;
+
+		public Region getProvince() {
+			return province;
+		}
+
+		public void setProvince(Region province) {
+			this.province = province;
+		}
+
+		public Region getCity() {
+			return city;
+		}
+
+		public void setCity(Region city) {
+			this.city = city;
+		}
+
+		public Region getDistrict() {
+			return district;
+		}
+
+		public void setDistrict(Region district) {
+			this.district = district;
+		}
+
+		@Override
+		public String toString() {
+			return ToStringBuilder.reflectionToString(this);
+		}
+
+	}
+
+	@Override
+	public com.tiamaes.bike.common.bean.connector.Device.Type getKind() {
+		return com.tiamaes.bike.common.bean.connector.Device.Type.PARK;
+	}
+
+}

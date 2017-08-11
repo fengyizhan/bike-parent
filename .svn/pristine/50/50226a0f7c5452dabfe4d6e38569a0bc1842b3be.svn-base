@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.storage.persistence.DriverSigninInfoMapper">
+
+	<!-- 保存司机插拔卡信息 -->
+	<insert id="addDriverSigninInfo" parameterType="com.tiamaes.bike.common.bean.connector.DriverSigninInfo" >
+    INSERT INTO tb_driver_signin 
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="state != null" >
+        state,
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.id != null and vehicle.company.id != ''" >
+        companyId,
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.name != null and vehicle.company.name != ''" >
+        companyName,
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.id != null and vehicle.department.id != ''" >
+        departmentId,
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.name != null and vehicle.department.name != ''" >
+        departmentName,
+      </if>
+      <if test="vehicle != null and vehicle.id != null and vehicle.id != ''" >
+        vehicleId,
+      </if>
+      <if test="vehicle != null and vehicle.carNo != null and vehicle.carNo != ''" >
+        carNo,
+      </if>
+      <if test="vehicle != null and vehicle.terminal != null and vehicle.terminal.simNo != null and vehicle.terminal.simNo != ''" >
+        simNo,
+      </if>
+      <if test="driver != null and driver.name != null and driver.name != ''" >
+        driverName,
+      </if>
+      <if test="driver != null and driver.licenseNo != null and driver.licenseNo != ''" >
+        qualification,
+      </if>
+      <if test="driver != null and driver.licenseAgency != null and driver.licenseAgency != ''" >
+        organization,
+      </if>
+      <if test="driver != null and driver.invalidDate != null" >
+        validDate,
+      </if>
+      <if test="result != null" >
+        result,
+      </if>
+        createTime
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="state != null" >
+        #{state,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.id != null and vehicle.company.id != ''" >
+        #{vehicle.company.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.company != null and vehicle.company.name != null and vehicle.company.name != ''" >
+        #{vehicle.company.name,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.id != null and vehicle.department.id != ''" >
+        #{vehicle.department.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.department != null and vehicle.department.name != null and vehicle.department.name != ''" >
+        #{vehicle.department.name,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.id != null and vehicle.id != ''" >
+        #{vehicle.id,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.carNo != null and vehicle.carNo != ''" >
+        #{vehicle.carNo,jdbcType=VARCHAR},
+      </if>
+      <if test="vehicle != null and vehicle.terminal != null and vehicle.terminal.simNo != null and vehicle.terminal.simNo != ''" >
+        #{vehicle.terminal.simNo,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.name != null and driver.name != ''" >
+        #{driver.name,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.licenseNo != null and driver.licenseNo != ''" >
+        #{driver.licenseNo,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.licenseAgency != null and driver.licenseAgency != ''" >
+        #{driver.licenseAgency,jdbcType=VARCHAR},
+      </if>
+      <if test="driver != null and driver.invalidDate != null" >
+        #{driver.invalidDate,jdbcType=DATE},
+      </if>
+      <if test="result != null" >
+        #{result,typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler},
+      </if>
+        #{createTime}
+    </trim>
+  </insert>
+  
+  <delete id="deleteDriverSigninInfo" parameterType="String">
+  	DELETE FROM tb_driver_signin WHERE id = #{id}
+  </delete>
+</mapper>

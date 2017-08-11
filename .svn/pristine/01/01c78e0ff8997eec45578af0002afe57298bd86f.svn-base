@@ -1,0 +1,88 @@
+package com.tiamaes.bike.common;
+
+/**
+ * 
+ * @author Chen
+ *
+ */
+public final class RedisKey {
+	public static final String CAPTASTORE = "spring:captcha:store";
+
+	public static final String SUBSCRIBERS = "mms:socket:subscribers:[%s]";
+	public static final String USERTOPICS = "mms:socket:user:topics:[%s]";
+	/** 连接对应服务器(key:simNO,value:http://ip:port) */
+	public static final String CONNECTS = "bike:connects";
+	/** 车载机对应流水号 */
+	public static final String SERIALNO_SIMNO = "bike:serialno:simno:[%s]";
+	/** 车辆信息 */
+	public static final String VEHICLES = "bike:{vehicles}";
+	/** 车辆在线数量 */
+	public static final String VEHICLES_ONLINE = "bike:{vehicles}:online";
+	/** 车辆离线数量 */
+	public static final String VEHICLES_OFFLINE = "bike:{vehicles}:offline";
+	/** 车辆停车数量 */
+	public static final String VEHICLES_PARKING = "bike:{vehicles}:parking";
+	/** 车辆与车牌号关系  */
+	public static final String VEHICLES_CARNO = "bike:{vehicles}:carno";
+	/** 车辆与车牌号关系  */
+	public static final String VEHICLES_SIMNO = "bike:{vehicles}:simno";
+	/** 车辆趟次记录 */
+	public static final String VEHICLES_TRIPS = "bike:{vehicles}:trips";
+	/** 车辆实时信息 */
+	public static final String VEHICLES_POINTVECTORS = "bike:{vehicles}:pointvector";
+	/** 车辆终端信息 */
+	public static final String VEHICLES_TERMINALS = "bike:{vehicles}:terminals";
+	/** 车辆终端关系 */
+	public static final String VEHICLES_TERMINALS_ID = "bike:{vehicles}:terminals:id";
+	/** 车辆终端SIM卡号与主键关系 **/
+	public static final String VEHICLES_TERMINALS_SIMNO = "bike:{vehicles}:terminals:simno";
+	/** 车辆当前司机实时信息 */
+	public static final String VEHICLES_DRIVERS_VEHICLEID = "bike:{vehicles}:drivers:vehicle:id";
+	/** 用户当前借车对应信息 */
+	public static final String VEHICLES_USERNAME_VEHICLE = "bike:{users}:vehicles:user:username";
+	/** 车辆上下线实时信息 */
+	public static final String VEHICLES_ONOFFLINEINFO_SIMNO = "bike:{vehicles}:onofflineinfos:simno";
+	/** 车辆进出场实时信息 */
+	public static final String VEHICLES_STATIONINFO_SIMNO = "bike:{vehicles}:stationinfos:simno";
+	/** 公司信息 */
+	public static final String COMPANIES = "bike:companies";
+	/** 部门信息 */
+	public static final String DEPARTMENTS = "bike:departments";
+	/** 电子围栏信息 */
+	public static final String STATIONS = "bike:stations";
+	/** 集中停放区信息 */
+	public static final String PARKS = "bike:parks";
+	/** 费率信息 */
+	public static final String RATES = "bike:rates";
+	/** 路线信息 */
+	public static final String ROUTES = "bike:routes";
+	/** 工程信息 */
+	public static final String PROJECTS = "bike:projects";
+	/**用户信息 */
+	public static final String DRIVERS = "bike:drivers";
+	/**用户钱包信息 */
+	public static final String WALLETUSERS = "bike:walletusers";
+	/**司机信息:从业资格证号*/
+	public static final String DRIVERS_LICENSENO = "bike:drivers:licenseno";
+	/** 司机插卡实时信息 */
+	public static final String DRIVERS_IGNININFO_SIMNO = "bike:drivers:ignininfos:simno";
+	
+	
+	/********************************************** 临时变量 ******************************************/
+	/** 车辆趟次记录id */
+	public static final String PROJECTTRIPS = "bike:{temp}:project:trip:id";
+	/** 车辆上下线记录id */
+	public static final String ONOFFLINE_ID = "bike:{temp}:vehicle:onoff:id";
+	/** 司机插拔卡记录id */
+	public static final String SIGNINOUT_ID = "bike:{temp}:driver:sign:id";
+	/** 设备拍照记录id */
+	public static final String VEHICLEPHOTO_ID = "bike:{temp}:vehicle:photo:id";
+	/** 车辆进出场记录id */
+	public static final String STATION_INOUTSTATIONS_ID = "bike:{temp}:station:inout:id";
+	/** 通用应答记录id */
+	public static final String COMMAND_RESPONSES_ID = "bike:{temp}:command:response:id";
+	/********************************************** 系统公共变量 ******************************************/
+	/** APP端用户的短信验证码 */
+	public static final String MESSAGE_VERIFYCODE = "bike:messages:verifycode:[%s]";
+	
+}

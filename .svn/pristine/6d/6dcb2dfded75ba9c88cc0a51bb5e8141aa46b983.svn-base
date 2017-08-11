@@ -1,0 +1,113 @@
+package com.tiamaes.bike.common.bean.homepage;
+
+import java.io.Serializable;
+
+public class OngoingProjectInfo implements Serializable {
+	
+	private static final long serialVersionUID = -137566353836967351L;
+
+	/**
+	 * 工程id
+	 */
+	private String id;
+	
+	/**
+	 * 工程名字
+	 */
+	private String projectName;
+	
+	/**
+	 * 当前工期(单位: 天)
+	 */
+	private String schedule;
+	
+	/**
+	 * 总土方数(单位：万m³)
+	 */
+	private int earthWork;
+	
+	/**
+	 * 车辆总数
+	 */
+	private int carTotal;
+	
+	/**
+	 * 运输趟次
+	 */
+	private int transportTimes;
+	
+	/**
+	 * 工程开始时间
+	 */
+	private String startTime;
+	
+	/**
+	 * 工程结束时间
+	 */
+	private String endTime;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	public String getSchedule() {
+		return schedule;
+	}
+
+	public void setSchedule(String schedule) {
+		this.schedule = schedule;
+	}
+
+	public int getEarthWork() {
+		return earthWork;
+	}
+
+	public void setEarthWork(int earthWork) {
+		this.earthWork = earthWork;
+	}
+
+	public int getCarTotal() {
+		return carTotal;
+	}
+
+	public void setCarTotal(int carTotal) {
+		this.carTotal = carTotal;
+	}
+
+	public int getTransportTimes() {
+		return transportTimes;
+	}
+
+	public void setTransportTimes(int transportTimes) {
+		this.transportTimes = transportTimes;
+	}
+
+	public String getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(String startTime) {
+		this.startTime = startTime;
+	}
+
+	public String getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(String endTime) {
+		this.endTime = endTime;
+	}
+	
+}

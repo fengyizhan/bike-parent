@@ -1,0 +1,73 @@
+package com.tiamaes.bike.common.bean.message;
+
+import org.apache.commons.codec.binary.Hex;
+
+import com.tiamaes.bike.common.bean.connector.command.DialCommand;
+import com.tiamaes.bike.common.bean.connector.command.MonitorCommand;
+import com.tiamaes.bike.common.utils.MobileUtils;
+
+/**
+ * 文本信息下发
+ * 
+ * @author lsl
+ *
+ */
+public class Message8400 extends Message {
+
+	private static final long serialVersionUID = -1384037959775909259L;
+
+	public Message8400(String simNo) {
+		Header headernow = new Header();
+		headernow.setId(0x8400);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(simNo);
+		this.setHeader(headernow);
+	}
+	
+	public Message8400(DialCommand dialCommand) throws Exception {
+		if(!MobileUtils.isValidMobileNum(dialCommand.getTelNo())){
+			return;
+		}
+		Header headernow = new Header();
+		headernow.setId(0x8400);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(dialCommand.getSimNo());
+		this.setHeader(headernow);
+		String telNo = dialCommand.getTelNo();
+//		telNo = StringUtils.leftPad(telNo, 12, "0");
+		dialCommand.setTelNo(telNo);
+		this.setResponseBody(dialCommand.getType(), dialCommand.getTelNo());
+	}
+	
+	public Message8400(MonitorCommand monitorCommand) throws Exception {
+		if(!MobileUtils.isValidMobileNum(monitorCommand.getTelNo())){
+			return;
+		}
+		Header headernow = new Header();
+		headernow.setId(0x8400);
+		headernow.setChildPackage(false);
+		headernow.setEnableRSA(false);
+		headernow.setSimNo(monitorCommand.getSimNo());
+		this.setHeader(headernow);
+		String telNo = monitorCommand.getTelNo();
+//		telNo = StringUtils.leftPad(telNo, 12, "0");
+		monitorCommand.setTelNo(telNo);
+		this.setResponseBody(monitorCommand.getType(), monitorCommand.getTelNo());
+	}
+
+	/**
+	 * 生成并放入消息实体
+	 * @param sign 0普通电话1监听
+	 * @param telNo
+	 * @throws Exception
+	 */
+	public void setResponseBody(int sign, String telNo) throws Exception {
+		StringBuffer bufferStr = new StringBuffer();
+		bufferStr.append(String.format("%02X", sign));
+		bufferStr.append(Hex.encodeHexString(telNo.getBytes("GBK")));
+		byte[] responseBody = Hex.decodeHex(bufferStr.toString().toCharArray());
+		this.setBody(responseBody);
+	}
+}

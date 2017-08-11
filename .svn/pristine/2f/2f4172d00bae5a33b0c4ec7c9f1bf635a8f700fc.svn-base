@@ -1,0 +1,196 @@
+package com.tiamaes.bike.api.information.department.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.api.information.department.service.CompanyServiceInterface;
+import com.tiamaes.bike.api.information.department.service.DepartmentServiceInterface;
+import com.tiamaes.bike.api.information.vehicle.service.VehicleServiceInterface;
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.information.Company;
+import com.tiamaes.bike.common.bean.information.Department;
+import com.tiamaes.bike.common.utils.UUIDGenerator;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/information/department")
+@Api(tags = {"department"}, description = "部门/车队管理")
+public class DepartmentController {
+	private static Logger logger = LogManager.getLogger(DepartmentController.class);
+	@Resource
+	private DepartmentServiceInterface departmentService;
+	@Resource
+	private CompanyServiceInterface companyService;
+	@Resource
+	private VehicleServiceInterface vehicleService;
+	
+	/**
+	 * 初始化页面下拉框所属公司的值
+	 * @return
+	 */
+	@RequestMapping(value = "/init", method = RequestMethod.GET, produces = { "application/json" })
+	@ApiOperation(value = "公司下拉列表", notes = "初始化页面下拉框所属公司的值")
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<String,Object>();
+		// 获取下拉列表-所属公司的值
+		List<Company> companies = companyService.getCompanys();
+		result.put("companies", companies);
+		return result;
+	}
+	
+	/**
+	 * 页面展示部门列表信息
+	 * @param company
+	 * @param pathVariable
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = {"/page/{number:\\d+}","/page/{number:\\d+}/{pageSize:\\d+}"}, method = RequestMethod.POST)
+	@ApiOperation(value = "部门列表", notes = "分页获取全部部门信息")
+	@ApiImplicitParam(name = "department", value = "部门实体", required = true, dataType = "Department")
+	public @ResponseBody PageInfo<Department> page(@RequestBody Department department, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<Department> pagination = new Pagination<Department>(number, pageSize);
+		//封装参数
+		Parameters<Department> parameters = new Parameters<Department>();
+		parameters.setUser(operator);
+		parameters.setModel(department);
+		List<Department> departments = departmentService.getListOfDepartments(parameters, pagination);
+		return new PageInfo<Department>(departments);
+	}
+	
+	/**
+	 * 根据id获取部门信息
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "部门信息", notes = "根据id获取部门信息",response=Department.class)
+	public @ResponseBody Department get(@PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){
+			logger.debug(id);
+		}
+		Department department = departmentService.getDepartmentById(id);
+		return department;
+	}
+	
+	/**
+	 * 验证部门名字是否存在
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	@RequestMapping(value = {"/checkname/{name}/{parentId}", "/checkname/{name}/{parentId}/{id}"}, method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "验证部门名称", notes = "验证部门名字是否存在",response=Department.class)
+	public @ResponseBody Map<String, Object> checkname(@PathVariable Optional<String> id, @PathVariable("name")String name, @PathVariable("name")String parentId) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("state", departmentService.checkDepartmentName(id, name, parentId));
+		return result;
+	}
+	
+	/**
+	 * 新增部门信息
+	 * @param department
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "增加部门", notes = "新增部门信息",response=Department.class)
+	@ApiImplicitParam(name = "department", value = "部门实体", required = true, dataType = "Department")
+	public @ResponseBody Department add(@RequestBody Department department,@CurrentUser User operator){
+		if(logger.isDebugEnabled()){
+			logger.debug(department.toString());
+		}
+		department.setId(UUIDGenerator.getUUID());
+		department = departmentService.addDepartment(department);
+		return department;
+	}
+	
+	/**
+	 * 更新部门信息
+	 * @param department
+	 * @param id
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = { "application/json" })
+	@ApiOperation(value = "更新部门", notes = "更新部门信息",response=Department.class)
+	@ApiImplicitParam(name = "department", value = "部门实体", required = true, dataType = "Department")
+	public @ResponseBody Department update(@RequestBody Department department, @PathVariable("id")String id,@CurrentUser User operator) {
+		if(logger.isDebugEnabled()){	
+			logger.debug(department.toString());
+		}
+		department.setId(id);
+		department = departmentService.updateDepartment(department);
+		return department;
+	}
+	
+	/**
+	 * 删除部门信息
+	 * @param id
+	 * @param operator
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = { "application/json" })
+	@ApiOperation(value = "删除部门", notes = "删除部门信息")
+	public @ResponseBody void delete(@PathVariable("id")String id,@CurrentUser User operator) {
+		if (StringUtils.isNotBlank(id)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(id);
+			}
+			int total = vehicleService.getTotalUseOfDepartment(id);
+			if (total > 0) {
+				throw new IllegalArgumentException("存在与此部门关联的车辆,请先解除关联再删除!");
+			}
+			Department department = departmentService.getDepartmentById(id);
+			departmentService.deleteDepartment(department);
+		}
+	}
+	
+	/**
+	 * 获取所有部门列表，用于下拉菜单生成
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/pullList", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "部门下拉列表", notes = " 获取所有部门列表，用于下拉菜单生成")
+	public @ResponseBody Map<String,Object> getPullList(@CurrentUser User operator) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("departments", departmentService.getDepartments());
+		return result;
+	}
+	
+	/**
+	 * 根据公司id获取部门下拉列表
+	 * @param companyId
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/departments/{parentId}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "部门下拉列表", notes = "根据公司id获取部门下拉列表")
+	public @ResponseBody List<Department> departments(@PathVariable("parentId")String companyId, @CurrentUser User operator) {
+		return departmentService.getDepartmentsByCompanyId(companyId);
+	}
+}

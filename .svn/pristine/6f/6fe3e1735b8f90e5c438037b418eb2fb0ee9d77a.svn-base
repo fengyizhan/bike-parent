@@ -1,0 +1,11 @@
+package com.tiamaes.bike.alipay;
+
+import org.springframework.stereotype.Component;
+
+/**
+ * 支付宝支付工具类
+ */
+@Component("payUtil")
+public class Pay {
+
+}

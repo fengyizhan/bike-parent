@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.wallet.information.consume.persistence.ConsumeMapper">
+	<resultMap id="consumeMap" type="com.tiamaes.bike.common.bean.wallet.Consume">
+		<id property="id" column="id"/>
+		<result property="username" column="username"/>
+		<result property="money" column="money"/>
+		<result property="createTime" column="createTime"/>
+	</resultMap>
+	
+	<select id="getConsumeById" parameterType="int" resultMap="consumeMap">
+		SELECT t.id, t.username, t.money, t.createTime FROM tw_consume t WHERE t.id = #{id}
+	</select>
+	
+	<select id="getListOfConsumesByUsername" parameterType="String" resultMap="consumeMap">
+		SELECT t.id, t.username, t.money, t.createTime FROM tw_consume t 
+		<where>
+			t.username = #{username}
+			<if test="id != null">
+		     AND t.id = #{id} 
+			</if>
+			<if test="startTime != null">
+		     AND t.createTime >= #{startTime} 
+			</if>
+			<if test="endTime != null">
+		     AND #{endTime} >= t.createTime
+			</if>
+		</where>
+		ORDER BY t.createTime DESC
+	</select>
+	
+	<insert id="addConsume" parameterType="com.tiamaes.bike.common.bean.wallet.Consume">
+		INSERT INTO tw_consume
+		(id,
+		 username,
+		 money,
+		 createTime)
+		VALUES
+		(#{id},
+		 #{username},
+		 #{money},
+		 #{createTime})
+	</insert>
+	
+	<update id="updateConsume" parameterType="com.tiamaes.bike.common.bean.wallet.Consume">
+		UPDATE tw_consume
+			SET username   = #{username},
+			    money      = #{money}
+			WHERE id = #{id}
+	</update>
+	
+	<select id="getId" resultType="Integer">
+		SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_NAME = 'tw_consume'
+	</select>
+	
+</mapper>

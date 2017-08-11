@@ -1,0 +1,185 @@
+package com.tiamaes.bike.monitor.listener;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
+
+import com.tiamaes.bike.common.RedisKey;
+import com.tiamaes.bike.common.bean.system.PointVector;
+import com.tiamaes.bike.common.bean.system.PointVector.Info;
+import com.tiamaes.bike.common.bean.system.PointVector.Info.State;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo;
+import com.tiamaes.bike.common.bean.connector.VehicleWarningInfo;
+import com.tiamaes.bike.common.bean.connector.ResponseInfo.ResponseState;
+import com.tiamaes.bike.common.bean.system.User;
+import com.tiamaes.bike.common.bean.information.Vehicle;
+import com.tiamaes.bike.common.bean.integrated.Schedule;
+
+@Component
+public class Listener{
+	private static Logger logger = LogManager.getLogger(Listener.class);
+	
+	@Autowired
+	private SimpMessagingTemplate template;
+	@Resource(name = "stringRedisTemplate")
+	private SetOperations<String, String> setOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, User> userOperator;
+	@Resource(name = "jsonRedisTemplate")
+	private HashOperations<String, String, PointVector> pointVectorOperator;
+	@Resource
+	private StringRedisTemplate stringRedisTemplate;
+
+	/**
+	 * 消费车辆实时状态信息
+	 * @param status
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen1", topicPattern = "com.tiamaes.bike.common.bean.information.Vehicle")
+	public void listen1(@Payload Vehicle vehicle) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug("------------------Received : {}-------------------", vehicle);
+		}
+		if(vehicle != null && vehicle.getId() != null){
+			//修改停车数量
+			if(State.LOWPOWER == vehicle.getInfo().getState()){
+//				setOperator.add(RedisKey.VEHICLES_PARKING, vehicle.getSimCode());
+			}else{
+//				setOperator.remove(RedisKey.VEHICLES_PARKING, vehicle.getSimCode());
+			}
+			/*String address = "";
+			//获取经纬度转换为地址
+			if(vehicle.getCenter()!=null){
+				PointVector.Center center = vehicle.getCenter();
+				//经纬度
+				double lat = center.getLat();
+				double lng = center.getLng();
+				
+				if (lat > 0 && lng > 0) {
+					address = lng + ", " + lat;
+				}
+				//地址
+				Info info = vehicle.getInfo();
+				if(info!=null){
+					info.setAddress(address);
+					vehicle.setInfo(info);
+				}
+			}*/
+			//获取实时司机信息
+			User user = userOperator.get(RedisKey.VEHICLES_DRIVERS_VEHICLEID, vehicle.getId());
+			//当天趟次
+			String dayTripCount = (String) stringRedisTemplate.opsForHash().get(RedisKey.VEHICLES_TRIPS, vehicle.getId());
+			
+			if(user!=null){
+				Info info = vehicle.getInfo();
+				info.setUser(user);
+				if(StringUtils.isNotBlank(dayTripCount)){
+					//当天趟次
+					info.setDayTrip(Integer.valueOf(dayTripCount));
+				}
+				vehicle.setInfo(info);
+			}
+			
+			template.convertAndSend("/topic/status", vehicle);
+		}
+	}
+	
+	/**
+	 * 消费车辆报警信息
+	 * @param warning
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen2", topicPattern = "com.tiamaes.bike.common.bean.connector.VehicleWarningInfo")
+	public void listen2(@Payload VehicleWarningInfo warning) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug("------------------Received : {}-------------------", warning);
+		}
+		if(warning != null && warning.getVehicle() != null && warning.getVehicle().getId() != null){
+			template.convertAndSend("/topic/warning", warning);
+		}
+	}
+	
+	/**
+	 * 车辆指令下发响应消息
+	 * @param response
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen3", topics = "com.tiamaes.bike.common.bean.connector.ResponseInfo")
+	public void listen3(@Payload ResponseInfo response) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug("------------------Received : {}-------------------", response);
+		}
+		if(response != null && response.getId() != null){
+			template.convertAndSend(String.format("/topic/response/%s", response.getId()), ResponseState.SUCCESS.equals(response.getResponseState()));
+		}
+	}
+	
+	/**
+	 * 车辆上下线消息
+	 * @param onoff
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen4", topics = "com.tiamaes.bike.common.bean.connector.VehicleOnOffLineInfo")
+	public void listen4(@Payload VehicleOnOffLineInfo onoff) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug("------------------Received : {}-------------------", onoff);
+		}
+		Vehicle vehicle = onoff.getVehicle();
+		
+		if(onoff != null && onoff.getVehicle() != null && onoff.getVehicle().getId() != null){
+			//获取车辆详情信息
+			PointVector pointVector = pointVectorOperator.get(RedisKey.VEHICLES_POINTVECTORS, vehicle.getId());
+			
+			if(onoff.getState().equals(VehicleOnOffLineInfo.State.ONLINE)){
+				//增加统计上下线的操作，更新缓存上下线数量
+//				setOperator.add(RedisKey.VEHICLES_ONLINE, onoff.getVehicle().getSimCode());
+//				setOperator.remove(RedisKey.VEHICLES_OFFLINE, onoff.getVehicle().getSimCode());
+				Info info = pointVector.getInfo();
+				if(info==null){
+					info = new Info();
+				}
+				info.setState(State.ONLINE);
+				vehicle.setInfo(info);
+			}
+			if(onoff.getState().equals(VehicleOnOffLineInfo.State.OFFLINE)){
+				//下线的时候，更新缓存上下线数量。
+//				setOperator.add(RedisKey.VEHICLES_OFFLINE, onoff.getVehicle().getSimCode());
+//				setOperator.remove(RedisKey.VEHICLES_ONLINE, onoff.getVehicle().getSimCode());
+				Info info = pointVector.getInfo();
+				if(info==null){
+					info = new Info();
+				}
+				info.setState(State.OFFLINE);
+				vehicle.setInfo(info);
+			}
+			onoff.setVehicle(vehicle);
+			
+			template.convertAndSend("/topic/onoff", onoff);
+		}
+	}
+	
+	/**
+	 * 消费用户任务信息
+	 * @param status
+	 * @throws Exception
+	 */
+	@KafkaListener(id = "listen5", topicPattern = "com.tiamaes.bike.common.bean.integrated.Schedule")
+	public void listen5(@Payload Schedule schedule) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug("------------------Received : {}-------------------", schedule.toString());
+		}
+		template.convertAndSend("/topic/schedule/" + schedule.getId(), schedule);
+	}
+
+}

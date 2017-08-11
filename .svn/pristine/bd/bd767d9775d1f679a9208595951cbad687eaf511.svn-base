@@ -1,0 +1,20 @@
+package com.tiamaes.bike.storage.service;
+
+import com.tiamaes.bike.common.bean.connector.VehiclePhotoInfo;
+
+public interface VehiclePhotoInfoServiceInterface {
+	
+	/**
+	 * 增加设备拍照记录
+	 * @param vehiclePhotoInfo
+	 * @return 
+	 */
+	String addVehiclePhotoInfo(VehiclePhotoInfo vehiclePhotoInfo) throws Exception;
+	
+	/**
+	 * 根据id删除设备拍照记录
+	 * @param id
+	 */
+	void deleteVehiclePhotoInfo(String id);
+
+}

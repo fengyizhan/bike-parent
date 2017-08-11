@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tiamaes.bike.api.information.authority.persistence.AuthorityMapper">
+	<resultMap type="com.tiamaes.bike.common.bean.information.Park" id="dataAuthority">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="level" property="level"/>
+		<result column="parentId" property="parentId"/>
+		<collection property="children" ofType="com.tiamaes.bike.common.bean.information.Vehicle">
+			<id column="vehicleId" property="id"/>
+			<result column="vehicleName" property="name"/>
+			<result column="vehicleParentId" property="parentId"/>
+			<result column="vehicleLevel" property="level"/>
+		</collection>
+	</resultMap>
+	<!-- 权限通用sql片段 -->
+	<sql id="userDataAuthorities">
+			AND EXISTS (SELECT 1 FROM TB_DATA_AUTHORITY T2 
+			WHERE T2.userId = ${userId}  
+			AND T2.levels = 2
+			AND T2.targetId = ${innerField} 
+			)
+	</sql>
+	<!-- 根据用户查询该用户下所能看到的车辆 -->
+	<select id="queryParkTree" parameterType="com.tiamaes.security.core.userdetails.User" resultMap="dataAuthority">
+		SELECT p.id,
+			   p.name,
+			   2 			  AS level,
+			   p.districtCode AS parentId,
+			   v.id			  AS vehicleId,
+			   v.name		  AS vehicleName,
+			   v.parentId	  AS vehicleParentId,
+			   3 			  AS vehicleLevel
+		FROM tb_park p
+		LEFT JOIN tb_vehicle v ON v.parentId = p.id AND v.registered = 1
+		<where>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include> -->
+		</where>
+	</select>
+	<!-- 根据用户查询该用户下所能看到的散车辆 -->
+	<select id="queryVehicleTree" parameterType="com.tiamaes.security.core.userdetails.User" resultMap="dataAuthority">
+		SELECT v.id,
+			   v.name,
+			   410100 AS parentId,
+			   3      AS level
+		FROM tb_vehicle v WHERE v.registered = 1 AND v.parentId = null
+		<where>
+			<!-- <include refid="userDataAuthorities">
+			  	<property name="userId" value="#{username}"/>
+			  	<property name="innerField" value="d.id"/>
+			</include> -->
+		</where>
+	</select>
+	<!-- 查询所有的公司和车队 -->
+	<select id="queryAuthoritiesTree" parameterType="java.lang.String" resultMap="dataAuthority">
+		SELECT c.id,
+			   c.name,
+			   (CASE WHEN DA1.targetId IS NOT NULL THEN 1 ELSE NULL END) AS companyChecked,
+			   1 			AS companyLevel,
+			   1			AS companyOpen,
+			   d.id			AS departmentId,
+			   d.name		AS departmentName,
+			   (CASE WHEN DA2.targetId IS NOT NULL THEN 1 ELSE NULL END) AS departmentChecked,
+			   d.parentId 	AS departmentParentId
+			   <!-- ,2 			AS departmentLevel -->
+		FROM Tb_Company c
+		LEFT JOIN Tb_Department d ON d.parentId = c.id
+		LEFT JOIN Tb_Data_Authority DA1 ON DA1.levels = 1 
+										AND DA1.targetId = C.id
+										AND DA1.userId = #{username}
+		LEFT JOIN Tb_Data_Authority DA2 ON DA2.levels = 2 
+										AND DA2.targetId = D.id
+										AND DA2.userId = #{username}
+		
+	</select>
+	<!-- 保存用户数据权限 -->
+	<insert id="saveDataAuthority" parameterType="com.tiamaes.bike.common.bean.system.DataAuthority">
+		INSERT INTO Tb_Data_Authority(USERID,TARGETID,LEVELS) VALUES (#{userId},#{targetId},#{levels})
+	</insert>
+	<!-- 删除用户权限 -->
+	<delete id="deleteDataAuthority" parameterType="com.tiamaes.bike.common.bean.system.DataAuthority">
+		DELETE FROM Tb_Data_Authority WHERE USERID = #{userId} 
+											AND TARGETID = #{targetId}
+											AND LEVELS = #{levels}
+	</delete>
+	
+	<!-- 验证数据库中是否已经存在 -->
+	<select id="hasExists" resultType="boolean">
+		 SELECT COUNT(1) FROM TB_DATA_AUTHORITY 
+							 <where>
+							 	<if test="userId!=null and userId!=''">
+							 		userId = #{userId,jdbcType=CHAR} 
+							 	</if>
+								 <if test="targetId!=null and targetId!=''">
+								  AND targetId = #{targetId,jdbcType=CHAR} 
+								 </if>
+								  AND levels = #{levels}
+							 </where>
+	</select>
+	<!-- 验证数据库中是否已经存在 -->
+	<select id="hasAuth" resultType="boolean">
+		 SELECT COUNT(1) FROM TB_DATA_AUTHORITY 
+							 <where>
+							 	userId = #{username,jdbcType=CHAR} 
+							 </where>
+	</select>
+</mapper>

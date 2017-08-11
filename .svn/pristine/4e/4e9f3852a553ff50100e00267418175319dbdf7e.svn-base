@@ -1,0 +1,61 @@
+<div class="wrapper" style="padding-top: 0;position: relative;" ng-controller="MonitorController" ng-cloak>
+	<div ng-show="leftMenu.state" class="sidebar" ng-style="{'height': height - 10,'width':200}" style="background-color: #FFFFFF" >	
+		<!-- <div class="input-group input-group-sm" style="width: 100%;">
+			<ui-select ng-model="multipleDemo.selected" theme="bootstrap" title="{{$select.selected.name}}" on-select="monitor($item)">
+				<ui-select-match placeholder="">{{$select.selected.name}}</ui-select-match>
+				<ui-select-choices position="down" repeat="bus in searchResults track by $index" refresh="searchAsync($select.search)" refresh-delay="0">
+					<small>
+						车编号: <span ng-bind-html="bus.id | highlight: $select.search"></span><br>
+						车工号: <span ng-bind-html="bus.name | highlight: $select.search"></span><br>
+						车牌号: <span ng-bind-html="bus.carNo | highlight: $select.search"></span>
+					</small>
+				</ui-select-choices> 
+			</ui-select>
+			<span class="input-group-btn">
+				<button type="button" class="btn btn-primary" title="刷新" ng-click="refresh($event)">
+					<i class="fa fa-refresh"></i>
+				</button>
+			</span>
+		</div> -->
+		<div class="content-container" ng-style="{'height': height - 34}">
+			<div class="nano">
+				<div class="overthrow nano-content">
+					<ul id="ztree" class="ztree" style="color: #FFFFFF;"></ul>
+				</div>
+				<div class="nano-pane">
+					<div class="nano-slider"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="width: auto; height: auto; position: absolute;top: 200px;z-index:900;" ng-style="{'left':leftMenu.state?200:1, 'top':height/2 - 33}">
+		<a href="javascript:;" ng-click="leftMenu.switching()"><img ng-src="resources/images/monitor/{{leftMenu.state?'leftnor.png':'rightnor.png'}}" border="0"/></a>
+	</div>
+	<div class="container-fluid" style="padding:0;">
+		<div class="row">
+			<div class="col-md-12">
+				<div id="map" style="position:relative;" ng-style="{'height': height,'width':width - (leftMenu.state?200:0)}"></div>
+				<div class="vehicle-state">
+					<div class="btn-group" role="group" aria-label="...">
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="online"></span>&nbsp;<span>在线：</span><b>{{vehicle.onlines}}</b></button>
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="offline"></span><span>离线：<b>{{vehicle.offlines}}</b></span></button>
+						<button type="button" class="btn btn-sm btn-default" style="cursor: default;"><span class="parking"></span><span>停车：<b>{{vehicle.parkings}}</b></span></button>
+						<!-- 
+						<button type="button" class="btn btn-sm btn-default" title="拖动地图" ng-click="dragMap()"><i class="fa fa-hand-pointer-o" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="点击放大" ng-click="setZoom(1)"><i class="fa fa-search-plus" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="点击缩小" ng-click="setZoom(-1)"><i class="fa fa-search-minus" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="添加线路" ng-click="openDrawing(1)"><i class="fa fa-share-alt" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="添加圆形区域" ng-click="openDrawing(2)"><i class="fa fa-circle" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="添加矩形区域" ng-click="openDrawing(3)"><i class="fa fa-square" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="添加多边形区域" ng-click="openDrawing(4)"><i class="fa fa-industry" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="返回中心点" ng-click="switchMode(3)"><i class="fa fa-dot-circle-o" aria-hidden="true"></i></button>
+						<button type="button" class="btn btn-sm btn-default" title="添加兴趣点" ng-click="alertMe()"><i class="fa fa-flag" aria-hidden="true"></i></button>
+						 -->
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div dialog="dialog" template-url="module/monitor/dialog.html" style="width: 812px;height: 492px;"></div>
+	<div dialog="vedio" template-url="module/monitor/vedio.html" class="md-effect-12" style="width:1365px;height:inherit;"></div>
+</div>

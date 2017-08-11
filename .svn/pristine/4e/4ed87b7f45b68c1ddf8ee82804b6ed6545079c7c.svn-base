@@ -1,0 +1,92 @@
+package com.tiamaes.bike.reporter.integrated.station.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.tiamaes.bike.common.bean.Parameters;
+import com.tiamaes.bike.common.bean.connector.VehicleStationInfo;
+import com.tiamaes.bike.common.bean.integrated.InoutRecord;
+import com.tiamaes.bike.common.bean.integrated.StationRecord;
+import com.tiamaes.bike.reporter.integrated.station.service.StationQueryServiceInterface;
+import com.tiamaes.mybatis.PageInfo;
+import com.tiamaes.mybatis.Pagination;
+import com.tiamaes.security.core.annotation.CurrentUser;
+import com.tiamaes.security.core.userdetails.User;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+
+@RestController
+@RequestMapping("/integrated/station")
+@Api(tags = {"stationQuery"}, description = "车辆进出场记录查询")
+public class StationQueryController {
+	@SuppressWarnings("unused")
+	private static Logger logger = LogManager.getLogger(StationQueryController.class);
+	@Resource
+	private StationQueryServiceInterface stationQueryService;
+	
+	/**
+	 * 页面初始化方法
+	 * @return
+	 */
+	@RequestMapping(value = "/init", method = RequestMethod.GET)
+	@ApiOperation(value = "进出场类型", notes = "获取车辆进出场类型值数据")
+	public @ResponseBody Map<String,Object> init() {
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("states", VehicleStationInfo.State.values());
+		return result;
+	}
+	
+	@RequestMapping(value = {"/inout/page/{number:\\d+}","/inout/page/{number:\\d+}/{totalItems:\\d+}"}, method = { RequestMethod.GET, RequestMethod.POST }, produces = {"application/json" })
+	@ApiOperation(value = "车辆进出场分页信息", notes = "获取当前页的车辆进出场列表数据")
+	@ApiImplicitParam(name = "stationRecord", value = "车辆进出场记录实体", required = true, dataType = "StationRecord")
+	public @ResponseBody PageInfo<StationRecord> page(@RequestBody StationRecord stationRecord, @PathVariable Map<String,String> pathVariable,@CurrentUser User operator) {
+		int number = pathVariable.get("number") == null ? 1 : Integer.parseInt(pathVariable.get("number"));
+		int pageSize = pathVariable.get("pageSize") == null ? 20 : Integer.parseInt(pathVariable.get("pageSize"));
+		Pagination<StationRecord> pagination = new Pagination<StationRecord>(number, pageSize);
+		//封装参数
+		Parameters<StationRecord> parameters = new Parameters<StationRecord>();
+		parameters.setUser(operator);
+		parameters.setModel(stationRecord);
+		
+		List<StationRecord> list = stationQueryService.getListOfStationRecords(parameters, pagination);
+		return new PageInfo<>(list);
+	}
+	
+	/**
+	 * 获取车辆实时监控中的车辆进出场信息
+	 * @param vehicleId
+	 * @param operator
+	 * @return
+	 */
+	@RequestMapping(value = "/inoutRecords/{vehicleId}", method = { RequestMethod.GET}, produces = {"application/json" })
+	@ApiOperation(value = "实时监控中的车辆进出场信息", notes = "获取车辆实时监控中的车辆进出场信息")
+	public @ResponseBody List<InoutRecord> inoutRecords(@PathVariable("vehicleId")String vehicleId, @CurrentUser User operator) {
+		return stationQueryService.getListOfInoutRecords(vehicleId);
+	}
+	
+	/**
+	 * 获取固定场区的进出场记录
+	 * @param stationRecord
+	 * @return
+	 */
+	@RequestMapping(value = "/inoutStation", method = RequestMethod.POST)
+	@ApiOperation(value = "固定场区的进出场记录", notes = "获取固定场区的进出场记录")
+	public @ResponseBody List<StationRecord> inoutStation(@RequestBody StationRecord stationRecord) {
+		return stationQueryService.getListOfInOutInfo(stationRecord);
+	}
+	
+}
